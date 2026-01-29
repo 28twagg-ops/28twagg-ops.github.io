@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PIXEL-NET V2</title>
+    <title>PIXEL-NET V4</title>
     <style>
         /* --- THE RETRO AESTHETIC --- */
         body {
@@ -29,46 +29,94 @@
 
         .container {
             max-width: 1200px; margin: 0 auto; padding: 20px;
-            display: grid; grid-template-columns: 3fr 1.2fr; gap: 20px;
+            display: grid; grid-template-columns: 3fr 1.2fr; gap: 30px;
         }
 
-        /* --- HERO SECTION --- */
+        /* --- HERO SECTION (Cinematic Upgrade) --- */
         .hero-section {
-            grid-column: 1 / -1; border: 2px solid #ff00ff; padding: 20px;
-            text-align: center; margin-bottom: 20px; box-shadow: 0 0 15px #ff00ff;
-            background: rgba(255, 0, 255, 0.05); transition: 0.5s; display: none; /* Hidden until loaded */
+            border: 2px solid #ff00ff; padding: 40px 20px;
+            text-align: center; margin-bottom: 30px; 
+            box-shadow: 0 0 15px #ff00ff;
+            background-color: #000;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            min-height: 200px; /* Lengthened */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
+
+        /* Dark overlay so text pops over the image */
+        .hero-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0, 0, 0, 0.7); /* Darken the background image */
+            z-index: 1;
+        }
+        
+        .hero-content { position: relative; z-index: 2; } /* Keeps text on top */
 
         /* --- SEARCH --- */
         .library-controls {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; flex-direction: column; gap: 10px;
             margin-bottom: 20px; border-bottom: 1px dashed #333; padding-bottom: 15px;
         }
+        .search-wrapper { width: 100%; }
+        
         #gameSearch {
             background: #000; border: 1px solid #0f0; color: #0f0;
-            padding: 10px; font-family: 'Courier New', monospace; width: 100%; font-size: 1em; outline: none;
+            padding: 10px; font-family: 'Courier New', monospace; 
+            width: 100%; box-sizing: border-box; font-size: 1em; outline: none;
         }
+        #gameSearch:focus { box-shadow: 0 0 10px #0f0; }
 
         /* --- GAME GRID --- */
-        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
 
         .cabinet {
-            border: 1px solid #0f0; padding: 10px; text-align: center;
-            transition: 0.3s; cursor: pointer; background: #000; position: relative;
+            border: 1px solid #333; padding: 10px; text-align: center;
+            transition: 0.3s; cursor: pointer; background: #0a0a0a; position: relative;
+            box-shadow: 0 0 5px #000;
         }
-        .cabinet:hover { background: #0f0; color: #000; transform: translateY(-5px); box-shadow: 0 0 20px #0f0; }
 
+        .cabinet:hover {
+            border-color: #0f0; transform: translateY(-5px); 
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.4); z-index: 10;
+        }
+
+        /* --- THUMBNAIL STYLING (75% Saturation) --- */
         .cabinet-screen {
-            width: 100%; height: 140px; background-color: #222; margin-bottom: 10px;
+            width: 100%; height: 200px; background-color: #000; margin-bottom: 12px;
             display: flex; align-items: center; justify-content: center;
             border: 1px solid #333; overflow: hidden;
         }
-        .cabinet-thumb { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%); transition: 0.3s; }
-        .cabinet:hover .cabinet-thumb { filter: grayscale(0%); }
+        
+        .cabinet-thumb { 
+            width: 100%; height: 100%; object-fit: contain;
+            /* 75% Color by default */
+            filter: saturate(75%) brightness(0.9); 
+            transition: 0.4s ease;
+        }
+
+        .cabinet:hover .cabinet-thumb { 
+            /* 100% Color + Glow on hover */
+            filter: saturate(100%) brightness(1.2) drop-shadow(0 0 5px #fff); 
+        }
+
+        .game-title { font-weight: bold; font-size: 1.2em; color: #fff; margin-bottom: 5px; text-transform: uppercase; }
+        .game-desc { font-size: 0.8em; color: #888; height: 2.4em; overflow: hidden; }
 
         /* --- SIDEBAR --- */
-        .stats-panel { border: 1px solid #0ff; padding: 15px; height: fit-content; box-shadow: 0 0 10px #0ff; }
-        .section-title { color: #0ff; border-bottom: 2px solid #0ff; padding-bottom: 5px; margin-bottom: 15px; font-size: 1.1em; }
+        .stats-panel { 
+            border: 1px solid #0ff; padding: 15px; height: fit-content; 
+            box-shadow: 0 0 10px #0ff; background: rgba(0, 255, 255, 0.05);
+        }
+        .section-title { 
+            color: #0ff; border-bottom: 2px solid #0ff; padding-bottom: 5px; 
+            margin-bottom: 15px; font-size: 1.1em; letter-spacing: 1px;
+        }
         .legend-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9em; border-bottom: 1px dashed #222; padding-bottom: 4px; }
         .rank { width: 20px; color: gold; font-weight: bold; }
         .legend-info { flex-grow: 1; text-align: left; }
@@ -110,15 +158,20 @@
 
     <div class="container">
         <div class="main-content">
+            
             <div class="hero-section" id="heroBanner">
-                <h2 style="margin:0;" id="heroTitle">🔥 WEEKLY FEATURE</h2>
-                <p id="heroSubtitle">LOADING DATA...</p>
-                <button id="heroButton" style="background:#ff00ff; border:none; padding:10px 20px; color:white; font-family:inherit; cursor:pointer; font-size:1.2em;">▶ PLAY NOW</button>
+                <div class="hero-overlay"></div>
+                <div class="hero-content">
+                    <h2 style="margin:0; text-shadow: 0 0 10px #ff00ff;" id="heroTitle">🔥 WEEKLY FEATURE</h2>
+                    <p id="heroSubtitle" style="color:#fff; font-weight:bold;">LOADING DATA...</p>
+                    <br>
+                    <button id="heroButton" style="background:#ff00ff; border:none; padding:12px 30px; color:white; font-family:inherit; cursor:pointer; font-size:1.2em; font-weight:bold; box-shadow: 0 0 10px #ff00ff;">▶ PLAY NOW</button>
+                </div>
             </div>
 
             <div class="library-controls">
                 <h3 style="margin:0;">// GAME LIBRARY</h3>
-                <div class="search-wrapper" style="width: 50%;">
+                <div class="search-wrapper">
                     <input type="text" id="gameSearch" placeholder="SEARCH TITLES..." onkeyup="filterGames()">
                 </div>
             </div>
@@ -128,16 +181,30 @@
         </div>
 
         <div class="stats-panel">
-            <div class="section-title">🏆 LEGENDS (TOP 5)</div>
+            
+            <div class="section-title">🏆 THE IMMOVABLE DOGS</div>
             <div class="legend-row"><span class="rank">1</span><div class="legend-info"><span>ASH</span></div><div>99,400</div></div>
             <div class="legend-row"><span class="rank">2</span><div class="legend-info"><span>KAI</span></div><div>98,100</div></div>
             <div class="legend-row"><span class="rank">3</span><div class="legend-info"><span>BOB</span></div><div>85,000</div></div>
+            <div class="legend-row"><span class="rank">4</span><div class="legend-info"><span>JON</span></div><div>72,000</div></div>
+            <div class="legend-row"><span class="rank">5</span><div class="legend-info"><span>AMY</span></div><div>64,200</div></div>
             
             <br>
             <div class="section-title" style="color:#ff00ff; border-color:#ff00ff;">🚀 BIG MOVERS</div>
+            
             <div style="margin-bottom:15px; border-left:2px solid #ff00ff; padding-left:10px;">
                 <div style="font-weight:bold;">ZED (Space Rocks)</div>
-                <div style="color:#0f0; font-size:1.1em; text-shadow:0 0 5px #0f0;">32,500</div>
+                <div style="color:#0f0; font-size:1.1em; text-shadow:0 0 5px #0f0;">+11,500</div>
+            </div>
+
+            <div style="margin-bottom:15px; border-left:2px solid #ff00ff; padding-left:10px;">
+                <div style="font-weight:bold;">MAX (Millipede)</div>
+                <div style="color:#0f0; font-size:1.1em; text-shadow:0 0 5px #0f0;">+8,200</div>
+            </div>
+
+            <div style="margin-bottom:15px; border-left:2px solid #ff00ff; padding-left:10px;">
+                <div style="font-weight:bold;">LIA (Droid Arena)</div>
+                <div style="color:#0f0; font-size:1.1em; text-shadow:0 0 5px #0f0;">+5,400</div>
             </div>
         </div>
     </div>
@@ -152,9 +219,7 @@
 
     <script src="js/engine.js"></script>
     <script>
-        // --- 1. SYSTEM BOOT ---
         window.onload = function() {
-            // Check for saved login
             const savedInitials = sessionStorage.getItem('playerInitials');
             if(savedInitials) {
                 document.getElementById('initialsInput').value = savedInitials;
@@ -163,14 +228,14 @@
             loadGames();
         };
 
-        // --- 2. DYNAMIC GAME LOADER ---
         async function loadGames() {
             try {
                 const response = await fetch('games.json');
                 const games = await response.json();
                 const grid = document.getElementById('arcadeGrid');
                 
-                // Populate Grid
+                grid.innerHTML = '';
+
                 games.forEach(game => {
                     const cab = document.createElement('div');
                     cab.className = 'cabinet';
@@ -180,16 +245,21 @@
                             <img src="${game.image}" class="cabinet-thumb" onerror="this.style.display='none'">
                         </div>
                         <div class="game-title">${game.title}</div>
-                        <div style="font-size:0.7em; color:#888;">${game.description}</div>
+                        <div class="game-desc">${game.description}</div>
                     `;
                     cab.onclick = () => launchGame(game.script);
                     grid.appendChild(cab);
                 });
 
-                // Pick Random Hero Game
+                // --- HERO LOGIC: FILL BACKGROUND ---
                 if(games.length > 0) {
                     const hero = games[Math.floor(Math.random() * games.length)];
-                    document.getElementById('heroBanner').style.display = 'block';
+                    const banner = document.getElementById('heroBanner');
+                    
+                    banner.style.display = 'flex'; // Use flex to center content
+                    // Set the image as the background of the box
+                    banner.style.backgroundImage = `url('${hero.image}')`;
+                    
                     document.getElementById('heroTitle').innerText = "🔥 FEATURE: " + hero.title;
                     document.getElementById('heroSubtitle').innerText = hero.description;
                     document.getElementById('heroButton').onclick = () => launchGame(hero.script);
@@ -198,22 +268,26 @@
             } catch (e) { console.error("System Error:", e); }
         }
 
-        // --- 3. CORE FUNCTIONS ---
         function launchGame(scriptPath) {
+            let cleanPath = scriptPath;
+            if(scriptPath.includes('games/')) cleanPath = scriptPath.replace('games/', '');
+            if(!cleanPath.startsWith('js/')) cleanPath = 'js/' + cleanPath;
+
             const oldScript = document.getElementById('active-cartridge');
             if (oldScript) oldScript.remove();
 
             const script = document.createElement('script');
-            script.src = scriptPath;
+            script.src = cleanPath;
             script.id = 'active-cartridge';
-            document.body.appendChild(script);
+            script.onerror = () => alert("ERROR: Could not find game file at " + cleanPath);
 
+            document.body.appendChild(script);
             document.getElementById('gameOverlay').style.display = 'flex';
         }
 
         function closeGame() {
             document.getElementById('gameOverlay').style.display = 'none';
-            window.location.reload(); // Reset memory
+            window.location.reload(); 
         }
 
         function enterArcade() {
