@@ -1,0 +1,15 @@
+[
+  {
+    "id": "millipede",
+    "title": "MILLIPEDE CHAOS",
+    "script": "js/games/millipede.js",
+    "image": "assets/millipede_thumb.png",
+    "description": "Defend the garden from the swarm."
+  }
+]
+{
+  "title": "MILLIPEDE (React)",
+  "type": "iframe",
+  "url": "games/millipede-react/index.html",
+  "thumb": "assets/millipede_thumb.png"
+}
