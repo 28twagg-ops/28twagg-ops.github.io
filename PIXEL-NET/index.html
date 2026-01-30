@@ -305,32 +305,44 @@
             frame.innerHTML = `<canvas id="gameCanvas" width="400" height="640" style="display:block; background:#000;"></canvas>`;
         }
 
-        function launchGame(scriptPath) {
-            if (!scriptPath || typeof scriptPath !== 'string') {
-                alert("ERROR: Invalid script path (missing or not a string).");
-                return;
-            }
 
-            // Make sure classic games have a canvas to render into
-            ensureCanvasFrame();
+function launchGame(scriptPath) {
+    if (!scriptPath || typeof scriptPath !== 'string') {
+        alert("ERROR: Invalid script path (missing or not a string).");
+        return;
+    }
 
-            let cleanPath = scriptPath;
+    // Make sure classic games have a canvas to render into
+    ensureCanvasFrame();
 
-            // Keep your existing behavior, but protect it
-            if(cleanPath.includes('games/')) cleanPath = cleanPath.replace('games/', '');
-            if(!cleanPath.startsWith('js/')) cleanPath = 'js/' + cleanPath;
+    let cleanPath = scriptPath.trim();
 
-            const oldScript = document.getElementById('active-cartridge');
-            if (oldScript) oldScript.remove();
+    // ✅ If it's already a correct path, leave it alone
+    // Examples you want to support:
+    //  - "js/games/millipede.js"   (your current setup)
+    //  - "games/millipede.js"      (older style - we map to js/games/)
+    //  - "millipede.js"            (very old style - we map to js/games/)
+    if (cleanPath.startsWith('js/')) {
+        // already correct
+    } else if (cleanPath.startsWith('games/')) {
+        // old style: games/foo.js -> js/games/foo.js
+        cleanPath = 'js/' + cleanPath;
+    } else {
+        // fallback: foo.js -> js/games/foo.js
+        cleanPath = 'js/games/' + cleanPath.replace(/^\/+/, '');
+    }
 
-            const script = document.createElement('script');
-            script.src = cleanPath;
-            script.id = 'active-cartridge';
-            script.onerror = () => alert("ERROR: Could not find game file at " + cleanPath);
+    const oldScript = document.getElementById('active-cartridge');
+    if (oldScript) oldScript.remove();
 
-            document.body.appendChild(script);
-            document.getElementById('gameOverlay').style.display = 'flex';
-        }
+    const script = document.createElement('script');
+    script.src = cleanPath;
+    script.id = 'active-cartridge';
+    script.onerror = () => alert("ERROR: Could not find game file at " + cleanPath);
+
+    document.body.appendChild(script);
+    document.getElementById('gameOverlay').style.display = 'flex';
+}
 
         function launchIframeGame(url) {
             if (!url || typeof url !== 'string') {
