@@ -13,8 +13,28 @@
 </head>
 <body>
 
-  <!-- PLAYER INITIALS BADGE -->
-  <div id="px-player-badge" title="Click to change initials">?</div>
+  <!-- PLAYER INITIALS (UI) -->
+  <button id="px-player-badge" class="px-badge" type="button" aria-label="Player initials">???</button>
+
+  <div id="px-initials-modal" class="px-modal" aria-hidden="true">
+    <div class="px-modal__backdrop" data-close="1"></div>
+    <div class="px-modal__panel" role="dialog" aria-modal="true" aria-labelledby="px-modal-title">
+      <div class="px-modal__head">
+        <h2 id="px-modal-title">Enter your initials</h2>
+        <button class="px-iconbtn" type="button" data-close="1" aria-label="Close">×</button>
+      </div>
+      <p class="px-modal__sub">These are shown on leaderboards across games.</p>
+
+      <div class="px-modal__row">
+        <input id="px-initials-input" class="px-input" type="text" inputmode="text" autocomplete="off"
+               autocapitalize="characters" spellcheck="false" maxlength="3" placeholder="TJW" />
+        <button id="px-initials-save" class="px-btn" type="button">Save</button>
+      </div>
+
+      <div id="px-initials-error" class="px-modal__error" aria-live="polite"></div>
+      <div class="px-modal__hint">1–3 letters or numbers. Click your initials (top-right) anytime to change.</div>
+    </div>
+  </div>
 
   <header class="site-header">
     <div class="brand">
@@ -97,13 +117,19 @@
 
   <footer class="footer wrap">
     <div class="muted">CREATED BY TYLER WAGGONER WITH THE USE OF AI</div>
+    <div class="muted">PIXEL-NET • Static GitHub Pages • v4</div>
   </footer>
 
-  <!-- INITIALS HANDLER -->
+  <!-- INITIALS LOGIC (NO browser prompt) -->
   <script>
     (function () {
       const LS_KEY = "px_player_initials";
       const SS_KEY = "playerInitials";
+
+      const badge = () => document.getElementById("px-player-badge");
+      const modal = () => document.getElementById("px-initials-modal");
+      const input = () => document.getElementById("px-initials-input");
+      const err = () => document.getElementById("px-initials-error");
 
       function normalize(v) {
         return String(v || "")
@@ -121,45 +147,95 @@
         sessionStorage.setItem(SS_KEY, v);
       }
 
-      function promptInitials(force) {
-        const existing = getInitials();
-        if (!force && existing) return existing;
-
-        let val = prompt("Enter your initials (1–3 letters/numbers):", existing || "");
-        val = normalize(val);
-        if (!val) val = "???";
-        setInitials(val);
-        return val;
+      function setError(msg) {
+        if (err()) err().textContent = msg || "";
       }
 
       function renderBadge() {
-        const el = document.getElementById("px-player-badge");
-        if (!el) return;
-        const initials = getInitials() || promptInitials(false);
-        el.textContent = initials;
+        const b = badge();
+        if (!b) return;
+        const v = getInitials();
+        b.textContent = v || "???";
+      }
+
+      function openModal(force) {
+        const m = modal();
+        if (!m) return;
+        m.classList.add("is-open");
+        m.setAttribute("aria-hidden", "false");
+        const v = force ? getInitials() : (getInitials() || "");
+        if (input()) {
+          input().value = v;
+          setTimeout(() => { input().focus(); input().select(); }, 0);
+        }
+        setError("");
+      }
+
+      function closeModal() {
+        const m = modal();
+        if (!m) return;
+        m.classList.remove("is-open");
+        m.setAttribute("aria-hidden", "true");
+        setError("");
+        renderBadge();
+      }
+
+      function save() {
+        const v = normalize(input() ? input().value : "");
+        if (!v) {
+          setError("Please enter 1–3 letters or numbers.");
+          if (input()) input().focus();
+          return;
+        }
+        setInitials(v);
+        closeModal();
       }
 
       window.addEventListener("DOMContentLoaded", () => {
         renderBadge();
-        const el = document.getElementById("px-player-badge");
-        if (el) {
-          el.addEventListener("click", () => {
-            promptInitials(true);
-            renderBadge();
+
+        // Show modal on first visit (no initials saved yet)
+        if (!getInitials()) openModal(false);
+
+        // Click badge to edit
+        if (badge()) badge().addEventListener("click", () => openModal(true));
+
+        // Save button / Enter key
+        const btn = document.getElementById("px-initials-save");
+        if (btn) btn.addEventListener("click", save);
+
+        if (input()) {
+          input().addEventListener("keydown", (e) => {
+            if (e.key === "Enter") save();
+            if (e.key === "Escape") closeModal();
+          });
+          input().addEventListener("input", () => {
+            const cur = input().selectionStart;
+            const before = input().value;
+            const after = normalize(before);
+            if (before !== after) {
+              input().value = after;
+              input().setSelectionRange(Math.min(cur, after.length), Math.min(cur, after.length));
+            }
           });
         }
+
+        // Close handlers
+        document.querySelectorAll('[data-close="1"]').forEach((el) => {
+          el.addEventListener("click", () => closeModal());
+        });
       });
     })();
   </script>
 
-  <!-- GAME LOADER -->
   <script>
+    // Normalize old/new games.json formats into one consistent shape.
     function normalizeGame(g) {
       const name = g.name ?? g.title ?? g.game ?? g.id ?? "UNTITLED";
       const thumb = g.thumb ?? g.image ?? g.thumbnail ?? "";
       const type = (g.type ?? "").toLowerCase();
       const path = g.path ?? g.url ?? g.href ?? "";
-      const script = (type === "iframe") ? "" : (g.script ?? "");
+      const script = g.script ?? g.js ?? "";
       const inferredType = type || (path && path.toLowerCase().endsWith(".html") ? "iframe" : "script");
       return { name, thumb, type: inferredType, path, script };
     }
@@ -177,6 +253,7 @@
           document.getElementById("featuredThumb").src = featured.thumb || "assets/millipede_thumb.png";
           document.getElementById("featuredTitle").textContent = featured.name;
           document.getElementById("featuredPlay").onclick = () => {
+            if (!featured.path) return alert("Missing path for featured game.");
             window.location.href = featured.path;
           };
         }
@@ -198,7 +275,18 @@
           card.appendChild(img);
           card.appendChild(title);
 
-          card.onclick = () => window.location.href = game.path;
+          card.onclick = () => {
+            if (game.type === "iframe") {
+              if (!game.path) return alert("Missing iframe path for: " + game.name);
+              window.location.href = game.path;
+              return;
+            }
+            if (!game.script) return alert("Missing script for: " + game.name);
+            const s = document.createElement("script");
+            s.src = game.script;
+            document.body.appendChild(s);
+          };
+
           grid.appendChild(card);
         });
 
