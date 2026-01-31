@@ -1,5 +1,5 @@
 /*
- * Neon Chase
+ * Neon Chase
  *
  * Race through a neon highway and dodge incoming traffic. The player
  * controls a car that can switch between three lanes to avoid
@@ -40,6 +40,10 @@
   let score = 0;
   let gameOver = false;
 
+  // Track whether the current run's score has been submitted to the backend.
+  // Without this flag the submit call would fire on every frame after game over.
+  let submitted = false;
+
   // Key handling
   window.addEventListener('keydown', e => {
     if (e.code === 'ArrowUp' || e.code === 'KeyW') {
@@ -66,11 +70,13 @@
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const ob = obstacles[i];
       ob.x -= speed;
+
       // Remove off screen
       if (ob.x + ob.width < 0) {
         obstacles.splice(i, 1);
         score += 10;
       }
+
       // Collision check
       if (!gameOver &&
           ob.lane === player.lane &&
@@ -79,6 +85,7 @@
         gameOver = true;
       }
     }
+
     // Increase difficulty over time
     if (!gameOver) {
       speed += delta * 0.0005;
@@ -89,6 +96,7 @@
   function drawBackground(offset) {
     ctx.fillStyle = '#01012b';
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
     // Neon lane lines
     ctx.strokeStyle = '#08f7fe33';
     ctx.lineWidth = 2;
@@ -98,6 +106,7 @@
       ctx.lineTo(WIDTH, laneY[i]);
       ctx.stroke();
     }
+
     // Moving vertical lines to simulate motion
     ctx.strokeStyle = '#f5d30022';
     for (let x = (offset % 40) - 40; x < WIDTH; x += 40) {
@@ -110,30 +119,48 @@
 
   let lastTime = performance.now();
   let lineOffset = 0;
+
+  function maybeSubmitScore() {
+    if (submitted) return;
+    if (!window.PixelNet || !PixelNet.submitScore) return;
+    submitted = true;
+    PixelNet.submitScore('neon-chase', Math.floor(score));
+  }
+
   function loop(time) {
     const delta = time - lastTime;
     lastTime = time;
     lineOffset += speed;
+
     // Spawn obstacles
     if (time - lastObstacleSpawn > obstacleInterval) {
       spawnObstacle();
       lastObstacleSpawn = time;
     }
+
     updateObstacles(delta);
     drawBackground(lineOffset);
+
     // Draw player
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x, laneY[player.lane] - player.height / 2, player.width, player.height);
+
     // Draw obstacles
     obstacles.forEach(ob => {
       ctx.fillStyle = ob.color;
       ctx.fillRect(ob.x, laneY[ob.lane] - ob.height / 2, ob.width, ob.height);
     });
+
     // Draw score
     ctx.fillStyle = '#ffffff';
     ctx.font = '18px sans-serif';
+    ctx.textAlign = 'left';
     ctx.fillText(`Score: ${Math.floor(score)}`, 10, 24);
+
     if (gameOver) {
+      // Submit once on game over
+      maybeSubmitScore();
+
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
       ctx.fillStyle = '#ffffff';
@@ -144,6 +171,7 @@
       ctx.fillText(`Final Score: ${Math.floor(score)}`, WIDTH / 2, HEIGHT / 2 + 10);
       ctx.fillText('Press Enter to Restart', WIDTH / 2, HEIGHT / 2 + 40);
     }
+
     requestAnimationFrame(loop);
   }
 
@@ -155,6 +183,9 @@
     score = 0;
     player.lane = 1;
     gameOver = false;
+
+    // Reset submission flag so a new run can submit a new score.
+    submitted = false;
   }
 
   requestAnimationFrame(loop);

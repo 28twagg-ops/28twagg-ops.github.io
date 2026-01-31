@@ -162,10 +162,11 @@
     if(getInitials()) closeModal();
   });
 
-  // First load behavior: if no initials yet, open modal once
+  // First load behavior: just refresh the badge. We intentionally do
+  // **not** auto-open the initials modal here because the modal should
+  // only appear when the badge is clicked.
   window.addEventListener("DOMContentLoaded", () => {
     refreshBadge();
-    if(!getInitials()) openModal();
   });
 })();
 </script>

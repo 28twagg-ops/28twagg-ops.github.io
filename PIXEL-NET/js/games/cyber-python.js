@@ -1,5 +1,5 @@
 /*
- * Cyber Python
+ * Cyber Python
  *
  * Classic snake game with a cyberpunk twist. Navigate the neon grid
  * collecting food to grow longer. Avoid colliding with the walls or
@@ -24,8 +24,12 @@
   let food;
   let score;
   let gameOver;
+
+  // Flag to ensure a score is submitted only once per game.
+  let submitted = false;
+
   let lastMoveTime = 0;
-  const moveInterval = 150; // milliseconds
+  const moveInterval = 150;
 
   function init() {
     snake = [ { x: Math.floor(COLS / 2), y: Math.floor(ROWS / 2) } ];
@@ -33,6 +37,9 @@
     placeFood();
     score = 0;
     gameOver = false;
+
+    // Reset submission flag so that the next run can upload a new score.
+    submitted = false;
   }
 
   function placeFood() {
@@ -68,30 +75,40 @@
     }
   });
 
+  function maybeSubmitScore() {
+    if (submitted) return;
+    if (!window.PixelNet || !PixelNet.submitScore) return;
+    submitted = true;
+    PixelNet.submitScore('cyber-python', score);
+  }
+
   function update(time) {
     if (gameOver) {
+      maybeSubmitScore();
       draw();
       requestAnimationFrame(update);
       return;
     }
+
     if (time - lastMoveTime > moveInterval) {
       lastMoveTime = time;
-      // Move snake
+
       const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
-      // Check wall collision
+
       if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
         gameOver = true;
       }
-      // Check self collision
+
       for (const s of snake) {
         if (s.x === head.x && s.y === head.y) {
           gameOver = true;
           break;
         }
       }
+
       if (!gameOver) {
         snake.unshift(head);
-        // Check food
+
         if (head.x === food.x && head.y === food.y) {
           score++;
           placeFood();
@@ -100,15 +117,15 @@
         }
       }
     }
+
     draw();
     requestAnimationFrame(update);
   }
 
   function draw() {
-    // Background
     ctx.fillStyle = '#010a0f';
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    // Draw grid lines
+
     ctx.strokeStyle = '#0d233f';
     ctx.lineWidth = 1;
     for (let i = 1; i < COLS; i++) {
@@ -123,18 +140,20 @@
       ctx.lineTo(WIDTH, i * CELL_SIZE);
       ctx.stroke();
     }
-    // Draw food
+
     ctx.fillStyle = '#ffcc00';
     ctx.fillRect(food.x * CELL_SIZE + 2, food.y * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
-    // Draw snake
+
     ctx.fillStyle = '#00e676';
-    snake.forEach((s, idx) => {
+    snake.forEach((s) => {
       ctx.fillRect(s.x * CELL_SIZE + 1, s.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
     });
-    // Score
+
     ctx.fillStyle = '#ffffff';
     ctx.font = '18px sans-serif';
+    ctx.textAlign = 'left';
     ctx.fillText(`Score: ${score}`, 10, 24);
+
     if (gameOver) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(0, 0, WIDTH, HEIGHT);

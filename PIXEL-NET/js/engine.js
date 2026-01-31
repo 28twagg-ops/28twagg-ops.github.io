@@ -83,3 +83,8 @@ const PixelNet = {
 // Start engine
 PixelNet.init();
 PixelNet.Input.startListening();
+
+// Expose the PixelNet object on the global window. Without this,
+// PixelNet will be undefined in wrapper pages and game scripts that
+// reference window.PixelNet.
+window.PixelNet = PixelNet;
