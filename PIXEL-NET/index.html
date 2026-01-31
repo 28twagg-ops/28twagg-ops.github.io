@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PIXEL-NET Arcade</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">PX</div>
+      <div class="brand-text">
+        <div class="brand-title">PIXEL-NET</div>
+        <div class="brand-subtitle">Online Arcade Network</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-link" href="#featured-game">Featured</a>
+      <a class="nav-link" href="#game-library">Library</a>
+      <a class="nav-link" href="#top-dogs">Top Dogs</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+
+    <section id="featured-game" class="section">
+      <div class="featured-card">
+        <div class="featured-media">
+          <img id="featuredThumb" src="assets/millipede_thumb.png" alt="Featured Game">
+          <div class="featured-glow"></div>
+          <div class="scanlines"></div>
+        </div>
+
+        <div class="featured-info">
+          <span class="badge">Game of the Week</span>
+          <h2 id="featuredTitle">Loading…</h2>
+          <p id="featuredDesc">Featured game rotates weekly. Top the leaderboard and hold it.</p>
+          <button id="featuredPlay" class="btn">Play Featured</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="game-library" class="section">
+      <div class="section-head">
+        <h3>Arcade Floor</h3>
+        <p class="muted">Pick a cabinet. Click to play.</p>
+      </div>
+      <div id="arcadeGrid" class="game-grid"></div>
+    </section>
+
+    <section id="top-dogs" class="section topdogs">
+      <div class="section-head">
+        <h3>Top Dogs</h3>
+        <p class="muted">Players holding top scores the longest. Prestige only.</p>
+      </div>
+
+      <ul class="player-list">
+        <li>
+          <div class="player-name">TJW</div>
+          <div class="player-details">
+            <span class="pill">HOLDEM</span>
+            <span class="score">4,109</span>
+            <span class="held-time">Held 14 days</span>
+          </div>
+        </li>
+        <li>
+          <div class="player-name">CSK</div>
+          <div class="player-details">
+            <span class="pill">BLACKJACK</span>
+            <span class="score">3,085</span>
+            <span class="held-time">Held 9 days</span>
+          </div>
+        </li>
+        <li>
+          <div class="player-name">RZX</div>
+          <div class="player-details">
+            <span class="pill">NEON CHASE</span>
+            <span class="score">987,450</span>
+            <span class="held-time">Held 21 days</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section id="explore-zone" class="section">
+      <div class="section-head">
+        <h3>Explore</h3>
+        <p class="muted">Seasonal themes, CRT vibe, and future features live here.</p>
+      </div>
+
+      <div class="explore-grid">
+        <div class="explore-card">
+          <div class="explore-title">Season Themes</div>
+          <div class="muted">Swap palettes by toggling a single class on &lt;body&gt;.</div>
+        </div>
+        <div class="explore-card">
+          <div class="explore-title">CRT Aesthetic</div>
+          <div class="muted">Scanlines + glow + subtle curvature, kept tasteful.</div>
+        </div>
+        <div class="explore-card">
+          <div class="explore-title">Leaderboard Prestige</div>
+          <div class="muted">“Top Dogs” honors long-held highscores.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer wrap">
+    <div class="muted">PIXEL-NET • Static GitHub Pages • v4</div>
+  </footer>
+
+  <script>
+    // Normalize old/new games.json formats into one consistent shape.
+    function normalizeGame(g) {
+      const name = g.name ?? g.title ?? g.game ?? g.id ?? "UNTITLED";
+      const thumb = g.thumb ?? g.image ?? g.thumbnail ?? "";
+      const type = (g.type ?? "").toLowerCase();
+
+      // iframe destination might be called path or url
+      const path = g.path ?? g.url ?? g.href ?? "";
+
+      // classic JS launcher might be script; ignore script for iframe games
+      const script = (type === "iframe") ? "" : (g.script ?? "");
+
+      // if type is missing but we have a URL that looks like an html file, treat as iframe
+      const inferredType = type || (path && path.toLowerCase().endsWith(".html") ? "iframe" : "script");
+
+      return { name, thumb, type: inferredType, path, script };
+    }
+
+    async function loadGames() {
+      try {
+        const res = await fetch("./games.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("games.json fetch failed: " + res.status);
+
+        const raw = await res.json();
+        if (!Array.isArray(raw)) throw new Error("games.json must be an array []");
+
+        const games = raw.map(normalizeGame);
+
+        // FEATURED = first game
+        const featured = games[0];
+        if (featured) {
+          const ft = document.getElementById("featuredThumb");
+          const tt = document.getElementById("featuredTitle");
+          const play = document.getElementById("featuredPlay");
+
+          if (featured.thumb) ft.src = featured.thumb;
+          tt.textContent = featured.name;
+
+          play.onclick = () => {
+            if (featured.type === "iframe" && featured.path) {
+              window.location.href = featured.path;
+              return;
+            }
+            if (featured.script) {
+              const s = document.createElement("script");
+              s.src = featured.script;
+              document.body.appendChild(s);
+              window.scrollTo({ top: document.getElementById("game-library").offsetTop - 10, behavior: "smooth" });
+              return;
+            }
+            alert("Featured game is missing a path/script in games.json");
+          };
+        }
+
+        // GRID
+        const grid = document.getElementById("arcadeGrid");
+        grid.innerHTML = "";
+
+        games.forEach(game => {
+          const card = document.createElement("div");
+          card.className = "game-card";
+
+          const img = document.createElement("img");
+          img.src = game.thumb || "assets/millipede_thumb.png";
+          img.alt = game.name;
+
+          const title = document.createElement("h4");
+          title.textContent = game.name;
+
+          card.appendChild(img);
+          card.appendChild(title);
+
+          card.onclick = () => {
+            if (game.type === "iframe") {
+              if (!game.path) return alert("Missing iframe path for: " + game.name);
+              window.location.href = game.path;
+              return;
+            }
+            if (!game.script) return alert("Missing script for: " + game.name);
+            const s = document.createElement("script");
+            s.src = game.script;
+            document.body.appendChild(s);
+          };
+
+          grid.appendChild(card);
+        });
+
+      } catch (e) {
+        console.error(e);
+        alert("Loader error. Open DevTools Console for details.");
+      }
+    }
+
+    loadGames();
+  </script>
+
+</body>
+</html>
