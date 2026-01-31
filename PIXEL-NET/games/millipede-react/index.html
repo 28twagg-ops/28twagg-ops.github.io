@@ -29,18 +29,18 @@
     .lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
     .lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
 
-    /* Hide in-game initials input */
-    input[maxlength="3"], input[maxLength="3"] { display:none !important; }
+    /* ✅ Hide the initials input so it “doesn’t ask” visually */
+    input[maxlength="3"], input[maxLength="3"]{display:none!important}
   </style>
 
-  <!-- React build (unchanged) -->
+  <!-- KEEP THIS (YOUR REACT BUILD) -->
   <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
 </head>
 <body>
 
   <div class="topbar">
     <button class="btn" id="px-exit">EXIT</button>
-    <div class="badge" id="px-badge">???</div>
+    <div class="badge" id="px-badge" title="Click to change initials on home page">???</div>
   </div>
 
   <div class="layout">
@@ -51,6 +51,7 @@
         <p><b>Shoot:</b> Space</p>
         <p><b>Goal:</b> Clear the swarm, survive, score high.</p>
       </div>
+      <div class="lb-meta">Initials are set on the homepage. Click the badge (top-right) to change.</div>
     </aside>
 
     <main class="panel">
@@ -58,7 +59,7 @@
       <div class="gamebox">
         <div id="root"></div>
       </div>
-      <div class="muted">Scores auto-save using your PIXEL-NET initials.</div>
+      <div class="muted">Leaderboard refreshes automatically.</div>
     </main>
 
     <aside class="panel">
@@ -73,57 +74,64 @@
   </div>
 
   <script src="../../js/engine.js"></script>
-
   <script>
     (function(){
       const SLUG = "millipede-react";
-      const initials =
-        (localStorage.getItem("px_player_initials") || "???")
-        .toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
 
-      if (initials !== "???") sessionStorage.setItem("playerInitials", initials);
-      if (window.PixelNet && PixelNet.init) PixelNet.init();
+      // Read initials from homepage storage and keep sessionStorage in sync
+      const ls = (localStorage.getItem("px_player_initials") || "").toUpperCase().slice(0,3);
+      if(ls) sessionStorage.setItem("playerInitials", ls);
 
-      document.getElementById("px-badge").textContent = initials;
-      document.getElementById("px-badge").onclick = () => location.href = "../../index.html";
+      if(window.PixelNet && PixelNet.init) PixelNet.init();
+
+      const badge = document.getElementById("px-badge");
+      badge.textContent = ls || "???";
+      badge.onclick = () => location.href = "../../index.html";
       document.getElementById("px-exit").onclick = () => location.href = "../../index.html";
 
       async function renderLeaderboard(){
+        const status = document.getElementById("lb-status");
         const L = document.getElementById("lb-left");
         const R = document.getElementById("lb-right");
-        const S = document.getElementById("lb-status");
-        L.innerHTML = ""; R.innerHTML = "";
+        L.innerHTML=""; R.innerHTML="";
 
         try{
           const data = await PixelNet.getLeaderboard(SLUG);
-          const rows = Array.isArray(data) ? data : (data.scores || []);
+          const rows = Array.isArray(data) ? data : (data?.scores || data?.top10 || data?.leaderboard || []);
           const top = rows.slice(0,10);
 
-          if (!top.length) { S.textContent = "No scores yet."; return; }
+          if(!top.length){ status.textContent="No scores yet."; return; }
 
-          top.forEach((r,i)=>{
-            const li = document.createElement("li");
-            li.className = "lb-item";
-            li.innerHTML = `<span>${i+1}.</span><span>${r.initials}</span><span class="lb-score">${r.score}</span>`;
-            (i < 5 ? L : R).appendChild(li);
+          top.forEach((row,i)=>{
+            const initials=(row.initials||row.name||"???").toString().toUpperCase();
+            const score=row.score ?? row.points ?? row.value ?? 0;
+
+            const li=document.createElement("li");
+            li.className="lb-item";
+            li.innerHTML=`<span class="lb-rank">${i+1}.</span><span>${initials}</span><span class="lb-score">${score}</span>`;
+            (i<5?L:R).appendChild(li);
           });
 
-          S.textContent = "Auto-refreshing…";
-        } catch {
-          S.textContent = "Leaderboard unavailable.";
+          status.textContent="Auto-refreshing…";
+        }catch(e){
+          console.error(e);
+          status.textContent="Failed to load leaderboard (backend sleeping?).";
         }
       }
 
       renderLeaderboard();
-      setInterval(renderLeaderboard, 15000);
+      setInterval(renderLeaderboard,15000);
 
-      // Auto-dismiss SAVE overlay once per game over
+      /* ✅ Auto-dismiss the in-game SAVE overlay (no freezing, no observers)
+         - Once per game-over score
+         - Uses the actual on-screen "SCORE: ###" text
+      */
       let lastScore = null;
       setInterval(() => {
         const m = (document.body.innerText || "").match(/SCORE:\s*([0-9]{1,8})/i);
         if (!m) return;
 
-        const score = parseInt(m[1],10);
+        const score = parseInt(m[1], 10);
         if (!Number.isFinite(score) || score === lastScore) return;
         lastScore = score;
 
@@ -131,6 +139,7 @@
           .find(b => (b.textContent || "").trim().toUpperCase() === "SAVE");
         if (btn) btn.click();
       }, 250);
+
     })();
   </script>
 </body>
