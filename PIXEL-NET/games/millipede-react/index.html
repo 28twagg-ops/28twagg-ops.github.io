@@ -29,6 +29,28 @@
     .lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
     .lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
     .hint{color:var(--muted);font-size:12px;margin-top:10px}
+  
+    .play-again-wrap{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      pointer-events:auto;
+      z-index:9999;
+      background:rgba(0,0,0,.35);
+    }
+    .play-again-btn{
+      padding:16px 28px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.25);
+      background:rgba(10,12,26,.9);
+      color:#e9ecff;
+      font:800 16px/1 "Orbitron",system-ui,sans-serif;
+      letter-spacing:.14em;
+      cursor:pointer;
+    }
+
   </style>
 
   <!-- React build -->
@@ -237,6 +259,11 @@
           }
           // Refresh leaderboard after save
           setTimeout(renderLeaderboard, 600);
+          
+        // Show PLAY AGAIN button after auto-save
+        const pa = document.getElementById("px-play-again");
+        if(pa) pa.style.display = "flex";
+
         }catch(err){
           console.error("[Millipede wrapper] auto-save failed:", err);
         }
@@ -248,6 +275,9 @@
       autoSaveIfGameOver();
 
       // Enter to restart once game over seen
+      const paBtn = document.querySelector('#px-play-again button');
+      if(paBtn){ paBtn.onclick = ()=>location.reload(); }
+
       window.addEventListener("keydown", (e)=>{
         if((e.code==="Enter" || e.key==="Enter") && gameOverSeen){
           e.preventDefault();
@@ -257,5 +287,10 @@
       }, {capture:true});
     })();
   </script>
+
+  <div class="play-again-wrap" id="px-play-again">
+    <button class="play-again-btn">PLAY AGAIN</button>
+  </div>
+
 </body>
 </html>
