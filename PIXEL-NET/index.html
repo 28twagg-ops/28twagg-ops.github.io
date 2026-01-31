@@ -13,29 +13,17 @@
 </head>
 <body>
 
-<!-- ================= PLAYER BADGE (TOP RIGHT) ================= -->
 <button id="px-player-badge" class="px-badge" type="button">???</button>
 
-<!-- ================= INITIALS MODAL (STARTS HIDDEN, POPS CLEANLY) ================= -->
 <section id="px-init-modal" class="px-init-modal hidden" aria-hidden="true">
   <div class="px-init-backdrop"></div>
-
   <div class="px-init-card" role="dialog" aria-modal="true" aria-label="Enter Initials">
     <div class="px-init-header">
       <span>ENTER INITIALS</span>
       <button id="px-init-close" type="button" aria-label="Close">×</button>
     </div>
-
-    <input
-      id="px-init-input"
-      type="text"
-      maxlength="3"
-      placeholder="_ _ _"
-      autocomplete="off"
-      autocapitalize="characters"
-      spellcheck="false"
-    />
-
+    <input id="px-init-input" type="text" maxlength="3" placeholder="_ _ _" autocomplete="off"
+      autocapitalize="characters" spellcheck="false" />
     <button id="px-init-save" type="button">SAVE</button>
     <div class="px-init-hint">Press Enter to save</div>
   </div>
@@ -87,16 +75,26 @@
     <div id="px-empty" class="muted hidden">No games match your search.</div>
   </section>
 
+  <!-- ✅ Leaderboards now actually renders -->
   <section id="leaderboards" class="section">
     <div class="section-head">
       <h3>Leaderboards</h3>
-      <!-- Show a helpful message while the leaderboard loads -->
-      <p class="muted">Top performers updated automatically.</p>
+      <p class="muted">Top Dogs = longest time held at #1.</p>
     </div>
-    <!-- Container to display aggregated leaderboard data -->
-    <div id="leaderboards-content" class="lb-grid"></div>
-    <!-- Status element for messages like loading or empty leaderboard -->
-    <p id="leaderboards-status" class="muted">Loading…</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="panel" style="padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.18)">
+        <div class="muted" style="font-family:Orbitron,system-ui,sans-serif;letter-spacing:.10em;font-size:12px">ALL‑TIME TOP DOGS</div>
+        <div id="px-topdogs" style="margin-top:10px"></div>
+      </div>
+
+      <div class="panel" style="padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.18)">
+        <div class="muted" style="font-family:Orbitron,system-ui,sans-serif;letter-spacing:.10em;font-size:12px">CURRENT #1 HOLDERS</div>
+        <div id="px-current" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="muted" id="px-lb-status" style="margin-top:10px">Loading…</div>
   </section>
 
 </main>
@@ -106,32 +104,19 @@
   <div class="muted">PIXEL-NET • Static GitHub Pages</div>
 </footer>
 
-<!-- ================= INITIALS LOGIC ================= -->
 <script>
 (() => {
   const KEY = "px_player_initials";
-
   const badge = document.getElementById("px-player-badge");
   const modal = document.getElementById("px-init-modal");
   const input = document.getElementById("px-init-input");
   const closeBtn = document.getElementById("px-init-close");
   const saveBtn = document.getElementById("px-init-save");
 
-  function normalize(v){
-    return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
-  }
-
-  function getInitials(){
-    return localStorage.getItem(KEY) || "";
-  }
-
-  function setInitials(v){
-    localStorage.setItem(KEY, v);
-  }
-
-  function refreshBadge(){
-    badge.textContent = getInitials() || "???";
-  }
+  function normalize(v){ return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3); }
+  function getInitials(){ return localStorage.getItem(KEY) || ""; }
+  function setInitials(v){ localStorage.setItem(KEY, v); }
+  function refreshBadge(){ badge.textContent = getInitials() || "???"; }
 
   function openModal(){
     modal.classList.remove("hidden");
@@ -139,12 +124,10 @@
     input.value = getInitials() || "";
     setTimeout(() => input.focus(), 0);
   }
-
   function closeModal(){
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden","true");
   }
-
   function save(){
     const v = normalize(input.value);
     if(!v) return;
@@ -162,21 +145,14 @@
     if(e.key === "Escape") closeModal();
   });
 
-  // Optional: click backdrop to close (only if already set)
   modal.querySelector(".px-init-backdrop").addEventListener("click", () => {
     if(getInitials()) closeModal();
   });
 
-  // First load behavior: just refresh the badge. We intentionally do
-  // **not** auto-open the initials modal here because the modal should
-  // only appear when the badge is clicked.
-  window.addEventListener("DOMContentLoaded", () => {
-    refreshBadge();
-  });
+  window.addEventListener("DOMContentLoaded", () => { refreshBadge(); });
 })();
 </script>
 
-<!-- ================= GAME LOADER ================= -->
 <script>
 async function loadGames(){
   const grid = document.getElementById("arcadeGrid");
@@ -184,10 +160,7 @@ async function loadGames(){
   const search = document.getElementById("px-search");
 
   const res = await fetch("./games.json", { cache:"no-store" });
-  if(!res.ok){
-    console.error("games.json failed to load");
-    return;
-  }
+  if(!res.ok){ console.error("games.json failed to load"); return; }
 
   const games = await res.json();
   grid.innerHTML = "";
@@ -206,17 +179,12 @@ async function loadGames(){
     card.appendChild(img);
     card.appendChild(title);
 
-    card.addEventListener("click", () => {
-      if(!g.path) return;
-      window.location.href = g.path;
-    });
-
+    card.addEventListener("click", () => { if(g.path) window.location.href = g.path; });
     grid.appendChild(card);
   });
 
   empty.classList.toggle("hidden", games.length !== 0);
 
-  // Featured = first game
   if(games[0]){
     const ft = document.getElementById("featuredThumb");
     const tt = document.getElementById("featuredTitle");
@@ -226,7 +194,6 @@ async function loadGames(){
     play.onclick = () => { if(games[0].path) location.href = games[0].path; };
   }
 
-  // Search filter
   search.addEventListener("input", () => {
     const q = (search.value || "").toLowerCase().trim();
     let visible = 0;
@@ -238,20 +205,26 @@ async function loadGames(){
     empty.classList.toggle("hidden", visible !== 0);
   });
 }
-
 loadGames();
 </script>
 
-  <!-- Load leaderboard helper and render Top Dogs on the home page -->
-  <script src="js/leaderboard.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (typeof renderTopDogs === 'function') {
-        // Populate the leaderboards section with top dog data
-        renderTopDogs('leaderboards-content');
-      }
-    });
-  </script>
+<!-- Engine first so we have backend URL + toast -->
+<script src="js/engine.js"></script>
+<script src="js/leaderboard.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const status = document.getElementById("px-lb-status");
+    try{
+      await renderTopDogs("px-topdogs");
+      await renderCurrentHolders("px-current");
+      status.textContent = "Auto-refreshing…";
+      setInterval(() => { renderTopDogs("px-topdogs"); renderCurrentHolders("px-current"); }, 20000);
+    }catch(e){
+      console.error(e);
+      status.textContent = "Failed to load leaderboards (backend sleeping?).";
+    }
+  });
+</script>
 
 </body>
 </html>

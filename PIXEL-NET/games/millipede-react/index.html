@@ -29,11 +29,10 @@
     .lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
     .lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
 
-    /* Hide the in-game initials input (so it doesn't "ask") */
-    input[maxlength="3"], input[maxLength="3"]{display:none!important}
+    /* Hide the in-game initials input (we auto-fill) */
+    input[maxlength="3"], input[maxLength="3"]{position:absolute;left:-9999px;opacity:0}
   </style>
 
-  <!-- KEEP THIS (YOUR REACT BUILD) -->
   <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
 </head>
 <body>
@@ -78,15 +77,27 @@
     (function(){
       const SLUG = "millipede-react";
 
-      const ls = localStorage.getItem("px_player_initials") || "";
-      if(ls) sessionStorage.setItem("playerInitials", ls);
+      // Sync initials from home storage into BOTH sessionStorage + the React localStorage keys
+      const initials =
+        (localStorage.getItem("px_player_initials") ||
+         sessionStorage.getItem("playerInitials") ||
+         "???").toString().toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3) || "???";
+
+      sessionStorage.setItem("playerInitials", initials);
+
+      // React build expects these keys:
+      try{
+        localStorage.setItem("n", initials);
+        localStorage.setItem("nm", initials);
+        localStorage.setItem("p", initials);
+        localStorage.setItem("u", initials);
+      }catch(_){}
 
       if(window.PixelNet && PixelNet.init) PixelNet.init();
 
       const badge = document.getElementById("px-badge");
-      badge.textContent = ls || "???";
+      badge.textContent = initials || "???";
       badge.onclick = () => location.href = "../../index.html";
-
       document.getElementById("px-exit").onclick = () => location.href = "../../index.html";
 
       async function renderLeaderboard(){
@@ -96,19 +107,16 @@
         L.innerHTML=""; R.innerHTML="";
 
         try{
-          const data = await PixelNet.getLeaderboard(SLUG);
-          const rows = Array.isArray(data) ? data : (data?.scores || data?.leaderboard || []);
-          const top = rows.slice(0,10);
-
+          const rows = await PixelNet.getLeaderboard(SLUG);
+          const top = (rows || []).slice(0,10);
           if(!top.length){ status.textContent="No scores yet."; return; }
 
           top.forEach((row,i)=>{
-            const initials=(row.initials||row.name||"???").toString().toUpperCase();
-            const score=row.score ?? row.points ?? row.value ?? 0;
-
+            const ini=(row.initials||row.name||"???").toString().toUpperCase();
+            const sc=row.score ?? row.points ?? row.value ?? 0;
             const li=document.createElement("li");
             li.className="lb-item";
-            li.innerHTML=`<span class="lb-rank">${i+1}.</span><span>${initials}</span><span class="lb-score">${score}</span>`;
+            li.innerHTML=`<span class="lb-rank">${i+1}.</span><span>${ini}</span><span class="lb-score">${sc}</span>`;
             (i<5?L:R).appendChild(li);
           });
 
@@ -118,27 +126,36 @@
           status.textContent="Failed to load leaderboard (backend sleeping?).";
         }
       }
-
       renderLeaderboard();
       setInterval(renderLeaderboard,15000);
 
-      // ✅ FIXED: lightweight auto-dismiss (NO innerText scanning => no freeze)
-      (function autoDismissSave(){
-        let coolingDown = false;
-
-        setInterval(() => {
-          if (coolingDown) return;
+      // Auto-fill any visible initials input + click SAVE once it appears
+      (function autoSaveInitials(){
+        let tries = 0;
+        const maxTries = 60; // ~30s
+        const tick = setInterval(() => {
+          tries++;
+          // If game over overlay is up, React likely rendered the input/button
+          const inputs = Array.from(document.querySelectorAll('input[maxlength="3"], input[maxLength="3"]'));
+          inputs.forEach(inp => {
+            try{
+              inp.value = initials;
+              inp.dispatchEvent(new Event("input", { bubbles:true }));
+              inp.dispatchEvent(new Event("change", { bubbles:true }));
+            }catch(_){}
+          });
 
           const btn = Array.from(document.querySelectorAll("button"))
             .find(b => (b.textContent || "").trim().toUpperCase() === "SAVE");
+          if (btn) {
+            try { btn.click(); } catch(_) {}
+            // also toast so user knows it happened (non-blocking)
+            if(window.PixelNet && PixelNet.toast) PixelNet.toast("Saved initials", "ok", 1200);
+            clearInterval(tick);
+          }
 
-          if (!btn) return;
-
-          coolingDown = true;
-          try { btn.click(); } catch(_) {}
-
-          setTimeout(() => { coolingDown = false; }, 1200);
-        }, 350);
+          if (tries >= maxTries) clearInterval(tick);
+        }, 500);
       })();
 
     })();

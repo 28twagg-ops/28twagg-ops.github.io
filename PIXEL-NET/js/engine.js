@@ -1,9 +1,7 @@
 /**
  * PIXEL-NET ENGINE
- * Connects the Frontend (GitHub Pages) to the Backend (Render)
- * Minimal, non-blocking, evidence-friendly submission.
+ * Minimal, non-blocking, evidence-friendly submission + in-UI toast notifications.
  */
-
 const PixelNet = {
   config: {
     BACKEND_URL: "https://pixel-net-backend.onrender.com"
@@ -15,15 +13,48 @@ const PixelNet = {
   },
 
   init: function () {
-    // Keep player initials synced from sessionStorage (set by homepage / wrappers)
     const storedInitials = sessionStorage.getItem("playerInitials");
-    if (storedInitials) {
-      this.player.initials = storedInitials;
-    }
+    if (storedInitials) this.player.initials = storedInitials;
     console.log("Pixel-Net Linked. Player:", this.player.initials);
   },
 
-  // Always get freshest initials at submit-time (prevents ??? submissions)
+  // --- small in-UI toast (non-blocking) ---
+  toast: function (msg, kind = "info", ms = 2200) {
+    try {
+      const id = "px-toast";
+      let el = document.getElementById(id);
+      if (!el) {
+        el = document.createElement("div");
+        el.id = id;
+        el.style.position = "fixed";
+        el.style.zIndex = "99999";
+        el.style.right = "14px";
+        el.style.bottom = "14px";
+        el.style.maxWidth = "320px";
+        el.style.padding = "10px 12px";
+        el.style.borderRadius = "14px";
+        el.style.border = "1px solid rgba(255,255,255,.14)";
+        el.style.background = "rgba(10,12,26,.82)";
+        el.style.backdropFilter = "blur(8px)";
+        el.style.color = "#e9ecff";
+        el.style.font = '700 12px/1.25 "Orbitron", system-ui, sans-serif';
+        el.style.letterSpacing = ".08em";
+        el.style.boxShadow = "0 14px 40px rgba(0,0,0,.35)";
+        el.style.display = "none";
+        document.body.appendChild(el);
+      }
+      const prefix = kind === "ok" ? "✅ " : kind === "err" ? "⚠️ " : "ℹ️ ";
+      el.textContent = prefix + String(msg || "");
+      el.style.display = "block";
+      el.style.opacity = "1";
+      clearTimeout(el._px_to);
+      el._px_to = setTimeout(() => {
+        el.style.opacity = "0";
+        setTimeout(() => (el.style.display = "none"), 180);
+      }, ms);
+    } catch (_) {}
+  },
+
   _getInitialsNow: function () {
     const s =
       sessionStorage.getItem("playerInitials") ||
@@ -38,64 +69,61 @@ const PixelNet = {
       .slice(0, 3) || "???";
   },
 
-  // --- SUBMIT SCORE TO RENDER (non-blocking, no alerts) ---
   submitScore: async function (gameSlug, score) {
     const initials = this._getInitialsNow();
     const safeScore = Number.isFinite(score) ? Math.floor(score) : 0;
 
-    // Helpful debug log (keeps your “evidence-based” requirement simple)
     console.log("[PixelNet] submitScore()", { gameSlug, initials, score: safeScore });
 
     try {
       const response = await fetch(`${this.config.BACKEND_URL}/api/score`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          game_slug: gameSlug,
-          initials,
-          score: safeScore
-        })
+        body: JSON.stringify({ game_slug: gameSlug, initials, score: safeScore })
       });
 
-      // Try to read response body (for DevTools evidence)
       let bodyText = "";
-      try {
-        bodyText = await response.text();
-      } catch (_) {}
+      try { bodyText = await response.text(); } catch (_) {}
 
       if (!response.ok) {
         console.warn("[PixelNet] Score upload failed", {
-          status: response.status,
-          statusText: response.statusText,
-          body: bodyText
+          status: response.status, statusText: response.statusText, body: bodyText
         });
+        this.toast("Score upload failed", "err");
         return { ok: false, status: response.status, body: bodyText };
       }
 
-      console.log("[PixelNet] Score uploaded OK", {
-        status: response.status,
-        body: bodyText
-      });
+      console.log("[PixelNet] Score uploaded OK", { status: response.status, body: bodyText });
+      this.toast("Added to leaderboard", "ok");
       return { ok: true, status: response.status, body: bodyText };
     } catch (err) {
       console.error("[PixelNet] Network error submitting score:", err);
+      this.toast("Network error submitting score", "err");
       return { ok: false, error: String(err) };
     }
   },
 
-  // --- GET LEADERBOARD FROM RENDER ---
+  // Normalize backend response into an array for game UIs
+  _normalizeLeaderboard: function (data) {
+    if (Array.isArray(data)) return data;
+    if (!data) return [];
+    if (Array.isArray(data.top10)) return data.top10;
+    if (Array.isArray(data.scores)) return data.scores;
+    if (Array.isArray(data.leaderboard)) return data.leaderboard;
+    return [];
+  },
+
   getLeaderboard: async function (gameSlug) {
     try {
-      const response = await fetch(`${this.config.BACKEND_URL}/api/leaderboard/${gameSlug}`);
-      const data = await response.json();
-      return data?.top10 || (Array.isArray(data) ? data : []);
+      const res = await fetch(`${this.config.BACKEND_URL}/api/leaderboard/${gameSlug}`, { cache: "no-store" });
+      const data = await res.json();
+      return this._normalizeLeaderboard(data);
     } catch (err) {
       console.error("[PixelNet] Could not fetch leaderboard", err);
       return [];
     }
   },
 
-  // --- INPUT HANDLER (Standard Controls) ---
   Input: {
     keys: { up: false, down: false, left: false, right: false, action: false },
 
@@ -114,9 +142,6 @@ const PixelNet = {
   }
 };
 
-// Start engine
 PixelNet.init();
 PixelNet.Input.startListening();
-
-// Expose globally (required for inline scripts + game files)
 window.PixelNet = PixelNet;
