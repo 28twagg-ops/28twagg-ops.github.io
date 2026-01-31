@@ -43,6 +43,7 @@
   // Track whether the current run's score has been submitted to the backend.
   // Without this flag the submit call would fire on every frame after game over.
   let submitted = false;
+  let finalScore = 0;
 
   // Key handling
   window.addEventListener('keydown', e => {
@@ -72,10 +73,10 @@
       ob.x -= speed;
 
       // Remove off screen
-      // Do not award points after crash/game over
-      if (!gameOver && ob.x + ob.width < 0) {
+      if (ob.x + ob.width < 0) {
         obstacles.splice(i, 1);
-        score += 10;
+        // Award points only during active play.
+        if (!gameOver) score += 10;
       }
 
       // Collision check
@@ -84,6 +85,7 @@
           ob.x < player.x + player.width &&
           ob.x + ob.width > player.x) {
         gameOver = true;
+        finalScore = Math.floor(score);
       }
     }
 
@@ -131,15 +133,15 @@
   function loop(time) {
     const delta = time - lastTime;
     lastTime = time;
-    lineOffset += speed;
+    if (!gameOver) lineOffset += speed;
 
     // Spawn obstacles
-    if (time - lastObstacleSpawn > obstacleInterval) {
+    if (!gameOver && time - lastObstacleSpawn > obstacleInterval) {
       spawnObstacle();
       lastObstacleSpawn = time;
     }
 
-    updateObstacles(delta);
+    if (!gameOver) updateObstacles(delta);
     drawBackground(lineOffset);
 
     // Draw player
@@ -169,7 +171,7 @@
       ctx.textAlign = 'center';
       ctx.fillText('Crash!', WIDTH / 2, HEIGHT / 2 - 20);
       ctx.font = '20px sans-serif';
-      ctx.fillText(`Final Score: ${Math.floor(score)}`, WIDTH / 2, HEIGHT / 2 + 10);
+      ctx.fillText(`Final Score: ${finalScore}`, WIDTH / 2, HEIGHT / 2 + 10);
       ctx.fillText('Press Enter to Restart', WIDTH / 2, HEIGHT / 2 + 40);
     }
 
@@ -182,6 +184,7 @@
     obstacleInterval = 1200;
     speed = 3;
     score = 0;
+    finalScore = 0;
     player.lane = 1;
     gameOver = false;
 
