@@ -9,20 +9,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=111" />
+  <link rel="stylesheet" href="style.css?v=112" />
 </head>
 <body>
 
-<!-- ================= PLAYER BADGE ================= -->
-<button id="px-player-badge" class="px-badge">???</button>
+<!-- ================= PLAYER BADGE (TOP RIGHT) ================= -->
+<button id="px-player-badge" class="px-badge" type="button">???</button>
 
-<!-- ================= INITIALS MODAL ================= -->
-<section id="px-init-modal" class="px-init-modal hidden">
+<!-- ================= INITIALS MODAL (STARTS HIDDEN, POPS CLEANLY) ================= -->
+<section id="px-init-modal" class="px-init-modal hidden" aria-hidden="true">
   <div class="px-init-backdrop"></div>
-  <div class="px-init-card">
+
+  <div class="px-init-card" role="dialog" aria-modal="true" aria-label="Enter Initials">
     <div class="px-init-header">
       <span>ENTER INITIALS</span>
-      <button id="px-init-close">×</button>
+      <button id="px-init-close" type="button" aria-label="Close">×</button>
     </div>
 
     <input
@@ -35,7 +36,7 @@
       spellcheck="false"
     />
 
-    <button id="px-init-save">SAVE</button>
+    <button id="px-init-save" type="button">SAVE</button>
     <div class="px-init-hint">Press Enter to save</div>
   </div>
 </section>
@@ -43,7 +44,7 @@
 <header class="site-header">
   <div class="brand">
     <div class="brand-mark">PX</div>
-    <div>
+    <div class="brand-text">
       <div class="brand-title">PIXEL-NET</div>
       <div class="brand-subtitle">Online Arcade Network</div>
     </div>
@@ -58,40 +59,38 @@
 
 <main class="wrap">
 
-  <!-- FEATURED -->
   <section id="featured-game" class="section">
     <div class="featured-card">
       <div class="featured-media">
         <img id="featuredThumb" src="assets/millipede_thumb.png" alt="Featured Game">
       </div>
+
       <div class="featured-info">
         <span class="badge">Game of the Week</span>
         <h2 id="featuredTitle">Loading…</h2>
         <p id="featuredDesc">Pick a cabinet below.</p>
-        <button id="featuredPlay" class="btn">Play Featured</button>
+        <button id="featuredPlay" class="btn" type="button">Play Featured</button>
       </div>
     </div>
   </section>
 
-  <!-- LIBRARY -->
   <section id="game-library" class="section">
     <div class="section-head px-headrow">
       <div>
         <h3>Arcade Floor</h3>
         <p class="muted">Pick a cabinet. Click to play.</p>
       </div>
-      <input id="px-search" class="px-search" type="search" placeholder="Search games…" />
+      <input id="px-search" class="px-search" type="search" placeholder="Search games…" autocomplete="off" />
     </div>
 
     <div id="arcadeGrid" class="game-grid"></div>
     <div id="px-empty" class="muted hidden">No games match your search.</div>
   </section>
 
-  <!-- LEADERBOARD PLACEHOLDER -->
   <section id="leaderboards" class="section">
     <div class="section-head">
       <h3>Leaderboards</h3>
-      <p class="muted">Coming back next.</p>
+      <p class="muted">Coming next.</p>
     </div>
   </section>
 
@@ -106,55 +105,83 @@
 <script>
 (() => {
   const KEY = "px_player_initials";
+
   const badge = document.getElementById("px-player-badge");
   const modal = document.getElementById("px-init-modal");
   const input = document.getElementById("px-init-input");
+  const closeBtn = document.getElementById("px-init-close");
+  const saveBtn = document.getElementById("px-init-save");
 
-  function normalize(v) {
-    return v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0,3);
+  function normalize(v){
+    return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
   }
 
-  function refresh() {
-    badge.textContent = localStorage.getItem(KEY) || "???";
+  function getInitials(){
+    return localStorage.getItem(KEY) || "";
   }
 
-  badge.onclick = () => {
+  function setInitials(v){
+    localStorage.setItem(KEY, v);
+  }
+
+  function refreshBadge(){
+    badge.textContent = getInitials() || "???";
+  }
+
+  function openModal(){
     modal.classList.remove("hidden");
-    input.value = localStorage.getItem(KEY) || "";
-    input.focus();
-  };
+    modal.setAttribute("aria-hidden","false");
+    input.value = getInitials() || "";
+    setTimeout(() => input.focus(), 0);
+  }
 
-  document.getElementById("px-init-close").onclick = () => {
+  function closeModal(){
     modal.classList.add("hidden");
-  };
+    modal.setAttribute("aria-hidden","true");
+  }
 
-  document.getElementById("px-init-save").onclick = save;
+  function save(){
+    const v = normalize(input.value);
+    if(!v) return;
+    setInitials(v);
+    refreshBadge();
+    closeModal();
+  }
 
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter") save();
-    if (e.key === "Escape") modal.classList.add("hidden");
+  badge.addEventListener("click", openModal);
+  closeBtn.addEventListener("click", closeModal);
+  saveBtn.addEventListener("click", save);
+
+  input.addEventListener("keydown", (e) => {
+    if(e.key === "Enter") save();
+    if(e.key === "Escape") closeModal();
   });
 
-  function save() {
-    const v = normalize(input.value);
-    if (!v) return;
-    localStorage.setItem(KEY, v);
-    refresh();
-    modal.classList.add("hidden");
-  }
+  // Optional: click backdrop to close (only if already set)
+  modal.querySelector(".px-init-backdrop").addEventListener("click", () => {
+    if(getInitials()) closeModal();
+  });
 
-  refresh();
+  // First load behavior: if no initials yet, open modal once
+  window.addEventListener("DOMContentLoaded", () => {
+    refreshBadge();
+    if(!getInitials()) openModal();
+  });
 })();
 </script>
 
 <!-- ================= GAME LOADER ================= -->
 <script>
-async function loadGames() {
+async function loadGames(){
   const grid = document.getElementById("arcadeGrid");
   const empty = document.getElementById("px-empty");
+  const search = document.getElementById("px-search");
 
-  const res = await fetch("./games.json", { cache: "no-store" });
-  if (!res.ok) return;
+  const res = await fetch("./games.json", { cache:"no-store" });
+  if(!res.ok){
+    console.error("games.json failed to load");
+    return;
+  }
 
   const games = await res.json();
   grid.innerHTML = "";
@@ -164,15 +191,19 @@ async function loadGames() {
     card.className = "game-card";
 
     const img = document.createElement("img");
-    img.src = g.thumb;
-    img.alt = g.name;
+    img.src = g.thumb || "assets/millipede_thumb.png";
+    img.alt = g.name || "Game";
 
     const title = document.createElement("h4");
-    title.textContent = g.name;
+    title.textContent = g.name || "UNTITLED";
 
     card.appendChild(img);
     card.appendChild(title);
-    card.onclick = () => window.location.href = g.path;
+
+    card.addEventListener("click", () => {
+      if(!g.path) return;
+      window.location.href = g.path;
+    });
 
     grid.appendChild(card);
   });
@@ -180,22 +211,24 @@ async function loadGames() {
   empty.classList.toggle("hidden", games.length !== 0);
 
   // Featured = first game
-  if (games[0]) {
-    featuredThumb.src = games[0].thumb;
-    featuredTitle.textContent = games[0].name;
-    featuredPlay.onclick = () => location.href = games[0].path;
+  if(games[0]){
+    const ft = document.getElementById("featuredThumb");
+    const tt = document.getElementById("featuredTitle");
+    const play = document.getElementById("featuredPlay");
+    ft.src = games[0].thumb || "assets/millipede_thumb.png";
+    tt.textContent = games[0].name || "Featured";
+    play.onclick = () => { if(games[0].path) location.href = games[0].path; };
   }
 
-  document.getElementById("px-search").addEventListener("input", e => {
-    const q = e.target.value.toLowerCase();
+  // Search filter
+  search.addEventListener("input", () => {
+    const q = (search.value || "").toLowerCase().trim();
     let visible = 0;
-
     document.querySelectorAll(".game-card").forEach(card => {
       const show = card.textContent.toLowerCase().includes(q);
       card.style.display = show ? "" : "none";
-      if (show) visible++;
+      if(show) visible++;
     });
-
     empty.classList.toggle("hidden", visible !== 0);
   });
 }
