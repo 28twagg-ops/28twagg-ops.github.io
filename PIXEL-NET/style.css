@@ -188,8 +188,8 @@ body{
 
 .game-card img{
   width:100%;
-  height:150px;
-  object-fit:cover;
+  height:170px; /* restored height */
+  object-fit:contain; /* prevent cropping */
   display:block;
 }
 .game-card h4{
@@ -331,9 +331,5 @@ body{
   color: var(--muted);
 }
 
-/* ===========================================================
-   GLOBAL UTILITY: hidden
-   Several scripts toggle the `hidden` class (ex: search empty msg).
-   Without this, the element remains visible.
-   =========================================================== */
+/* GLOBAL UTILITY: hidden */
 .hidden{ display:none !important; }

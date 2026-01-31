@@ -102,7 +102,7 @@
 
             const li=document.createElement("li");
             li.className="lb-item";
-            li.innerHTML=`<span class="lb-rank">${i+1}.</span><span>${initials}</span><span class="lb-score">${score}</span>`;
+            li.innerHTML=\`<span class="lb-rank">\${i+1}.</span><span>\${initials}</span><span class="lb-score">\${score}</span>\`;
             (i<5?L:R).appendChild(li);
           });
 
@@ -115,6 +115,35 @@
 
       renderLeaderboard();
       setInterval(renderLeaderboard,15000);
+
+      // Hook into the React game to detect Save button and submit score.
+      function hookSave() {
+        // Find the overlay container by searching for a button with exact text "Save".
+        const buttons = document.querySelectorAll('button');
+        for (const btn of buttons) {
+          if (btn.textContent.trim().toUpperCase() === 'SAVE') {
+            if (btn.__px_hooked) return; // avoid duplicate listeners
+            btn.__px_hooked = true;
+            btn.addEventListener('click', () => {
+              // Find the score displayed in the overlay (digits in text content).
+              const overlay = btn.closest('div');
+              let score = 0;
+              if (overlay) {
+                const txt = overlay.textContent || '';
+                const match = txt.match(/\\d+/);
+                if (match) score = parseInt(match[0], 10);
+              }
+              if (score >= 0 && window.PixelNet && PixelNet.submitScore) {
+                PixelNet.submitScore('millipede-react', score);
+                renderLeaderboard();
+              }
+            });
+          }
+        }
+      }
+      // Observe DOM mutations because React creates/destroys the overlay dynamically.
+      const obs = new MutationObserver(() => hookSave());
+      obs.observe(document.body, { childList: true, subtree: true });
     })();
   </script>
 </body>
