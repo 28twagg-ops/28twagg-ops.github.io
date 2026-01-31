@@ -1,215 +1,59 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Millipede (React)</title>
-
-  <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
+  <title>Millipede Chaos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    :root{
-      --bg:#070812;
-      --text:#e9ecff;
-      --muted:#a7b0d6;
-      --stroke: rgba(255,255,255,.10);
-      --cyan:#00fff7;
-      --pink:#ff007a;
-      --shadow: 0 14px 40px rgba(0,0,0,.35);
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
     }
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
-    body{
-      margin:0;
-      color:var(--text);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:
-        radial-gradient(900px 600px at 20% 0%, rgba(0,255,247,.14), transparent 60%),
-        radial-gradient(900px 600px at 80% 10%, rgba(255,0,122,.12), transparent 60%),
-        linear-gradient(180deg, #050614, var(--bg));
-    }
-    .muted{ color: var(--muted); }
-
-    .exit-btn{
-      position:fixed; top:16px; left:16px; z-index:9999;
-      padding:10px 12px; border-radius:14px;
-      background: rgba(0,0,0,.55);
-      border:1px solid rgba(255,255,255,.18);
-      color:#fff; text-decoration:none;
-      font-weight:900; letter-spacing:.6px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(8px);
-    }
-    .exit-btn:hover{ background: rgba(0,0,0,.75); border-color: rgba(0,255,247,.45); }
-
-    .play-grid{
-      display:grid;
-      grid-template-columns: 340px 1fr 340px;
-      gap:14px;
-      padding:76px 14px 18px;
-      width:min(1460px, 96vw);
-      margin:0 auto;
-      min-height:100vh;
-    }
-
-    .panel{
-      background: linear-gradient(180deg, rgba(15,19,36,.94), rgba(11,16,32,.92));
-      border:1px solid var(--stroke);
-      border-radius:18px;
-      padding:16px;
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      position:relative;
-    }
-    .panel::before{
-      content:"";
-      position:absolute; inset:-2px;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(0,255,247,.14), transparent 45%),
-        radial-gradient(circle at 80% 15%, rgba(255,0,122,.10), transparent 50%);
-      pointer-events:none;
-      filter: blur(10px);
-      opacity:.65;
-    }
-    .panel > *{ position:relative; z-index:1; }
-
-    .tag{
-      display:inline-flex; align-items:center;
-      font-size:11px; letter-spacing:1px; text-transform:uppercase;
-      color:#fff;
-      background: linear-gradient(45deg, rgba(255,0,122,.95), rgba(0,255,247,.55));
-      padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      width:fit-content;
-    }
-
-    h1{ margin:10px 0 6px; font-size:20px; letter-spacing:.4px; }
-
-    .block{
-      margin-top:12px;
-      padding:12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.20);
-    }
-    .block h3{
-      margin:0 0 8px;
-      font-size:13px;
-      letter-spacing:.6px;
-      text-transform:uppercase;
-    }
-
-    .play-center{
-      background: rgba(0,0,0,.25);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:18px;
-      overflow:hidden;
-      min-height:72vh;
-      padding:0;
-      box-shadow: var(--shadow);
-      position:relative;
-    }
-    .center-head{
-      position:absolute; top:10px; left:10px; right:10px;
-      display:flex; justify-content:space-between; gap:10px;
-      pointer-events:none; opacity:.95;
-      z-index: 5;
-    }
-    .chip{
-      font-size:11px; letter-spacing:1px; text-transform:uppercase;
-      color: rgba(233,236,255,.95);
-      padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.35);
-      backdrop-filter: blur(6px);
-    }
-    .chip b{ color: var(--cyan); }
-
-    #root{
-      width:100%;
-      height:100%;
-      min-height:72vh;
-    }
-
-    .lb-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
-    .lb-col{
-      padding:12px; border-radius:14px;
-      border:1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.20);
-      min-height:260px;
-    }
-    .lb-title{ margin:0 0 8px; font-size:13px; letter-spacing:.6px; text-transform:uppercase; }
-    .lb-list{ margin:0; padding-left:18px; color: var(--muted); font-size:13px; line-height:1.6; }
-    .lb-list li{ margin:4px 0; }
-    .lb-note{ margin-top:12px; font-size:12px; color: var(--muted); opacity:.9; }
-
-    @media (max-width:1180px){
-      .play-grid{ grid-template-columns: 1fr; }
-      .play-center{ min-height:52vh; }
-      #root{ min-height:52vh; }
-      .lb-col{ min-height:auto; }
+    #root {
+      width: 100%;
+      height: 100%;
     }
   </style>
 </head>
-
 <body>
-  <a class="exit-btn" href="../../index.html">✕ EXIT</a>
 
-  <div class="play-grid">
-    <aside class="panel">
-      <div class="tag">Cabinet Brief</div>
-      <h1>Millipede</h1>
-      <div class="muted">Arcade shooter chaos.</div>
+  <div id="root"></div>
 
-      <div class="block">
-        <h3>Controls</h3>
-        <div class="muted">Click game to focus. Controls are shown in-game.</div>
-      </div>
-
-      <div class="block">
-        <h3>Objective</h3>
-        <div class="muted">Clear segments, survive longer, push score.</div>
-      </div>
-
-      <div class="block">
-        <h3>Pro Tips</h3>
-        <div class="muted">Create lanes. Don’t let the swarm box you in.</div>
-      </div>
-    </aside>
-
-    <main class="play-center">
-      <div class="center-head">
-        <div class="chip">Player: <b id="pxInit">???</b></div>
-        <div class="chip">Focus game for input</div>
-      </div>
-      <div id="root"></div>
-    </main>
-
-    <aside class="panel">
-      <div class="tag">Top 10</div>
-      <h1 style="margin-bottom:0;">Leaderboard</h1>
-      <div class="muted">Arcade split view.</div>
-
-      <div class="lb-grid">
-        <div class="lb-col">
-          <div class="lb-title">1–5</div>
-          <ol class="lb-list"><li>---</li><li>---</li><li>---</li><li>---</li><li>---</li></ol>
-        </div>
-        <div class="lb-col">
-          <div class="lb-title">6–10</div>
-          <ol class="lb-list"><li>---</li><li>---</li><li>---</li><li>---</li><li>---</li></ol>
-        </div>
-      </div>
-
-      <div class="lb-note">When score submission is re-enabled, these slots auto-fill.</div>
-    </aside>
-  </div>
-
+  <!-- ================= PIXEL-NET INITIALS BRIDGE ================= -->
   <script>
-    const init = (localStorage.getItem("px_player_initials") || sessionStorage.getItem("playerInitials") || "???")
-      .toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3) || "???";
-    const el = document.getElementById("pxInit");
-    if (el) el.textContent = init;
+    (function () {
+      const PX_KEY = "px_player_initials";
+
+      function getPXInitials() {
+        return localStorage.getItem(PX_KEY) || "";
+      }
+
+      const initials = getPXInitials();
+
+      if (initials) {
+        // Common patterns used by arcade games
+        localStorage.setItem("playerInitials", initials);
+        localStorage.setItem("initials", initials);
+        sessionStorage.setItem("playerInitials", initials);
+
+        // Expose globally in case the game checks window.*
+        window.PLAYER_INITIALS = initials;
+      }
+
+      // HARD BLOCK any prompt() usage (kills in-game initials popup)
+      const originalPrompt = window.prompt;
+      window.prompt = function () {
+        return initials || "";
+      };
+    })();
   </script>
+
+  <!-- ================= MILLIPIDE REACT BUILD (UNCHANGED) ================= -->
+  <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
+
 </body>
 </html>
