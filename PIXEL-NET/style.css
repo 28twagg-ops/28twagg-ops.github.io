@@ -28,89 +28,177 @@ body{
 
 a{ color:inherit; text-decoration:none; }
 .wrap{ width:min(1100px, 92vw); margin:0 auto; }
+.section{ padding:18px 0; }
 .muted{ color:var(--muted); }
 
-/* ================= GRID ================= */
+/* ================= HEADER ================= */
+.site-header{
+  width:min(1100px, 92vw);
+  margin:18px auto 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.brand{ display:flex; align-items:center; gap:12px; }
+
+.brand-mark{
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  background: linear-gradient(135deg, rgba(0,255,247,.22), rgba(255,0,122,.18));
+  border:1px solid rgba(255,255,255,.12);
+  font-family:"Orbitron", system-ui, sans-serif;
+  font-weight:800;
+  letter-spacing:.12em;
+}
+
+.brand-title{
+  font-family:"Orbitron", system-ui, sans-serif;
+  font-weight:800;
+  letter-spacing:.12em;
+}
+
+.brand-subtitle{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:2px;
+}
+
+.nav{ display:flex; gap:10px; }
+
+.nav-link{
+  padding:8px 10px;
+  border-radius:12px;
+  color:var(--muted);
+}
+
+.nav-link:hover{
+  color:var(--text);
+  background: rgba(255,255,255,.04);
+}
+
+/* ================= FEATURED (RESTORED) ================= */
+.featured-card{
+  display:grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap:16px;
+  padding:14px;
+  background: linear-gradient(180deg, var(--card1), var(--card2));
+  border:1px solid var(--stroke);
+  border-radius:18px;
+  box-shadow: var(--shadow);
+}
+
+.featured-media{
+  position:relative;
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  min-height:240px;
+}
+
+.featured-media img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.featured-info{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.badge{
+  align-self:flex-start;
+  padding:6px 10px;
+  border-radius:999px;
+  background: rgba(0,255,247,.12);
+  border:1px solid rgba(0,255,247,.18);
+  font-size:12px;
+}
+
+.featured-info h2{
+  margin:10px 0 8px;
+  font-family:"Orbitron", system-ui, sans-serif;
+  letter-spacing:.06em;
+}
+
+.btn{
+  margin-top:12px;
+  height:44px;
+  border-radius:12px;
+  border:1px solid rgba(0,255,247,.35);
+  background: linear-gradient(135deg, rgba(0,255,247,.22), rgba(255,0,122,.12));
+  color:var(--text);
+  font-weight:800;
+  cursor:pointer;
+}
+
+/* ================= LIBRARY ================= */
+.px-headrow{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:12px;
+}
+
+.px-search{
+  height:42px;
+  padding:0 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(10,12,26,.60);
+  color:var(--text);
+}
+
+/* GRID */
 .game-grid{
   display:grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap:14px;
 }
+
 @media (max-width: 980px){
-  .game-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .featured-card{ grid-template-columns:1fr; }
+  .game-grid{ grid-template-columns: repeat(2, 1fr); }
 }
+
 @media (max-width: 520px){
-  .game-grid{ grid-template-columns: 1fr; }
+  .game-grid{ grid-template-columns:1fr; }
 }
 
-/* ================= GAME CARDS (POLISHED) ================= */
-
+/* ================= GAME CARDS (ONLY POLISHED PART) ================= */
 .game-card{
-  padding:6px;                 /* tighter left/right */
+  padding:6px;
   border-radius:18px;
   background: linear-gradient(180deg, rgba(15,19,36,.65), rgba(10,12,26,.45));
   border:1px solid rgba(255,255,255,.10);
   box-shadow: 0 14px 36px rgba(0,0,0,.30);
   cursor:pointer;
-  transition: transform .12s ease, border-color .12s ease;
-  overflow:hidden;
   text-align:center;
 }
 
-.game-card:hover{
-  transform: translateY(-2px);
-  border-color: rgba(0,255,247,.22);
-}
-
-/* thumbnail hugs card */
 .game-card img{
   width:100%;
   height:170px;
+  object-fit:contain;
   border-radius:14px;
-  object-fit: contain;
   background: rgba(0,0,0,.25);
-  display:block;
-  margin:0;
 }
 
-/* title aligned to image width, centered */
 .game-card h4{
   margin:8px auto 2px;
-  max-width:92%;               /* pulls left/right inward */
+  max-width:92%;
   font-family:"Orbitron", system-ui, sans-serif;
   letter-spacing:.10em;
   font-size:13px;
   text-align:center;
-}
-
-/* ================= REMOVE BAD INITIALS GHOST ================= */
-/* This kills the stray faint initials artifact you circled */
-.px-initcard,
-.px-initcard__inner{
-  display:none !important;
-}
-
-/* ================= BADGE (KEEP ONLY TOP RIGHT) ================= */
-.px-badge{
-  position:fixed;
-  top:14px;
-  right:14px;
-  z-index:9999;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width:54px;
-  height:38px;
-  padding:0 12px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(10,12,26,.72);
-  backdrop-filter: blur(8px);
-  color:var(--text);
-  font:700 14px/1 "Orbitron", system-ui, sans-serif;
-  letter-spacing:.10em;
-  cursor:pointer;
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
 }
 
 /* ================= LEADERBOARD ================= */
@@ -119,4 +207,33 @@ a{ color:inherit; text-decoration:none; }
   border-radius:16px;
   background: linear-gradient(180deg, rgba(15,19,36,.55), rgba(10,12,26,.35));
   border:1px solid rgba(255,255,255,.10);
+}
+
+/* ================= BADGE ================= */
+.px-badge{
+  position:fixed;
+  top:14px;
+  right:14px;
+  z-index:9999;
+  min-width:54px;
+  height:38px;
+  padding:0 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(10,12,26,.72);
+  color:var(--text);
+  font:700 14px/1 "Orbitron", system-ui, sans-serif;
+  letter-spacing:.10em;
+  cursor:pointer;
+}
+
+/* ================= FOOTER ================= */
+.footer{
+  padding:18px 0 22px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  color:var(--muted);
+  font-size:12px;
+  border-top:1px solid rgba(255,255,255,.06);
 }
