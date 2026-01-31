@@ -13,6 +13,7 @@
       --stroke: rgba(255,255,255,.10);
       --panel: rgba(15,19,36,.92);
       --cyan:#00fff7;
+      --pink:#ff007a;
       --shadow: 0 14px 40px rgba(0,0,0,.35);
     }
 
@@ -28,61 +29,151 @@
         linear-gradient(180deg, #050614, var(--bg));
     }
 
-    /* Exit button */
+    .muted{ color: var(--muted); }
+
+    /* Exit */
     .exit-btn{
       position:fixed;
       top:16px;
       left:16px;
       z-index:9999;
       padding:10px 12px;
-      border-radius:12px;
+      border-radius:14px;
       background: rgba(0,0,0,.55);
       border:1px solid rgba(255,255,255,.18);
       color:#fff;
       text-decoration:none;
-      font-weight:800;
-      letter-spacing:.5px;
+      font-weight:900;
+      letter-spacing:.6px;
       box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
     }
     .exit-btn:hover{
       background: rgba(0,0,0,.75);
       border-color: rgba(0,255,247,.45);
     }
 
-    /* 3-column layout */
+    /* Grid */
     .play-grid{
       display:grid;
-      grid-template-columns: 320px 1fr 320px;
-      gap:12px;
-      padding:72px 12px 12px;  /* room for exit button */
-      width:min(1400px, 96vw);
+      grid-template-columns: 340px 1fr 340px;
+      gap:14px;
+      padding:76px 14px 18px;
+      width:min(1460px, 96vw);
       margin:0 auto;
       min-height:100vh;
     }
 
     .panel{
-      background: var(--panel);
+      background: linear-gradient(180deg, rgba(15,19,36,.94), rgba(11,16,32,.92));
       border:1px solid var(--stroke);
-      border-radius:16px;
-      padding:14px;
+      border-radius:18px;
+      padding:16px;
       box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
     }
 
-    .muted{ color: var(--muted); }
+    .panel::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(0,255,247,.14), transparent 45%),
+        radial-gradient(circle at 80% 15%, rgba(255,0,122,.10), transparent 50%);
+      pointer-events:none;
+      filter: blur(10px);
+      opacity:.65;
+    }
+    .panel > *{ position:relative; z-index:1; }
 
+    .tag{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      font-size:11px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      color:#fff;
+      background: linear-gradient(45deg, rgba(255,0,122,.95), rgba(0,255,247,.55));
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      width:fit-content;
+    }
+
+    h1{
+      margin:10px 0 6px;
+      font-size:20px;
+      letter-spacing:.4px;
+    }
+
+    .block{
+      margin-top:12px;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.20);
+    }
+
+    .block h3{
+      margin:0 0 8px;
+      font-size:13px;
+      letter-spacing:.6px;
+      text-transform:uppercase;
+      color: rgba(233,236,255,.95);
+    }
+
+    .kv{
+      display:grid;
+      grid-template-columns: 92px 1fr;
+      gap:8px 10px;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .k{ color: var(--muted); }
+    .v b{ color:#fff; }
+
+    /* Center (game) */
     .play-center{
       background: rgba(0,0,0,.25);
-      border:1px solid var(--stroke);
-      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
       overflow:hidden;
       display:grid;
       place-items:center;
-      min-height:70vh;
+      min-height:72vh;
       padding:10px;
       box-shadow: var(--shadow);
+      position:relative;
     }
 
-    /* Keep your existing canvas working */
+    .center-head{
+      position:absolute;
+      top:10px;
+      left:10px;
+      right:10px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      pointer-events:none;
+      opacity:.95;
+    }
+
+    .chip{
+      pointer-events:none;
+      font-size:11px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      color: rgba(233,236,255,.95);
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+    }
+    .chip b{ color: var(--cyan); }
+
     canvas{
       border: 2px solid #222;
       max-width: 100%;
@@ -90,30 +181,45 @@
       display:block;
     }
 
-    h3{ margin:0 0 10px; letter-spacing:.3px; }
-    .pill{
-      display:inline-block;
-      font-size:12px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
+    /* Leaderboard */
+    .lb-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      margin-top:12px;
+    }
+    .lb-col{
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.20);
+      min-height: 260px;
+    }
+    .lb-title{
+      margin:0 0 8px;
+      font-size:13px;
+      letter-spacing:.6px;
+      text-transform:uppercase;
+    }
+    .lb-list{
+      margin:0;
+      padding-left:18px;
       color: var(--muted);
-      background: rgba(0,0,0,.18);
-      margin-bottom:10px;
+      font-size:13px;
+      line-height:1.6;
+    }
+    .lb-list li{ margin:4px 0; }
+    .lb-note{
+      margin-top:12px;
+      font-size:12px;
+      color: var(--muted);
+      opacity:.9;
     }
 
-    .leaderboard ol{
-      margin:8px 0 0;
-      padding-left: 18px;
-    }
-    .leaderboard li{ margin:6px 0; }
-
-    @media (max-width:1100px){
-      .play-grid{
-        grid-template-columns: 1fr;
-        padding-top:72px;
-      }
-      .play-center{ min-height:50vh; }
+    @media (max-width:1180px){
+      .play-grid{ grid-template-columns: 1fr; }
+      .play-center{ min-height:52vh; }
+      .lb-col{ min-height:auto; }
     }
   </style>
 </head>
@@ -122,42 +228,78 @@
   <a class="exit-btn" href="../../index.html">✕ EXIT</a>
 
   <div class="play-grid">
-    <!-- LEFT: Instructions -->
+    <!-- LEFT: instructions -->
     <aside class="panel">
-      <div class="pill">HOW TO PLAY</div>
-      <h3>Neon Chase</h3>
-      <p class="muted" style="margin:0 0 10px;">
-        Move with <b>WASD</b> or <b>Arrow Keys</b>. Survive as long as possible.
-      </p>
-      <p class="muted" style="margin:0 0 10px;">
-        Tip: click the game area once so it captures keyboard input.
-      </p>
-      <p class="muted" style="margin:0;">
-        Player initials are saved on the main arcade page (top-right).
-      </p>
+      <div class="tag">Cabinet Brief</div>
+      <h1>Neon Chase</h1>
+      <div class="muted">Fast reflex survival in a glowing grid.</div>
+
+      <div class="block">
+        <h3>Controls</h3>
+        <div class="kv">
+          <div class="k">Move</div><div class="v"><b>WASD</b> or <b>Arrow Keys</b></div>
+          <div class="k">Focus</div><div class="v">Click the game once to capture keys</div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Objective</h3>
+        <div class="kv">
+          <div class="k">Goal</div><div class="v">Stay alive and push your score higher.</div>
+          <div class="k">Avoid</div><div class="v">Anything that tags you = run over.</div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Pro Tips</h3>
+        <div class="muted">
+          Short turns beat big moves. Keep your path clean. Don’t panic-strafe.
+        </div>
+      </div>
     </aside>
 
-    <!-- CENTER: Game (UNCHANGED GAME ELEMENT) -->
+    <!-- CENTER: game -->
     <main class="play-center">
+      <div class="center-head">
+        <div class="chip">Player: <b id="pxInit">???</b></div>
+        <div class="chip">Press <b>ESC</b> to pause (if supported)</div>
+      </div>
+
       <canvas id="gameCanvas"></canvas>
     </main>
 
-    <!-- RIGHT: Leaderboard (placeholder, safe) -->
-    <aside class="panel leaderboard">
-      <div class="pill">LEADERBOARD</div>
-      <h3>Neon Chase</h3>
-      <p class="muted" style="margin:0 0 10px;">
-        Online leaderboard sync will be wired back in next (this panel is safe + non-breaking).
-      </p>
-      <ol class="muted">
-        <li>---</li>
-        <li>---</li>
-        <li>---</li>
-      </ol>
+    <!-- RIGHT: leaderboard -->
+    <aside class="panel">
+      <div class="tag">Top 10</div>
+      <h1 style="margin-bottom:0;">Leaderboard</h1>
+      <div class="muted">Online sync returns later — layout ready now.</div>
+
+      <div class="lb-grid">
+        <div class="lb-col">
+          <div class="lb-title">1–5</div>
+          <ol class="lb-list">
+            <li>---</li><li>---</li><li>---</li><li>---</li><li>---</li>
+          </ol>
+        </div>
+        <div class="lb-col">
+          <div class="lb-title">6–10</div>
+          <ol class="lb-list">
+            <li>---</li><li>---</li><li>---</li><li>---</li><li>---</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="lb-note">When score submission is re-enabled, these slots will auto-fill.</div>
     </aside>
   </div>
 
-  <!-- Existing scripts kept exactly (do not change) -->
+  <script>
+    // show initials if present (safe)
+    const init = (localStorage.getItem("px_player_initials") || sessionStorage.getItem("playerInitials") || "???")
+      .toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3) || "???";
+    document.getElementById("pxInit").textContent = init;
+  </script>
+
   <script src="../../js/engine.js"></script>
   <script src="../../js/games/neon-chase.js"></script>
 </body>
