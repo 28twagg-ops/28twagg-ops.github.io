@@ -11,16 +11,17 @@
     "title": "MILLIPEDE (React)",
     "type": "iframe",
     "url": "games/millipede-react/index.html",
-    "script": "games/millipede-react/index.html",
+    "script": "js/games/index.html",
     "image": "assets/millipede_thumb.png",
-    "description": "Modern React remake of the classic."
+    "description": "Modern React remake of the classic.",
+    "path": "games/game-2/index.html"
   },
   {
     "id": "robo-arena",
-    "title": "Robo‑Arena",
+    "title": "Robo\u2011Arena",
     "script": "js/games/robo-arena.js",
     "image": "assets/robo-arena_thumb.jpg",
-    "description": "Battle bots in a neon‑lit arena."
+    "description": "Battle bots in a neon\u2011lit arena."
   },
   {
     "id": "neon-chase",
@@ -34,7 +35,7 @@
     "title": "Vector Duel",
     "script": "js/games/vector-duel.js",
     "image": "assets/vector-duel_thumb.png",
-    "description": "Engage in fast‑paced vector ship duels."
+    "description": "Engage in fast\u2011paced vector ship duels."
   },
   {
     "id": "cyber-python",
