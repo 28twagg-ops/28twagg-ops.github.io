@@ -37,7 +37,7 @@
 
   <div class="topbar">
     <button class="btn" id="px-exit">EXIT</button>
-    <div class="badge" id="px-badge" title="Click to change initials on home page">???</div>
+    <div class="badge" id="px-badge" title="Initials (set on homepage)">???</div>
   </div>
 
   <div class="layout">
@@ -48,7 +48,7 @@
         <p><b>Shoot:</b> Space</p>
         <p><b>Goal:</b> Clear the swarm, survive, score high.</p>
       </div>
-      <div class="lb-meta">Initials are set on the homepage. Click the badge (top-right) to change.</div>
+      <div class="lb-meta">Initials are set on the homepage. This game auto-uses them.</div>
     </aside>
 
     <main class="panel">
@@ -56,7 +56,7 @@
       <div class="gamebox">
         <div id="root"></div>
       </div>
-      <div class="muted">Leaderboard refreshes automatically.</div>
+      <div class="muted">Scores auto-submit on game over.</div>
     </main>
 
     <aside class="panel">
@@ -73,10 +73,17 @@
   <script src="../../js/engine.js"></script>
   <script>
     (function(){
-      const ls = localStorage.getItem("px_player_initials") || "";
-      if(ls) sessionStorage.setItem("playerInitials", ls);
-      if(window.PixelNet && PixelNet.init) PixelNet.init();
+      const HOME_KEY = "px_player_initials";
+      const SLUG = "millipede-react";
 
+      // 1) Force initials to come from homepage storage, and put into sessionStorage (what engine.js uses).
+      const ls = (localStorage.getItem(HOME_KEY) || "").toUpperCase().slice(0,3);
+      if (ls) sessionStorage.setItem("playerInitials", ls);
+
+      // Init engine AFTER sessionStorage is set
+      if (window.PixelNet && PixelNet.init) PixelNet.init();
+
+      // UI badge shows initials but DOES NOT open an initials modal here
       const badge = document.getElementById("px-badge");
       badge.textContent = ls || "???";
       badge.onclick = () => location.href = "../../index.html";
@@ -90,8 +97,8 @@
         L.innerHTML=""; R.innerHTML="";
 
         try{
-          const data = await PixelNet.getLeaderboard("millipede-react");
-          const rows = Array.isArray(data) ? data : (data?.scores || data?.leaderboard || []);
+          const data = await PixelNet.getLeaderboard(SLUG);
+          const rows = Array.isArray(data) ? data : (data?.top10 || data?.scores || data?.leaderboard || []);
           const top = rows.slice(0,10);
 
           if(!top.length){ status.textContent="No scores yet."; return; }
@@ -102,7 +109,7 @@
 
             const li=document.createElement("li");
             li.className="lb-item";
-            li.innerHTML=\`<span class="lb-rank">\${i+1}.</span><span>\${initials}</span><span class="lb-score">\${score}</span>\`;
+            li.innerHTML=`<span class="lb-rank">${i+1}.</span><span>${initials}</span><span class="lb-score">${score}</span>`;
             (i<5?L:R).appendChild(li);
           });
 
@@ -116,34 +123,101 @@
       renderLeaderboard();
       setInterval(renderLeaderboard,15000);
 
-      // Hook into the React game to detect Save button and submit score.
-      function hookSave() {
-        // Find the overlay container by searching for a button with exact text "Save".
-        const buttons = document.querySelectorAll('button');
-        for (const btn of buttons) {
-          if (btn.textContent.trim().toUpperCase() === 'SAVE') {
-            if (btn.__px_hooked) return; // avoid duplicate listeners
-            btn.__px_hooked = true;
-            btn.addEventListener('click', () => {
-              // Find the score displayed in the overlay (digits in text content).
-              const overlay = btn.closest('div');
-              let score = 0;
-              if (overlay) {
-                const txt = overlay.textContent || '';
-                const match = txt.match(/\\d+/);
-                if (match) score = parseInt(match[0], 10);
-              }
-              if (score >= 0 && window.PixelNet && PixelNet.submitScore) {
-                PixelNet.submitScore('millipede-react', score);
-                renderLeaderboard();
-              }
-            });
+      // 2) Silent submit (NO alerts, avoids “freeze” feeling).
+      async function silentSubmit(score){
+        try{
+          if (!window.PixelNet) return;
+          const initials = (PixelNet.player?.initials || ls || "???").toUpperCase().slice(0,3);
+          if (!initials || initials === "???") return;
+
+          const resp = await fetch(`${PixelNet.config.BACKEND_URL}/api/score`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ game_slug: SLUG, initials, score })
+          });
+
+          // Read JSON if present (optional)
+          let j = null;
+          try { j = await resp.json(); } catch(_) {}
+          if (!resp.ok || (j && j.ok === false)) {
+            console.warn("Millipede silent submit rejected:", resp.status, j);
+          } else {
+            // Refresh leaderboard immediately on success
+            renderLeaderboard();
           }
+        }catch(err){
+          console.error("Millipede silent submit error:", err);
         }
       }
-      // Observe DOM mutations because React creates/destroys the overlay dynamically.
-      const obs = new MutationObserver(() => hookSave());
+
+      // 3) Auto-fill and auto-submit the React overlay so it NEVER asks.
+      // We detect the overlay input (maxlength=3 or placeholder containing "initial")
+      // and the Save/Submit button, set initials, then click it once.
+      let autoSubmittedForThisGameOver = false;
+
+      function tryAutoSubmitOverlay(){
+        if (autoSubmittedForThisGameOver) return;
+
+        // Find candidate initials input
+        const inputs = Array.from(document.querySelectorAll("input"));
+        const initInput = inputs.find(inp => {
+          const ml = parseInt(inp.getAttribute("maxlength") || "0", 10);
+          const ph = (inp.getAttribute("placeholder") || "").toLowerCase();
+          return ml === 3 || ph.includes("init");
+        });
+
+        // Find a Save/Submit button created by the React overlay
+        const buttons = Array.from(document.querySelectorAll("button"));
+        const saveBtn = buttons.find(b => {
+          const t = (b.textContent || "").trim().toLowerCase();
+          return t === "save" || t === "submit" || t === "ok";
+        });
+
+        if (!saveBtn) return;
+
+        // Extract score from the overlay area (best effort: nearest container text)
+        let score = 0;
+        const container = saveBtn.closest("div") || document.body;
+        const txt = (container.textContent || "");
+        const m = txt.match(/(\d+)/);
+        if (m) score = parseInt(m[1], 10);
+
+        // Fill initials if input exists; hide it so the user never sees it
+        if (initInput) {
+          initInput.value = ls || (PixelNet.player?.initials || "???");
+          initInput.dispatchEvent(new Event("input", { bubbles: true }));
+          initInput.dispatchEvent(new Event("change", { bubbles: true }));
+          // optional hide so it "never asks"
+          initInput.style.display = "none";
+        }
+
+        // Mark so we don't spam clicks
+        autoSubmittedForThisGameOver = true;
+
+        // 1) Submit to backend silently
+        silentSubmit(score);
+
+        // 2) Click the React Save button to let the game close its overlay normally
+        // Delay a tick so React has processed the input event first
+        setTimeout(() => {
+          try { saveBtn.click(); } catch(_) {}
+        }, 0);
+      }
+
+      // Observe DOM changes because React creates the overlay dynamically.
+      const obs = new MutationObserver(() => {
+        // If overlay disappears later and reappears next game over, allow again:
+        // We reset when a new run starts; easiest heuristic: if a SAVE button is NOT present, reset flag.
+        const hasSave = Array.from(document.querySelectorAll("button")).some(b => {
+          const t = (b.textContent || "").trim().toLowerCase();
+          return t === "save" || t === "submit" || t === "ok";
+        });
+        if (!hasSave) autoSubmittedForThisGameOver = false;
+
+        tryAutoSubmitOverlay();
+      });
       obs.observe(document.body, { childList: true, subtree: true });
+
     })();
   </script>
 </body>
