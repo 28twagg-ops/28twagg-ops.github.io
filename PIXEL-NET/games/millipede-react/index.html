@@ -236,8 +236,16 @@
       }
 
       async function autoSaveIfGameOver(){
-        const txt = (document.body.innerText||"").toUpperCase();
-        const isOver = txt.includes("GAME OVER");
+        // Game-over signal should come from the game overlay itself (NOT our side panels).
+        // We treat "SAVE"/"ENTER INITIALS" UI as the reliable marker.
+        const buttons = Array.from(document.querySelectorAll("#root button, button"));
+        const hasSaveBtn = buttons.some(b => (b.textContent||"").trim().toUpperCase()==="SAVE");
+        const hasEnterInitials = Array.from(document.querySelectorAll("#root *")).some(el => (el.textContent||"").trim().toUpperCase()==="ENTER INITIALS");
+
+        // Extra fallback: a "GAME OVER" element inside the game container (#root / gamebox)
+        const hasGameOverInRoot = Array.from(document.querySelectorAll("#root *")).some(el => (el.textContent||"").trim().toUpperCase()==="GAME OVER");
+
+        const isOver = hasSaveBtn || hasEnterInitials || hasGameOverInRoot;
         if(!isOver) return;
 
         gameOverSeen = true;
@@ -246,7 +254,7 @@
         const score = readScoreNow();
         if(savedThisDeath) return;
 
-        // Extra guard: prevent saving the same score repeatedly (some UIs keep rerendering).
+        // Prevent saving same score repeatedly
         if(score === lastScoreSaved) return;
 
         savedThisDeath = true;
@@ -259,13 +267,14 @@
           }
           // Refresh leaderboard after save
           setTimeout(renderLeaderboard, 600);
-          
-        // Show PLAY AGAIN button after auto-save
-        const pa = document.getElementById("px-play-again");
-        if(pa) pa.style.display = "flex";
 
+          // Show PLAY AGAIN overlay after we have attempted save
+          const pa = document.getElementById("px-play-again");
+          if(pa) pa.style.display = "flex";
         }catch(err){
           console.error("[Millipede wrapper] auto-save failed:", err);
+          const pa = document.getElementById("px-play-again");
+          if(pa) pa.style.display = "flex";
         }
       }
 
