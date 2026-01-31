@@ -2,28 +2,34 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Millipede Chaos</title>
+<title>PIXEL-NET Game</title>
 <link rel="stylesheet" href="../../style.css">
 </head>
 
 <body class="game-shell">
 
+<!-- TOP BAR -->
 <header class="game-topbar">
   <button onclick="location.href='../../index.html'">EXIT</button>
   <div id="playerBadge"></div>
 </header>
 
+<!-- LAYOUT -->
 <div class="game-layout">
 
+  <!-- HOW TO PLAY -->
   <aside class="game-panel left">
     <h3>How to Play</h3>
-    <p>Arrow keys to move, space to fire.</p>
+    <p id="instructions">Use arrows / spacebar.</p>
   </aside>
 
+  <!-- GAME -->
   <main class="game-center">
-    <div id="root"></div>
+    <!-- GAME CONTENT GOES HERE -->
+    <!-- iframe OR canvas -->
   </main>
 
+  <!-- LEADERBOARD -->
   <aside class="game-panel right">
     <h3>Leaderboard</h3>
     <div id="leaderboard"></div>
@@ -32,11 +38,9 @@
 </div>
 
 <script>
-const initials = localStorage.getItem("px_player_initials") || "???";
-document.getElementById("playerBadge").textContent = initials;
+const i = localStorage.getItem("px_player_initials") || "???";
+document.getElementById("playerBadge").textContent = i;
 </script>
-
-<script type="module" src="./assets/index-BTthQfIO.js"></script>
 
 </body>
 </html>
