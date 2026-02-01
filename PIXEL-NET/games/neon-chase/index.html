@@ -70,6 +70,18 @@
       letter-spacing:1px;
     }
 
+    .player-badge{
+      margin-left:auto;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.25);
+      color: var(--pn-cyan);
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:800;
+      letter-spacing:1px;
+      cursor:pointer;
+    }
+
     .play-title{
       display:flex;
       align-items:baseline;
@@ -254,26 +266,17 @@
     @media (max-width: 600px) {
       .mobile-hint { display: block; }
     }
-  
-/* PX-MOBILE-OVERRIDE */
-@media (max-width:980px){
-  .play-grid{grid-template-columns:1fr; gap:10px; padding:10px}
-  .panel{padding:10px}
-  .title{margin:0 0 6px; font-size:13px}
-  .muted{display:none}
-  .gamebox{height:calc(100dvh - 56px - 24px); min-height:0}
-}
-/* PX-MOBILE-OVERRIDE-END */
-</style>
+  </style>
 </head>
 
 <body>
   <div class="play-shell">
     <header class="play-topbar">
       <a class="exit-btn" href="../../index.html">✕ EXIT</a>
-      <div class="play-title">
-        <span class="muted">PLAYER</span> <strong id="playInitials">---</strong>
-      </div>
+      <div style="flex:1"></div>
+      <button class="player-badge" id="playerBadge" title="Player initials">
+        <span id="playInitials">---</span>
+      </button>
     </header>
 
     <div class="play-grid">
@@ -670,7 +673,25 @@ function init() {
     canvas.width = COLS * TILE_SIZE;
     canvas.height = ROWS * TILE_SIZE;
 
-    document.getElementById("playInitials").textContent = getInitialsFromStorage();
+    const setInitialsUI = () => {
+      const v = getInitialsFromStorage();
+      const el = document.getElementById("playInitials");
+      if (el) el.textContent = v;
+    };
+    setInitialsUI();
+
+    const badge = document.getElementById("playerBadge");
+    if (badge) {
+      badge.addEventListener("click", () => {
+        const current = getInitialsFromStorage();
+        const next = prompt("Enter your initials (2-3 letters):", current === "---" ? "" : current);
+        if (!next) return;
+        const cleaned = next.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3);
+        if (cleaned.length < 2) return;
+        localStorage.setItem("px_player_initials", cleaned);
+        setInitialsUI();
+      });
+    }
     refreshLeaderboard();
 
     window.addEventListener('keydown', handleKey);

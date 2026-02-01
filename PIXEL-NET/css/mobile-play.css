@@ -23,12 +23,20 @@
 .px-rotate .px-mobilebtn{width:100%;justify-content:center}
 
 @media (pointer:coarse) and (max-width: 900px){
-  body.px-mobile-play{overflow:hidden}
+  /* Don't hard-lock scrolling for the whole page on mobile.
+     We only suppress browser gestures *inside the actual game surface* (canvas/iframe)
+     so the user can still scroll outside the game area if needed. */
+  body.px-mobile-play{overflow:auto; height:auto}
   body.px-mobile-play .px-mobilebar{display:flex}
   /* Make common layouts stack without breaking desktop */
   .layout{flex-direction:column !important;align-items:stretch !important}
   .layout > .panel{display:none !important}
   .layout > .gamebox{width:100% !important;max-width:100% !important}
-  /* Capture swipes in play area */
-  canvas, iframe, .gamebox{touch-action:none;overscroll-behavior:none}
+  /* Keep the game fully visible without requiring scroll */
+  .layout{min-height:calc(100dvh - 56px)}
+  .layout > .gamebox{height:calc(100dvh - 56px); min-height:0}
+
+  /* Capture swipes in the *game surface* only */
+  canvas, iframe{touch-action:none;overscroll-behavior:none}
+  .gamebox{touch-action:manipulation}
 }
