@@ -1,30 +1,17 @@
-# Changelog
+# PIXEL-NET Patch Changelog
 
-## [2026‑02‑01] – New games added
+## Mobile + UI fixes
+- **millipede-react**: Mobile now scrolls (page overflow enabled on small screens) so the bottom of the game/panels is reachable; panels scroll independently; game box gets a stable responsive height.
+- **neon-chase**: Fix initials source (reads `px_player_initials`), allow scrolling in panels on touch (removed `touch-action:none` from body), and make mobile layout stack with a responsive game height while preventing page scroll only when swiping on the canvas.
 
-### Neon Trail Riders
+## Games.json consistency
+- **Caked Up Cats** entry was in a different schema (id/title/href). Converted to the standard `{name,type,path,thumb,description}` schema so it renders + clicks correctly.
+- Updated **CYBER PYTHON** thumbnail path to `assets/cyber-python_thumb.png`.
 
-* Introduced **Neon Trail Riders**, an original light‑cycle survival game.
-* Navigate a glowing grid while leaving behind a persistent trail.  Crashing into your trail or the arena walls ends your run.
-* Collect pulsing orbs to earn a 50‑point bonus and clear part of your trail, adding a strategic risk/reward mechanic.
-* Speed ramps up over time for escalating difficulty.
-* Score is automatically submitted to the PIXEL‑NET leaderboard on game over.  Press **Enter** to restart after a crash.
+## Caked Up Cats wrapper + leaderboard theme
+- Added a PIXEL-NET wrapper (`games/caked-up-cats/index.html`) with themed green panels + working leaderboard.
+- Kept the full game in an isolated iframe (`games/caked-up-cats/game.html`) and added PIXEL-NET score submit on Game Over.
 
-Further updates will continue to expand the PIXEL‑NET arcade with more original titles.
-
-## [2026‑02‑01] – QA & Bug Fixes
-
-After a comprehensive QA pass across the entire PIXEL‑NET arcade, only one minor issue was discovered:
-
-- **Player initials badge alignment:** The text inside the navigation badge on the home page was not vertically centered.  A CSS update to `.px-badge--nav` adds `display: inline-flex` with `align-items: center` and `justify-content: center` to fix the alignment.  No other functional bugs were found.
-
-The QA process and results are documented in detail in `QA_REPORT.md`.
-
-### Neon Arena Assault
-
-* Added **Neon Arena Assault**, a twin‑stick style arena shooter.
-* Move with **WASD** and fire with the **arrow keys**; combine keys for diagonal shots.
-* Enemies spawn from all four edges and home in on the player.  Spawn rate and speed increase over time.
-* Includes a combo system: kill enemies in quick succession to increase the multiplier up to ×10.  Each kill awards `10 × combo` points; the combo resets if you wait too long.
-* Particle explosions and neon gradients deliver satisfying feedback for each victory.
-* Score submits automatically at game over, and you can restart with **Enter**.
+## Thumbnails
+- Generated and added `assets/cyber-python_thumb.png`.
+- Added a consistent rounded neon border to `assets/caked-up-cats_thumb.png`.

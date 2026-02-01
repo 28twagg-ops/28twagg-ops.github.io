@@ -27,12 +27,8 @@
       background: var(--pn-bg);
       color:#fff;
       font-family:'Orbitron', sans-serif;
-      /* IMPORTANT:
-         - Desktop users must be able to scroll normally.
-         - On mobile, we only block scroll *inside the game surface*.
-      */
-      overflow:auto;
-      touch-action:manipulation;
+      overflow:hidden;            /* no page scroll on desktop */
+      touch-action:auto;          /* allow panel scrolling on touch */
       -webkit-user-select:none;
       user-select:none;
     }
@@ -78,17 +74,12 @@
       flex:1 1 auto;
       display:grid;
       grid-template-columns: 300px 1fr 300px;
-      grid-template-areas: "how game lb";
       gap:12px;
       padding:12px;
       box-sizing:border-box;
       align-items:stretch;
       min-height:0;
     }
-
-    .panel-how{ grid-area: how; }
-    .panel-lb{ grid-area: lb; }
-    .center-wrap{ grid-area: game; }
 
     .panel{
       background: var(--pn-panel);
@@ -98,7 +89,6 @@
       box-sizing:border-box;
       min-height:0;
       overflow:auto;
-      -webkit-overflow-scrolling: touch;
     }
 
     .panel h3{
@@ -142,18 +132,11 @@
       min-height:0;
     }
 
-    /* Mobile: put GAME first, then panels (so the full game is visible immediately).
-       Keep panels compact but scrollable. */
+    /* Mobile: stack panels, keep game big */
     @media (max-width: 980px){
-      .play-grid{
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "game"
-          "how"
-          "lb";
-      }
-      .panel{ max-height: 18vh; }
-      .center-wrap{ min-height: 56vh; }
+      .play-grid{ grid-template-columns: 1fr; }
+      .panel{ max-height: 28vh; }
+      .center-wrap{ min-height: 44vh; }
     }
 
     /* ========= GAME CSS (your original, preserved) ========= */
@@ -165,15 +148,9 @@
       background-color: #000;
     }
 
-    #game-container{ touch-action:none; }
     canvas {
       display: block;
       background-color: #080808;
-      touch-action:none; /* stop scroll gestures INSIDE the game */
-      max-width:100%;
-      max-height:100%;
-      width:100%;
-      height:auto;
     }
 
     #ui-layer {
@@ -268,7 +245,14 @@
     @media (max-width: 600px) {
       .mobile-hint { display: block; }
     }
-  </style>
+  
+    @media (max-width: 900px){
+      body{overflow:auto;}
+      .play-grid{grid-template-columns: 1fr; padding:10px;}
+      .panel{max-height:none;}
+      .gamebox{display:flex;align-items:stretch;justify-content:stretch;height:min(62vh,520px);}
+    }
+    </style>
 </head>
 
 <body>
@@ -281,7 +265,7 @@
     </header>
 
     <div class="play-grid">
-      <aside class="panel panel-how">
+      <aside class="panel">
         <h3>How to Play</h3>
         <ul>
           <li>Move: Arrow Keys / Swipe</li>
@@ -310,7 +294,7 @@
         </div>
       </main>
 
-      <aside class="panel panel-lb">
+      <aside class="panel">
         <h3>Leaderboard</h3>
         <div id="lbStatus" class="lb-status">Loading…</div>
         <ol id="lbList" class="lb-list"></ol>
@@ -670,9 +654,11 @@ function init() {
     refreshLeaderboard();
 
     window.addEventListener('keydown', handleKey);
-    /* Mobile: capture gestures ONLY inside the canvas so the page can scroll elsewhere */
-    canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
-    canvas.addEventListener('touchend', handleTouchEnd, {passive: false});
+    window.addEventListener('touchstart', handleTouchStart, {passive: false});
+    window.addEventListener('touchend', handleTouchEnd, {passive: false});
+
+    // Prevent page scroll ONLY while swiping on the canvas
+    canvas.addEventListener('touchmove', (e)=>{ if(e.cancelable) e.preventDefault(); }, {passive:false});
 
     showStartScreen();
     resetLevel();

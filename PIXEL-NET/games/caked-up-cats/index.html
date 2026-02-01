@@ -1,700 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CAKED UP CATS</title>
-
-  <!-- PIXEL-NET Engine (leaderboards) -->
-  <script src="../../js/engine.js"></script>
-
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
-
-    /* ================= PIXEL-NET WRAPPER ================= */
     :root{
-      --pn-bg:#050010;
-      --pn-panel: rgba(5, 0, 16, 0.75);
-      --pn-border: rgba(255,255,255,0.10);
-      --pn-cyan:#00F0FF;
-      --pn-pink:#FF0055;
-      --pn-muted:#9aa0b3;
-
-      /* Original game palette */
-      --bg-color: #6bc96b;
-      --text-color: #2e4a2e;
-      --accent: #ff6b6b;
-      --card-bg: rgba(255, 255, 255, 0.9);
+      --text:#eaffef;
+      --muted:#bde7c8;
+      --bg1:#061009;
+      --bg2:#071a0c;
+      --card: rgba(10, 40, 18, .72);
+      --card2: rgba(10, 40, 18, .52);
+      --stroke: rgba(120,255,170,.18);
+      --accent:#4ade80;
+      --accent2:#22c55e;
+      --shadow: 0 14px 40px rgba(0,0,0,.45);
     }
-
-    *{ box-sizing:border-box; }
-
+    *{box-sizing:border-box}
+    html,body{height:100%}
     body{
       margin:0;
-      background: var(--pn-bg);
-      color:#fff;
-      font-family: 'Orbitron', system-ui, sans-serif;
-      /* Desktop must be scrollable. On mobile, we only block scroll inside the game surface. */
-      overflow:auto;
-      touch-action:manipulation;
-      -webkit-user-select:none;
+      color:var(--text);
+      font-family: Nunito, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(900px 520px at 15% 10%, rgba(74,222,128,.16), transparent 60%),
+        radial-gradient(900px 520px at 85% 25%, rgba(34,197,94,.12), transparent 60%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%);
+      overflow:hidden; /* desktop: no page scroll; panels scroll */
+      color-scheme:dark;
+    }
+
+    .topbar{
+      width:min(1300px, 94vw);
+      margin:14px auto 10px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+    }
+    .btn{
+      height:38px; padding:0 12px;
+      border-radius:12px;
+      background:rgba(20,70,32,.45);
+      border:1px solid var(--stroke);
+      color:var(--text);
+      font-weight:900;
+      letter-spacing:.3px;
+      cursor:pointer;
+      display:inline-flex; align-items:center; justify-content:center;
+      text-decoration:none;
       user-select:none;
     }
+    .btn:hover{background:rgba(20,70,32,.62)}
 
-    .play-shell{ min-height:100dvh; display:flex; flex-direction:column; }
-
-    .play-topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:10px 12px;
-      background: rgba(5, 0, 16, 0.85);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      z-index:10;
-      flex:0 0 auto;
+    .badge{
+      height:38px;
+      padding:0 14px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(74,222,128,.22), rgba(34,197,94,.10));
+      display:flex; align-items:center; gap:10px;
+      box-shadow: 0 10px 26px rgba(0,0,0,.30);
     }
+    .badge .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px rgba(74,222,128,.7)}
+    .badge .sub{color:var(--muted);font-weight:800;font-size:12px;letter-spacing:.4px}
+    .badge .ini{font-weight:900}
 
-    .top-left{ display:flex; align-items:center; gap:12px; }
-
-    .exit-btn{
-      text-decoration:none;
-      color: var(--pn-cyan);
-      border: 1px solid rgba(0,240,255,0.35);
-      padding:6px 10px;
-      border-radius:10px;
-      box-shadow: 0 0 12px rgba(0,240,255,0.18);
-      font-size:12px;
-      letter-spacing:1px;
-      background: transparent;
-      cursor:pointer;
-    }
-
-    .play-title{ display:flex; align-items:baseline; gap:8px; font-size:12px; }
-    .play-title .muted{ color: var(--pn-muted); }
-    .play-title strong{ color: var(--pn-cyan); letter-spacing:1px; }
-
-    .play-grid{
-      flex:1 1 auto;
+    .layout{
+      width:min(1300px, 94vw);
+      margin:0 auto 18px;
       display:grid;
-      grid-template-columns: 300px 1fr 300px;
-      grid-template-areas: "how game lb";
+      grid-template-columns: 320px 1fr 320px;
       gap:12px;
-      padding:12px;
-      align-items:stretch;
-      min-height:0;
+      height: calc(100vh - 14px - 10px - 38px - 18px); /* topbar + margins */
+      min-height: 560px;
     }
-
     .panel{
-      background: var(--pn-panel);
-      border: 1px solid var(--pn-border);
-      border-radius:12px;
-      padding:12px;
+      background:linear-gradient(180deg,var(--card),var(--card2));
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:14px;
       min-height:0;
       overflow:auto;
       -webkit-overflow-scrolling:touch;
     }
-
-    .panel h3{
-      margin:0 0 10px 0;
-      font-size:14px;
-      letter-spacing:1px;
-      color: var(--pn-pink);
-      text-shadow: 0 0 6px rgba(255,0,85,0.30);
+    .panel h3{margin:2px 0 10px;font-size:14px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
+    .howto{
+      border:1px dashed rgba(120,255,170,.22);
+      border-radius:14px;
+      padding:12px;
+      background:rgba(0,0,0,.18);
     }
+    .howto .row{display:flex;gap:10px;align-items:flex-start;margin:10px 0}
+    .howto .ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+      background:rgba(74,222,128,.18);border:1px solid rgba(120,255,170,.22);font-size:18px}
+    .howto b{display:block}
 
-    .panel p, .panel li{ font-size:12px; line-height:1.55; color:#d6d6d6; }
-    .panel ul{ margin:0; padding-left:18px; }
-
-    .panel-how{ grid-area: how; }
-    .panel-lb{ grid-area: lb; }
-
-    .center-wrap{
-      grid-area: game;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height:0;
+    .gamepanel{min-height:0; display:flex; flex-direction:column; gap:10px}
+    .gamebox{
+      position:relative;
+      border-radius:16px;
       overflow:hidden;
+      border:1px solid rgba(120,255,170,.18);
+      background:rgba(0,0,0,.20);
+      min-height:0;
+      height:min(72vh,640px);
+      box-shadow: 0 0 24px rgba(74,222,128,.10);
+    }
+    iframe{
+      width:100%; height:100%; border:0; display:block;
     }
 
-    /* Mobile: put game first, then panels; keep game large */
-    @media (max-width: 980px){
-      .play-grid{
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "game"
-          "how"
-          "lb";
-      }
-      .panel{ max-height: 18vh; }
-      .center-wrap{ min-height: 56vh; }
+    .lb{
+      list-style:none; padding:0; margin:0;
+      display:flex; flex-direction:column; gap:8px;
     }
-
-    /* ================= ORIGINAL GAME STYLES (SCOPED) ================= */
-    #game-container{
-      position: relative;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-      border: 8px solid #2d5a2d;
-      border-radius: 20px;
-      background: var(--bg-color);
-      width: min(92vmin, 640px);
-      height: min(92vmin, 640px);
-      max-width: 100%;
-      max-height: 100%;
-      overflow: hidden;
-      touch-action:none; /* block scroll only inside the game */
-    }
-
-    canvas{
-      display:block;
-      width:100%;
-      height:100%;
+    .lb li{
+      display:flex; justify-content:space-between; align-items:center;
+      padding:8px 10px;
       border-radius:12px;
-      touch-action:none;
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(120,255,170,.14);
+      font-weight:800;
     }
+    .lb .rank{color:var(--muted);width:30px}
+    .lb .name{flex:1}
+    .lb .score{font-variant-numeric:tabular-nums}
 
-    /* UI Overlay */
-    #ui-layer{
-      position:absolute;
-      top:0; left:0;
-      width:100%;
-      height:60px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:0 20px;
-      box-sizing:border-box;
-      font-weight:bold;
-      font-size:18px;
-      z-index:5;
-      pointer-events:none;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0));
-      color:white;
-      text-shadow:1px 1px 2px black;
+    .status{color:var(--muted);font-size:12px;margin:4px 0 8px}
+
+    @media (max-width:1100px){
+      html,body{height:auto;overflow:auto}
+      body{overflow:auto}
+      .layout{grid-template-columns:1fr; height:auto; min-height:0}
+      .gamebox{height:min(62vh,520px)}
     }
-
-    .ui-group{ display:flex; gap:15px; align-items:center; }
-
-    /* Energy Bar */
-    #energy-container{
-      display:flex;
-      align-items:center;
-      width:140px;
-      background: rgba(0,0,0,0.5);
-      padding:5px 10px;
-      border-radius:20px;
-      border:2px solid rgba(255,255,255,0.2);
-    }
-    #energy-label{ margin-right:8px; font-size:12px; color:#fff; font-weight:800; }
-    .energy-bar-bg{ flex-grow:1; height:12px; background:#333; border-radius:6px; overflow:hidden; }
-    #energy-bar-fill{ width:100%; height:100%; background: linear-gradient(90deg, #ffaa00, #ffff00); transition: width 0.2s; border-radius:6px; }
-
-    /* Screens */
-    .screen{
-      position:absolute;
-      top:0; left:0;
-      width:100%; height:100%;
-      background: rgba(20, 40, 20, 0.92);
-      display:none;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      text-align:center;
-      z-index:20;
-      padding:20px;
-      box-sizing:border-box;
-      color: #fff;
-    }
-
-    .screen h1{
-      font-size:42px;
-      margin:0 0 10px;
-      text-shadow:0 0 10px rgba(255,255,255,0.3);
-    }
-
-    .screen p{ max-width: 85%; font-size:14px; line-height:1.5; opacity:0.95; }
-
-    .btn-big{
-      background: #fff;
-      color: #1c381c;
-      border:none;
-      padding: 14px 22px;
-      border-radius: 14px;
-      font-weight: 900;
-      letter-spacing: .06em;
-      cursor:pointer;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
-      margin-top: 12px;
-    }
-
-    /* Leaderboard panel */
-    .lb-status{ font-size:11px; color: var(--pn-muted); margin-bottom:8px; }
-    .lb-list{ margin:0; padding-left:18px; font-size:12px; line-height:1.55; color:#e8e8e8; }
-    .lb-list li{ margin:4px 0; }
-
-    /* Hide the in-game D-pad (desktop), keep for very small screens if you want */
-    #mobile-controls{ display:none; }
-
-    /* Fix: keep desktop scroll usable; only the game area blocks gestures */
   </style>
 </head>
-
 <body>
-  <div class="play-shell">
-    <header class="play-topbar">
-      <div class="top-left">
-        <a class="exit-btn" href="../../index.html">✕ EXIT</a>
-        <div class="play-title"><span class="muted">PLAYER</span> <strong id="playInitials">---</strong></div>
-      </div>
-    </header>
-
-    <div class="play-grid">
-      <aside class="panel panel-how">
-        <h3>How to Play</h3>
-        <ul>
-          <li><b>Move:</b> Arrow Keys / WASD</li>
-          <li><b>Goal:</b> Find the exit before energy runs out.</li>
-          <li><b>Avoid:</b> Dogs (instant game over).</li>
-          <li><b>Scoring:</b> Level bonus + remaining energy. No infinite farming.</li>
-        </ul>
-        <p style="margin-top:10px;"><span style="color:var(--pn-muted)">Initials are set on the homepage.</span></p>
-      </aside>
-
-      <main class="center-wrap">
-        <div id="game-container">
-          <canvas id="gameCanvas" width="600" height="600"></canvas>
-
-          <div id="ui-layer">
-            <div class="ui-group">
-              <div id="score-display">PTS: 0</div>
-              <div id="level-display">LVL: 1</div>
-            </div>
-            <div class="ui-group">
-              <div id="energy-container">
-                <span id="energy-label">ENERGY</span>
-                <div class="energy-bar-bg"><div id="energy-bar-fill"></div></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Screens (kept from original) -->
-          <div id="screenStart" class="screen" style="display:flex;">
-            <h1>CAKED UP CATS</h1>
-            <p>Navigate the garden maze. Grab treats. Dodge dogs. Make it to the exit before energy hits zero.</p>
-            <button class="btn-big" id="btnStart">START</button>
-          </div>
-
-          <div id="screenChar" class="screen">
-            <h1>CHOOSE CAT</h1>
-            <p>Select a style. Some cats unlock as you progress.</p>
-            <div id="charGrid" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; width:min(520px, 90%);"></div>
-            <button class="btn-big" id="btnCharBack">BACK</button>
-          </div>
-
-          <div id="screenLevelUp" class="screen">
-            <h1>LEVEL UP!</h1>
-            <div id="level-score" style="font-size:26px; font-weight:900; margin:5px 0;">SCORE: 0</div>
-            <p>Next maze gets tougher. Keep going.</p>
-            <button class="btn-big" id="btnNextLevel">NEXT LEVEL</button>
-          </div>
-
-          <div id="screenGameOver" class="screen">
-            <h1>GAME OVER</h1>
-            <p id="gameover-msg">Out of energy!</p>
-            <div id="final-score" style="font-size:26px; font-weight:900; margin:5px 0;">SCORE: 0</div>
-            <div id="highscore-display" style="font-size:16px; margin:5px 0;">HIGH SCORE: 0</div>
-            <button class="btn-big" id="btnRestart">RESTART</button>
-          </div>
-        </div>
-      </main>
-
-      <aside class="panel panel-lb">
-        <h3>Leaderboard</h3>
-        <div id="lbStatus" class="lb-status">Loading…</div>
-        <ol id="lbList" class="lb-list"></ol>
-      </aside>
+  <div class="topbar">
+    <a class="btn" href="../../index.html">✕ EXIT</a>
+    <div class="badge" title="Player">
+      <span class="dot"></span>
+      <span class="sub">PLAYER</span>
+      <span class="ini" id="playInitials">???</span>
     </div>
   </div>
 
-<script>
-  // ================= PIXEL-NET LEADERBOARD INTEGRATION =================
-  const GAME_SLUG = "caked-up-cats";
-  let scoreSubmitted = false;
+  <div class="layout">
+    <aside class="panel">
+      <h3>How to play</h3>
+      <div class="howto">
+        <div class="row"><div class="ico">🍰</div><div><b>Eat Cake</b><span>Gain energy + short speed boost (+50 pts).</span></div></div>
+        <div class="row"><div class="ico">🐭</div><div><b>Catch the Mouse</b><span>Finish the level for a big bonus.</span></div></div>
+        <div class="row"><div class="ico">🚫</div><div><b>Avoid Hazards</b><span>Dogs, mud slows you, sprinklers drain energy.</span></div></div>
+        <div class="row"><div class="ico">⌨️</div><div><b>Controls</b><span>Arrow Keys / WASD. Mobile d‑pad appears on touch devices.</span></div></div>
+      </div>
+    </aside>
 
-  function getInitialsFromStorage(){
-    return (localStorage.getItem("px_initials") || localStorage.getItem("px_player_initials") || localStorage.getItem("pixelnet_initials") || "???")
-      .toUpperCase().slice(0,3);
-  }
+    <main class="panel gamepanel">
+      <h3>Caked Up Cats</h3>
+      <div class="gamebox">
+        <iframe id="gameFrame" src="game.html" title="Caked Up Cats"></iframe>
+      </div>
+      <div class="status" id="hint">Tip: swipe/press inside the game to control. Scroll works outside the game on mobile.</div>
+    </main>
 
-  async function refreshLeaderboard(){
-    const status = document.getElementById("lbStatus");
-    const list = document.getElementById("lbList");
-    if(!status || !list || !window.PixelNet) return;
+    <aside class="panel">
+      <h3>Leaderboard</h3>
+      <div class="status" id="lbStatus">Loading…</div>
+      <ol class="lb" id="lbList"></ol>
+    </aside>
+  </div>
 
-    status.textContent = "Loading…";
-    list.innerHTML = "";
+  <script src="../../js/engine.js"></script>
+  <script>
+    const GAME_SLUG = 'caked-up-cats';
 
-    try{
-      const data = await PixelNet.getLeaderboard(GAME_SLUG);
-      const entries = (data && data.entries) ? data.entries : (Array.isArray(data) ? data : []);
-
-      entries.slice(0,10).forEach((e, idx) => {
-        const li = document.createElement("li");
-        const name = (e.name || e.initials || "???").toString().toUpperCase().slice(0,3);
-        const sc = Number(e.score) || 0;
-        li.textContent = `${idx+1}. ${name} — ${sc}`;
-        list.appendChild(li);
-      });
-
-      status.textContent = entries.length ? "" : "No scores yet.";
-    }catch(err){
-      status.textContent = "Leaderboard failed to load.";
-      console.log("[CAKED-UP-CATS] leaderboard error:", err);
+    function getInitials(){
+      const raw = localStorage.getItem('px_player_initials') || sessionStorage.getItem('px_player_initials') || localStorage.getItem('playerInitials') || '';
+      const ini = (raw || '???').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+      return ini || '???';
     }
-  }
 
-  async function submitScoreOnce(finalScore){
-    if(scoreSubmitted) return;
-    scoreSubmitted = true;
+    async function refreshLeaderboard(){
+      const status = document.getElementById('lbStatus');
+      const list = document.getElementById('lbList');
+      if (!status || !list || !window.PixelNet) return;
 
-    try{
-      if(window.PixelNet && PixelNet.submitScore){
-        await PixelNet.submitScore(GAME_SLUG, Number(finalScore)||0);
+      status.textContent = 'Loading…';
+      list.innerHTML = '';
+      try{
+        const data = await PixelNet.getLeaderboard(GAME_SLUG);
+        const entries = (data && data.entries) ? data.entries : (Array.isArray(data) ? data : []);
+        if (!entries.length){ status.textContent = 'No scores yet.'; return; }
+        status.textContent = '';
+
+        entries.slice(0,10).forEach((e, i)=>{
+          const li = document.createElement('li');
+          const initials = (e.initials || e.name || '---').toString().toUpperCase().slice(0,3);
+          const score = Number(e.score ?? 0) || 0;
+          li.innerHTML = `<span class="rank">${i+1}</span><span class="name">${initials}</span><span class="score">${score}</span>`;
+          list.appendChild(li);
+        });
+      }catch(err){
+        status.textContent = 'Leaderboard unavailable.';
+        console.error(err);
       }
-    }catch(err){
-      console.log("[CAKED-UP-CATS] submit error:", err);
     }
 
-    // refresh regardless of submit success (backend could be sleeping)
+    document.getElementById('playInitials').textContent = getInitials();
     refreshLeaderboard();
-  }
-
-  // ================= ORIGINAL GAME LOGIC (ported, minimal edits) =================
-
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-
-  const uiScore = document.getElementById('score-display');
-  const uiHighScore = document.getElementById('highscore-display');
-  const uiLevel = document.getElementById('level-display');
-  const energyFill = document.getElementById('energy-bar-fill');
-
-  const screenStart = document.getElementById('screenStart');
-  const screenChar = document.getElementById('screenChar');
-  const screenLevelUp = document.getElementById('screenLevelUp');
-  const screenGameOver = document.getElementById('screenGameOver');
-
-  const btnStart = document.getElementById('btnStart');
-  const btnRestart = document.getElementById('btnRestart');
-  const btnNextLevel = document.getElementById('btnNextLevel');
-  const btnCharBack = document.getElementById('btnCharBack');
-
-  // Touch: prevent scroll only on the game surface
-  ['touchstart','touchmove','touchend'].forEach(evt => {
-    canvas.addEventListener(evt, (e) => e.preventDefault(), { passive:false });
-  });
-
-  let score = 0;
-  let highScore = Number(localStorage.getItem('cakedUpHighScore')) || 0;
-  uiHighScore.innerText = `HIGH SCORE: ${highScore}`;
-
-  let level = 1;
-  let gameState = 'START';
-
-  const TILE = 24;
-  const GRID = 25;
-
-  let viewX = 0, viewY = 0;
-
-  let maze = [];
-  let treats = [];
-  let dogs = [];
-  let exitTile = {x:0,y:0};
-
-  const player = {
-    x: 0, y: 0,
-    size: 18,
-    speed: 2.6,
-    energy: 100,
-    maxEnergy: 100,
-    dash: 0,
-  };
-
-  const keys = { ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false, w:false, a:false, s:false, d:false };
-
-  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
-
-  function showOnly(screen){
-    [screenStart, screenChar, screenLevelUp, screenGameOver].forEach(s => s.style.display = 'none');
-    if(screen) screen.style.display = 'flex';
-  }
-
-  function resetRun(){
-    scoreSubmitted = false;
-    score = 0;
-    level = 1;
-    player.energy = player.maxEnergy;
-    uiScore.innerText = `PTS: ${score}`;
-    uiLevel.innerText = `LVL: ${level}`;
-  }
-
-  function makeMaze(){
-    // Simple procedural maze (kept intentionally lightweight)
-    maze = [];
-    for(let y=0;y<GRID;y++){
-      const row=[];
-      for(let x=0;x<GRID;x++){
-        const wall = (x===0||y===0||x===GRID-1||y===GRID-1) || (Math.random() < 0.14);
-        row.push(wall ? 1 : 0);
-      }
-      maze.push(row);
-    }
-
-    // Carve a guaranteed start and exit corridor
-    const sx = 1, sy = 1;
-    const ex = GRID-2, ey = GRID-2;
-    for(let x=sx; x<=ex; x++) maze[sy][x]=0;
-    for(let y=sy; y<=ey; y++) maze[y][ex]=0;
-
-    player.x = sx*TILE;
-    player.y = sy*TILE;
-    exitTile = {x: ex, y: ey};
-
-    // Treats
-    treats = [];
-    for(let i=0;i<10 + level*3;i++){
-      let tx,ty;
-      do{
-        tx = 1 + Math.floor(Math.random()*(GRID-2));
-        ty = 1 + Math.floor(Math.random()*(GRID-2));
-      }while(maze[ty][tx]===1 || (tx===sx && ty===sy) || (tx===ex && ty===ey));
-      treats.push({x:tx*TILE+TILE/2, y:ty*TILE+TILE/2, r:6});
-    }
-
-    // Dogs
-    dogs = [];
-    const dogCount = Math.min(1 + Math.floor(level/2), 6);
-    for(let i=0;i<dogCount;i++){
-      let dx,dy;
-      do{
-        dx = 1 + Math.floor(Math.random()*(GRID-2));
-        dy = 1 + Math.floor(Math.random()*(GRID-2));
-      }while(maze[dy][dx]===1 || (dx===sx && dy===sy));
-      dogs.push({x:dx*TILE+TILE/2, y:dy*TILE+TILE/2, vx:(Math.random()<0.5?-1:1)*1.0, vy:0, r:10});
-    }
-  }
-
-  function tileAt(px,py){
-    const tx = Math.floor(px/TILE);
-    const ty = Math.floor(py/TILE);
-    if(tx<0||ty<0||tx>=GRID||ty>=GRID) return 1;
-    return maze[ty][tx];
-  }
-
-  function canMove(nx, ny){
-    const pad = 8;
-    return tileAt(nx+pad, ny+pad)===0 &&
-           tileAt(nx+player.size-pad, ny+pad)===0 &&
-           tileAt(nx+pad, ny+player.size-pad)===0 &&
-           tileAt(nx+player.size-pad, ny+player.size-pad)===0;
-  }
-
-  function update(){
-    // energy drain
-    player.energy = Math.max(0, player.energy - (0.015 + level*0.003));
-    energyFill.style.width = `${(player.energy/player.maxEnergy)*100}%`;
-
-    if(player.energy <= 0){
-      endGame(false, "Out of energy!");
-      return;
-    }
-
-    // movement
-    let dx = 0, dy = 0;
-    if(keys.ArrowUp || keys.w) dy -= 1;
-    if(keys.ArrowDown || keys.s) dy += 1;
-    if(keys.ArrowLeft || keys.a) dx -= 1;
-    if(keys.ArrowRight || keys.d) dx += 1;
-
-    if(dx && dy){
-      const inv = 1/Math.sqrt(2);
-      dx *= inv; dy *= inv;
-    }
-
-    const sp = player.speed;
-    const nx = player.x + dx*sp;
-    const ny = player.y + dy*sp;
-
-    if(canMove(nx, player.y)) player.x = nx;
-    if(canMove(player.x, ny)) player.y = ny;
-
-    // camera
-    viewX = clamp(player.x - canvas.width/2 + player.size/2, 0, GRID*TILE - canvas.width);
-    viewY = clamp(player.y - canvas.height/2 + player.size/2, 0, GRID*TILE - canvas.height);
-
-    // collect treats
-    for(let i=treats.length-1;i>=0;i--){
-      const t=treats[i];
-      const px = player.x + player.size/2;
-      const py = player.y + player.size/2;
-      const dist = Math.hypot(px - t.x, py - t.y);
-      if(dist < 14){
-        treats.splice(i,1);
-        score += 50;
-        uiScore.innerText = `PTS: ${score}`;
-        player.energy = Math.min(player.maxEnergy, player.energy + 12);
-      }
-    }
-
-    // dogs roam
-    dogs.forEach(d => {
-      const nx2 = d.x + d.vx;
-      const ny2 = d.y + d.vy;
-      const tx = Math.floor(nx2/TILE);
-      const ty = Math.floor(ny2/TILE);
-      if(maze[ty]?.[tx]===1){
-        d.vx *= -1;
-      }else{
-        d.x = nx2;
-      }
-
-      // collision
-      const px = player.x + player.size/2;
-      const py = player.y + player.size/2;
-      if(Math.hypot(px - d.x, py - d.y) < 18){
-        endGame(false, "Caught by a dog!");
-      }
-    });
-
-    // exit reached
-    const ex = exitTile.x*TILE + TILE/2;
-    const ey = exitTile.y*TILE + TILE/2;
-    const px = player.x + player.size/2;
-    const py = player.y + player.size/2;
-    if(Math.hypot(px-ex, py-ey) < 18){
-      endGame(true);
-    }
-  }
-
-  function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // background
-    ctx.fillStyle = "#7ad67a";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    // maze
-    for(let y=0;y<GRID;y++){
-      for(let x=0;x<GRID;x++){
-        if(maze[y][x]===1){
-          ctx.fillStyle = "#2d5a2d";
-          ctx.fillRect(x*TILE - viewX, y*TILE - viewY, TILE, TILE);
-        }
-      }
-    }
-
-    // exit
-    ctx.fillStyle = "#ffd84a";
-    ctx.fillRect(exitTile.x*TILE - viewX + 3, exitTile.y*TILE - viewY + 3, TILE-6, TILE-6);
-
-    // treats
-    treats.forEach(t => {
-      ctx.fillStyle = "#ff6b6b";
-      ctx.beginPath();
-      ctx.arc(t.x - viewX, t.y - viewY, t.r, 0, Math.PI*2);
-      ctx.fill();
-    });
-
-    // dogs
-    dogs.forEach(d => {
-      ctx.fillStyle = "#333";
-      ctx.beginPath();
-      ctx.arc(d.x - viewX, d.y - viewY, d.r, 0, Math.PI*2);
-      ctx.fill();
-    });
-
-    // player
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(player.x - viewX, player.y - viewY, player.size, player.size);
-  }
-
-  function loop(){
-    if(gameState === 'PLAYING'){
-      update();
-      draw();
-      requestAnimationFrame(loop);
-    }
-  }
-
-  function endGame(win, msg){
-    gameState = win ? 'LEVELUP' : 'GAMEOVER';
-
-    if(win){
-      const levelBonus = 500 + (level * 100);
-      const energyBonus = Math.floor(player.energy * 10);
-      score += levelBonus + energyBonus;
-      document.getElementById('level-score').innerText = `SCORE: ${score}`;
-
-      level++;
-      uiLevel.innerText = `LVL: ${level}`;
-      showOnly(screenLevelUp);
-    }else{
-      // Freeze and submit final score once
-      document.getElementById('final-score').innerText = `SCORE: ${score}`;
-      if(msg) document.getElementById('gameover-msg').innerText = msg;
-
-      if(score > highScore){
-        highScore = score;
-        localStorage.setItem('cakedUpHighScore', String(highScore));
-        uiHighScore.innerText = `HIGH SCORE: ${highScore}`;
-      }
-
-      submitScoreOnce(score);
-      showOnly(screenGameOver);
-    }
-  }
-
-  function startGame(){
-    gameState = 'PLAYING';
-    showOnly(null);
-    makeMaze();
-    requestAnimationFrame(loop);
-  }
-
-  // Inputs
-  window.addEventListener('keydown', (e) => {
-    if(e.key in keys) keys[e.key] = true;
-  });
-  window.addEventListener('keyup', (e) => {
-    if(e.key in keys) keys[e.key] = false;
-  });
-
-  btnStart.onclick = () => {
-    scoreSubmitted = false;
-    startGame();
-  };
-
-  btnRestart.onclick = () => {
-    resetRun();
-    showOnly(screenStart);
-  };
-
-  btnNextLevel.onclick = () => {
-    gameState = 'PLAYING';
-    showOnly(null);
-    makeMaze();
-    requestAnimationFrame(loop);
-  };
-
-  btnCharBack.onclick = () => {
-    showOnly(screenStart);
-  };
-
-  // Init
-  document.getElementById('playInitials').textContent = getInitialsFromStorage();
-  refreshLeaderboard();
-
-</script>
+    setInterval(refreshLeaderboard, 8000);
+  </script>
 </body>
 </html>

@@ -31,7 +31,7 @@
     "name": "CYBER PYTHON",
     "type": "iframe",
     "path": "games/cyber-python/index.html",
-    "thumb": "assets/cyber-python_thumb.jpg",
+    "thumb": "assets/cyber-python_thumb.png",
     "description": "Classic snake, cyber style."
   },
   {
@@ -46,6 +46,6 @@
     "type": "iframe",
     "path": "games/caked-up-cats/index.html",
     "thumb": "assets/caked-up-cats_thumb.png",
-    "description": "Garden maze mayhem. Sneak past dogs. Bank bonuses."
+    "description": "Garden maze arcade. Eat cake, catch mice, avoid hazards."
   }
 ]
