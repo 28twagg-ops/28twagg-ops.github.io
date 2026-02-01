@@ -27,11 +27,20 @@
       background: var(--pn-bg);
       color:#fff;
       font-family:'Orbitron', sans-serif;
-      overflow:hidden;            /* no page scroll on desktop */
-      touch-action:auto;          /* allow panel scrolling on touch */
+      /*
+        IMPORTANT:
+        - Do NOT lock scrolling for desktop users.
+        - On mobile, scrolling should work OUTSIDE the game.
+        - The game canvas will still prevent scroll via JS listeners.
+      */
+      overflow:auto;
+      touch-action: pan-y;
       -webkit-user-select:none;
       user-select:none;
     }
+
+    /* Prevent touch scrolling on the actual game surface only */
+    canvas{ touch-action:none; }
 
     .play-shell{
       height:100vh;
@@ -245,14 +254,7 @@
     @media (max-width: 600px) {
       .mobile-hint { display: block; }
     }
-  
-    @media (max-width: 900px){
-      body{overflow:auto;}
-      .play-grid{grid-template-columns: 1fr; padding:10px;}
-      .panel{max-height:none;}
-      .gamebox{display:flex;align-items:stretch;justify-content:stretch;height:min(62vh,520px);}
-    }
-    </style>
+  </style>
 </head>
 
 <body>
@@ -313,8 +315,16 @@ const GAME_SLUG = "neon-chase";
 let scoreSubmitted = false;
 
 function getInitialsFromStorage() {
-  return (localStorage.getItem("px_initials") || localStorage.getItem("pixelnet_initials") || "???")
-    .toUpperCase().slice(0, 3);
+  const raw = (
+    localStorage.getItem("px_player_initials") ||
+    localStorage.getItem("px_initials") ||
+    localStorage.getItem("pixelnet_initials") ||
+    localStorage.getItem("playerInitials") ||
+    sessionStorage.getItem("playerInitials") ||
+    localStorage.getItem("initials") ||
+    "???"
+  );
+  return String(raw).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3) || "???";
 }
 
 async function refreshLeaderboard() {
@@ -656,9 +666,6 @@ function init() {
     window.addEventListener('keydown', handleKey);
     window.addEventListener('touchstart', handleTouchStart, {passive: false});
     window.addEventListener('touchend', handleTouchEnd, {passive: false});
-
-    // Prevent page scroll ONLY while swiping on the canvas
-    canvas.addEventListener('touchmove', (e)=>{ if(e.cancelable) e.preventDefault(); }, {passive:false});
 
     showStartScreen();
     resetLevel();

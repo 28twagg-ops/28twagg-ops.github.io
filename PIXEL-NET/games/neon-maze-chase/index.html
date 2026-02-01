@@ -123,16 +123,8 @@
       border-radius: 14px;
       background: rgba(0,0,0,.55);
       overflow:hidden;
-      max-width:100%;
-      touch-action:none; /* block scroll only inside the game */
     }
-    canvas{
-      display:block;
-      background:#080808;
-      max-width:100%;
-      height:auto;
-      touch-action:none;
-    }
+    canvas{display:block; background:#080808}
 
     #ui-layer{
       position:absolute; inset:0;
@@ -287,7 +279,16 @@
   <script>
     // Sync homepage initials -> engine initials
     (function(){
-      const ls = localStorage.getItem("px_player_initials") || "";
+      const raw = (
+        localStorage.getItem("px_player_initials") ||
+        localStorage.getItem("px_initials") ||
+        localStorage.getItem("pixelnet_initials") ||
+        localStorage.getItem("playerInitials") ||
+        sessionStorage.getItem("playerInitials") ||
+        localStorage.getItem("initials") ||
+        ""
+      );
+      const ls = String(raw).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0,3);
       if(ls) sessionStorage.setItem("playerInitials", ls);
       if(window.PixelNet && PixelNet.init) PixelNet.init();
 
@@ -636,9 +637,8 @@ function init() {
   canvas.height = ROWS * TILE_SIZE;
 
   window.addEventListener('keydown', handleKey);
-  /* Mobile: capture gestures ONLY inside the canvas so the page can scroll elsewhere */
-  canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-  canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+  window.addEventListener('touchstart', handleTouchStart, { passive: false });
+  window.addEventListener('touchend', handleTouchEnd, { passive: false });
 
   showStartScreen();
   resetLevel();

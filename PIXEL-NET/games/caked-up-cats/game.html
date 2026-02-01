@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Caked Up Cats: Garden Maze</title>
+    <!-- PIXEL-NET Engine (leaderboard submit) -->
+    <script src="../../js/engine.js"></script>
     <style>
         :root {
             --bg-color: #6bc96b; 
@@ -26,6 +28,7 @@
             width: 100vw;
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            /* Game captures touch; wrapper handles page scroll. */
             touch-action: none;
         }
 
@@ -384,12 +387,7 @@
         </div>
     </div>
 
-    <script src="../../js/engine.js"></script>
-
     <script>
-        const GAME_SLUG = 'caked-up-cats';
-        let scoreSubmitted = false;
-
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const uiLevel = document.getElementById('level-display');
@@ -408,6 +406,9 @@
         let TILE = 40; 
         let COLS = 15;
         let ROWS = 15;
+
+        const GAME_SLUG = "caked-up-cats";
+        let scoreSubmitted = false;
 
         let gameState = 'MENU';
         let level = 1;
@@ -1511,6 +1512,13 @@
                 updateCharSelect();
                 screenLevelUp.style.display = 'flex';
             } else {
+                // Freeze + submit score once at GAME OVER (PIXEL-NET backend)
+                if (!scoreSubmitted && window.PixelNet && typeof PixelNet.submitScore === "function") {
+                    scoreSubmitted = true;
+                    const finalScore = Math.floor(Number(score) || 0);
+                    try { PixelNet.submitScore(GAME_SLUG, finalScore); } catch (e) {}
+                }
+
                 if (score > highScore) {
                     highScore = score;
                     localStorage.setItem('cakedUpHighScore', highScore);
@@ -1519,12 +1527,6 @@
                 if (msg) document.getElementById('gameover-msg').innerText = msg;
                 document.getElementById('final-score').innerText = `SCORE: ${score}`;
                 screenGameOver.style.display = 'flex';
-                // PIXEL-NET: submit score once at GAME OVER
-                if (!scoreSubmitted && window.PixelNet) {
-                    scoreSubmitted = true;
-                    const finalScore = Number(score) || 0;
-                    PixelNet.submitScore(GAME_SLUG, finalScore);
-                }
             }
         }
 
@@ -1594,17 +1596,17 @@
         });
 
         btnStart.addEventListener('click', () => {
-            scoreSubmitted = false;
             screenMenu.style.display = 'none';
+            scoreSubmitted = false;
             updateCharSelect();
             startLevel();
         });
 
         btnRetry.addEventListener('click', () => {
-            scoreSubmitted = false;
             screenGameOver.style.display = 'none';
             score = 0;
             level = 1;
+            scoreSubmitted = false;
             updateCharSelect();
             startLevel();
         });
