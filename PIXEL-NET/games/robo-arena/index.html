@@ -59,6 +59,23 @@
       color:var(--text);
     }
 
+    /* Mobile panel tabs (show game full-screen, toggle HOW/BOARD) */
+    .mobile-tabs{ display:none; width:min(1200px, 92vw); margin:0 auto 10px; gap:10px; }
+    .tabbtn{
+      flex:1;
+      font-family:"Orbitron", system-ui, sans-serif;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.28);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      opacity:.85;
+    }
+    .tabbtn.is-active{ opacity:1; border-color: rgba(0,255,247,.55); box-shadow:0 0 14px rgba(0,243,255,.18); }
+
     .layout{
       width:min(1200px, 92vw);
       margin:0 auto 16px;
@@ -249,9 +266,16 @@
     }
 
     @media (max-width: 1100px){
-      .layout{ grid-template-columns: 1fr; height:auto; min-height:0; }
-      body{ overflow:auto; }
-      .gamebox{ min-height: 62vh; }
+      .layout{ grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 900px){
+      body{ overflow:hidden; }
+      .mobile-tabs{ display:flex; }
+      .layout{ grid-template-columns: 1fr; height: calc(100vh - 132px); min-height:0; }
+      .panel{ display:none; overflow:auto; }
+      .panel.px-panel--active{ display:block; }
+      .gamebox{ min-height: calc(100vh - 240px); }
     }
     @media (max-width: 768px){
       h1{ font-size:2rem; }
@@ -267,8 +291,14 @@
     <div class="badge" id="px-badge" title="Click to change initials on home page">???</div>
   </div>
 
+  <div class="mobile-tabs" id="px-tabs">
+    <button class="tabbtn is-active" data-view="game">GAME</button>
+    <button class="tabbtn" data-view="how">HOW</button>
+    <button class="tabbtn" data-view="board">BOARD</button>
+  </div>
+
   <div class="layout">
-    <aside class="panel">
+    <aside class="panel px-panel" id="px-how">
       <h3 class="title">HOW TO PLAY</h3>
       <div class="muted">
         <p><b>Move:</b> WASD (or left stick)</p>
@@ -278,7 +308,7 @@
       <div class="lb-meta">Initials are set on the homepage. Click the badge (top-right) to change.</div>
     </aside>
 
-    <main class="panel gamewrap">
+    <main class="panel gamewrap px-panel px-panel--active" id="px-gamepanel">
       <h3 class="title">ROBO-ARENA</h3>
       <div class="gamebox" id="px-gamebox">
         <div id="game-container">
@@ -336,7 +366,7 @@
       <div class="muted">Backend leaderboard + auto-save on game over.</div>
     </main>
 
-    <aside class="panel">
+    <aside class="panel px-panel" id="px-board">
       <h3 class="title">LEADERBOARD</h3>
       <div id="px-lb" class="muted">Loading…</div>
     </aside>
@@ -389,6 +419,29 @@
       const gb = document.getElementById("px-gamebox");
       if(gb){
         gb.addEventListener("touchmove", (e)=>{ e.preventDefault(); }, {passive:false});
+      }
+
+      // Mobile tabs: GAME / HOW / BOARD
+      const tabs = document.getElementById("px-tabs");
+      const panels = {
+        game: document.getElementById("px-gamepanel"),
+        how: document.getElementById("px-how"),
+        board: document.getElementById("px-board")
+      };
+      function setView(v){
+        Object.values(panels).forEach(p => p && p.classList.remove("px-panel--active"));
+        if(panels[v]) panels[v].classList.add("px-panel--active");
+        if(tabs){
+          tabs.querySelectorAll(".tabbtn").forEach(b => b.classList.toggle("is-active", b.dataset.view===v));
+        }
+      }
+      if(tabs){
+        tabs.addEventListener("click", (e)=>{
+          const b = e.target.closest(".tabbtn");
+          if(!b) return;
+          setView(b.dataset.view);
+        });
+        setView("game");
       }
 
       // Expose slug for game script

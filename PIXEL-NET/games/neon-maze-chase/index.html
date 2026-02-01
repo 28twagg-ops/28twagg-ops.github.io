@@ -219,6 +219,31 @@
       .layout{grid-template-columns: 1fr;}
       .topbar{width:94vw}
     }
+  
+    /* Mobile tabs (GAME / HOW / BOARD) */
+    .mobile-tabs{ display:none; width:min(1200px, 92vw); margin:0 auto 10px; gap:10px; }
+    .tabbtn{
+      flex:1;
+      font-family:"Orbitron", system-ui, sans-serif;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      border:1px solid rgba(0,255,247,.35);
+      background: rgba(0,255,247,.10);
+      color:#00f3ff;
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+    }
+    .tabbtn.is-active{ background: rgba(0,255,247,.18); box-shadow:0 0 14px rgba(0,243,255,.20); }
+
+    @media (max-width: 900px){
+      body{ overflow:hidden !important; }
+      .mobile-tabs{ display:flex; }
+      .layout, .play-grid{ grid-template-columns: 1fr !important; height: calc(100vh - 132px) !important; min-height:0 !important; }
+      .panel{ display:none !important; overflow:auto !important; max-height:none !important; }
+      .panel.px-panel--active{ display:block !important; }
+    }
+
   </style>
 </head>
 <body>
@@ -228,7 +253,13 @@
       <div class="btn" style="cursor:default; opacity:.9;">NEON MAZE CHASE</div>
       <div class="badge" id="px-badge" title="Change initials on the homepage">???</div>
     </div>
+  
+  <div class="mobile-tabs" id="px-tabs">
+    <button class="tabbtn is-active" data-view="game">GAME</button>
+    <button class="tabbtn" data-view="how">HOW</button>
+    <button class="tabbtn" data-view="board">BOARD</button>
   </div>
+</div>
 
   <div class="layout">
     <aside class="panel howto">
@@ -266,7 +297,7 @@
       </div>
     </main>
 
-    <aside class="panel">
+    <aside class="panel px-panel" id="px-how">
       <div class="lb-title">
         <h2 style="margin:0;">LEADERBOARD</h2>
         <div class="lb-status" id="lb-status">Loading…</div>
@@ -289,6 +320,30 @@
 
       document.getElementById("px-player").textContent = ls || "???";
       document.getElementById("px-exit").onclick = () => location.href = "../../index.html";
+
+      // Mobile tabs: GAME / HOW / BOARD
+      const tabs = document.getElementById("px-tabs");
+      const panels = {
+        game: document.getElementById("px-gamepanel") || document.querySelector("main.panel"),
+        how: document.getElementById("px-how"),
+        board: document.getElementById("px-board")
+      };
+      function setView(v){
+        Object.values(panels).forEach(p => p && p.classList.remove("px-panel--active"));
+        if(panels[v]) panels[v].classList.add("px-panel--active");
+        if(tabs){
+          tabs.querySelectorAll(".tabbtn").forEach(b => b.classList.toggle("is-active", b.dataset.view===v));
+        }
+      }
+      if(tabs){
+        tabs.addEventListener("click", (e)=>{
+          const b = e.target.closest(".tabbtn");
+          if(!b) return;
+          setView(b.dataset.view);
+        });
+        setView("game");
+      }
+
 
       async function renderLeaderboard(){
         const status = document.getElementById("lb-status");
