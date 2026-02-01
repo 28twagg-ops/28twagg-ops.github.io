@@ -114,6 +114,35 @@
     }
   });
 
+  // Mobile controls: swipe on the canvas to change direction.
+  // We only capture touch events on the canvas so the page can still
+  // scroll when swiping outside the game.
+  let t0 = null;
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+      t0 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    if (gameOver) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+  canvas.addEventListener('touchend', (e) => {
+    if (gameOver) {
+      reset();
+      return;
+    }
+    if (!t0) return;
+    const t1 = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+    if (!t1) return;
+    const dx = t1.clientX - t0.x;
+    const dy = t1.clientY - t0.y;
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    if (ax < 18 && ay < 18) return; // ignore tiny swipes
+    if (ax > ay) nextDir = dx > 0 ? 'right' : 'left';
+    else nextDir = dy > 0 ? 'down' : 'up';
+  }, { passive: true });
+
   // Advance the game state on a fixed time step. Each step moves the
   // player one cell in the current direction, checks for collisions,
   // processes orb collection and trail clearing, and gradually

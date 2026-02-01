@@ -84,6 +84,29 @@
   let submitted = false;
 
   const keys = {};
+
+  // Mobile: optional on-screen controls (added in the wrapper HTML).
+  // Buttons map directly to the same key codes used by the keyboard logic.
+  function bindMobileButton(btn){
+    const code = btn.getAttribute('data-code');
+    if (!code) return;
+    const down = (e) => {
+      e.preventDefault();
+      keys[code] = true;
+      if (code === 'Space') {
+        player.fire(bullets);
+      }
+    };
+    const up = (e) => { e.preventDefault(); keys[code] = false; };
+    btn.addEventListener('pointerdown', down);
+    btn.addEventListener('pointerup', up);
+    btn.addEventListener('pointercancel', up);
+    btn.addEventListener('pointerleave', up);
+  }
+  try {
+    const wrap = document.getElementById('mobile-controls');
+    if (wrap) wrap.querySelectorAll('button[data-code]').forEach(bindMobileButton);
+  } catch(e) {}
   window.addEventListener('keydown', e => {
     keys[e.code] = true;
     if (e.code === 'Space') {

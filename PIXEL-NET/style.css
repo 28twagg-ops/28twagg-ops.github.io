@@ -73,18 +73,14 @@ body{
 
 .nav{
   display:flex;
+  align-items:center;
   gap:14px;
   flex-wrap:wrap;
-  align-items:center;
 }
 .nav-link{
   color:var(--muted);
   text-decoration:none;
   font-size:13px;
-  display:inline-flex;
-  align-items:center;
-  height:32px;
-  line-height:32px;
 }
 .nav-link:hover{
   color:var(--text);
@@ -198,6 +194,7 @@ body{
   height:170px; /* restored height */
   object-fit:contain; /* prevent cropping */
   display:block;
+  background:#000; /* makes transparent thumbs look clean */
 }
 .game-card h4{
   margin:0;
@@ -371,10 +368,6 @@ body{
   color:#00f3ff;
   font-family:"Orbitron", system-ui, sans-serif;
   letter-spacing:.10em;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  height:32px;
   line-height:1;
 }
 .px-badge--nav:hover{

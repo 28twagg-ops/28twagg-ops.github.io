@@ -27,8 +27,10 @@
       background: var(--pn-bg);
       color:#fff;
       font-family:'Orbitron', sans-serif;
-      overflow:hidden;            /* important for mobile */
-      touch-action:none;          /* stop browser gestures interfering with swipes */
+      /* Allow normal page scrolling outside the game area (mobile) */
+      overflow:auto;
+      /* Let the page pan normally; we'll lock gestures only on the canvas */
+      touch-action:pan-y;
       -webkit-user-select:none;
       user-select:none;
     }
@@ -69,22 +71,6 @@
     }
     .play-title .muted{ color: var(--pn-muted); }
     .play-title strong{ color: var(--pn-cyan); letter-spacing:1px; }
-
-    /* Mobile tabs (GAME / HOW / BOARD) */
-    .mobile-tabs{ display:none; width:100%; gap:10px; padding:0 12px 12px; box-sizing:border-box; }
-    .tabbtn{
-      flex:1;
-      font-family:"Orbitron", system-ui, sans-serif;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      border:1px solid rgba(0,255,204,.35);
-      background: rgba(0,255,204,.10);
-      color: var(--pn-cyan);
-      border-radius:12px;
-      padding:10px 12px;
-      cursor:pointer;
-    }
-    .tabbtn.is-active{ background: rgba(0,255,204,.18); box-shadow:0 0 16px rgba(0,255,204,.18); }
 
     .play-grid{
       flex:1 1 auto;
@@ -148,14 +134,11 @@
       min-height:0;
     }
 
-    /* Mobile: show game full-screen, toggle HOW/BOARD via tabs */
-    @media (max-width: 900px){
-      body{ overflow:hidden; }
-      .mobile-tabs{ display:flex; }
-      .play-grid{ grid-template-columns: 1fr; height: calc(100vh - 120px); }
-      .panel{ display:none; max-height:none; }
-      .panel.px-panel--active{ display:block; }
-      .center-wrap{ min-height: 0; }
+    /* Mobile: stack panels, keep game big */
+    @media (max-width: 980px){
+      .play-grid{ grid-template-columns: 1fr; }
+      .panel{ max-height: 28vh; }
+      .center-wrap{ min-height: 44vh; }
     }
 
     /* ========= GAME CSS (your original, preserved) ========= */
@@ -170,6 +153,7 @@
     canvas {
       display: block;
       background-color: #080808;
+      touch-action:none; /* swipes on the canvas should not scroll the page */
     }
 
     #ui-layer {
@@ -276,14 +260,8 @@
       </div>
     </header>
 
-    <div class="mobile-tabs" id="px-tabs">
-      <button class="tabbtn is-active" data-view="game">GAME</button>
-      <button class="tabbtn" data-view="how">HOW</button>
-      <button class="tabbtn" data-view="board">BOARD</button>
-    </div>
-
     <div class="play-grid">
-      <aside class="panel px-panel" id="px-how">
+      <aside class="panel">
         <h3>How to Play</h3>
         <ul>
           <li>Move: Arrow Keys / Swipe</li>
@@ -293,7 +271,7 @@
         </ul>
       </aside>
 
-      <main class="panel center-wrap px-panel px-panel--active" id="px-gamepanel">
+      <main class="center-wrap">
         <div id="game-container">
           <canvas id="gameCanvas"></canvas>
 
@@ -312,7 +290,7 @@
         </div>
       </main>
 
-      <aside class="panel px-panel" id="px-board">
+      <aside class="panel">
         <h3>Leaderboard</h3>
         <div id="lbStatus" class="lb-status">Loading…</div>
         <ol id="lbList" class="lb-list"></ol>
@@ -668,35 +646,20 @@ function init() {
     canvas.width = COLS * TILE_SIZE;
     canvas.height = ROWS * TILE_SIZE;
 
+    // Mobile: prevent the browser from scrolling when the user swipes
+    // on the canvas, but allow scrolling elsewhere on the page.
+    ["touchstart","touchmove","touchend"].forEach(evt => {
+      canvas.addEventListener(evt, (e) => e.preventDefault(), { passive: false });
+    });
+
     document.getElementById("playInitials").textContent = getInitialsFromStorage();
     refreshLeaderboard();
 
-    // Mobile tabs
-    (function(){
-      const tabs = document.getElementById("px-tabs");
-      const panels = {
-        game: document.getElementById("px-gamepanel"),
-        how: document.getElementById("px-how"),
-        board: document.getElementById("px-board")
-      };
-      function setView(v){
-        Object.values(panels).forEach(p => p && p.classList.remove("px-panel--active"));
-        if(panels[v]) panels[v].classList.add("px-panel--active");
-        if(tabs) tabs.querySelectorAll(".tabbtn").forEach(b => b.classList.toggle("is-active", b.dataset.view===v));
-      }
-      if(tabs){
-        tabs.addEventListener("click", (e)=>{
-          const b = e.target.closest(".tabbtn");
-          if(!b) return;
-          setView(b.dataset.view);
-        });
-        setView("game");
-      }
-    })();
-
     window.addEventListener('keydown', handleKey);
-    window.addEventListener('touchstart', handleTouchStart, {passive: false});
-    window.addEventListener('touchend', handleTouchEnd, {passive: false});
+    // Attach touch controls to the canvas only (so the page can still scroll
+    // when the user swipes outside the game area).
+    canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
+    canvas.addEventListener('touchend', handleTouchEnd, {passive: false});
 
     showStartScreen();
     resetLevel();

@@ -14,19 +14,22 @@
     .topbar{width:min(1300px,94vw);margin:14px auto 10px;display:flex;align-items:center;justify-content:space-between;gap:12px}
     .btn{height:38px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(10,12,26,.72);color:var(--text);font:700 13px/1 "Orbitron",system-ui,sans-serif;letter-spacing:.10em;cursor:pointer}
     .badge{min-width:54px;display:inline-grid;place-items:center;height:38px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(10,12,26,.72);color:var(--text);font:700 13px/1 "Orbitron",system-ui,sans-serif;letter-spacing:.10em;cursor:pointer}
-    .mobile-tabs{display:none;width:min(1300px,94vw);margin:0 auto 10px;gap:10px}
-    .tabbtn{flex:1;height:38px;padding:0 12px;border-radius:12px;border:1px solid rgba(0,255,247,.40);background:rgba(0,255,247,.10);color:#00f3ff;font:700 12px/1 "Orbitron",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
-    .tabbtn.is-active{background:rgba(0,255,247,.18);box-shadow:0 0 16px rgba(0,243,255,.18)}
     .layout{width:min(1300px,94vw);margin:0 auto 18px;display:grid;grid-template-columns:280px 1fr 320px;gap:14px;align-items:stretch}
     @media (max-width:1100px){.layout{grid-template-columns:1fr}}
-    @media (max-width:900px){body{overflow:hidden}.mobile-tabs{display:flex}.layout{grid-template-columns:1fr;height:calc(100vh - 132px);margin-bottom:10px}.panel{display:none;overflow:auto}.panel.px-panel--active{display:block}.gamebox{min-height:calc(100vh - 240px)}}
-    @media (max-width:900px){body{overflow:hidden}.mobile-tabs{display:flex}.layout{grid-template-columns:1fr;height:calc(100vh - 132px);margin-bottom:12px}.panel{display:none;overflow:auto}.panel.px-panel--active{display:block}.gamebox{min-height:calc(100vh - 240px)}}
     .panel{background:linear-gradient(180deg,var(--card1),var(--card2));border:1px solid var(--stroke);border-radius:18px;box-shadow:var(--shadow);padding:14px}
     .title{font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.10em;margin:0 0 10px;font-size:14px}
     .muted{color:var(--muted)}
     .gamewrap{display:flex;flex-direction:column;gap:10px}
-    .gamebox{border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.28);display:grid;place-items:center;min-height:520px}
-    canvas#gameCanvas{width:100%;height:100%;display:block}
+    .gamebox{border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.28);display:grid;place-items:center;min-height:360px;height:min(72vh,560px)}
+    @media (max-width:700px){.gamebox{height:70vh}}
+    canvas#gameCanvas{width:100%;height:100%;display:block;touch-action:none}
+
+    /* Mobile on-screen controls */
+    .mobile-controls{display:none;gap:10px;justify-content:space-between;margin-top:10px}
+    .mcol{display:flex;gap:10px}
+    .mbtn{height:48px;min-width:54px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(10,12,26,.82);color:var(--text);font:800 13px/1 "Orbitron",system-ui,sans-serif;letter-spacing:.10em;}
+    .mbtn:active{filter:brightness(1.18)}
+    @media (max-width:768px){.mobile-controls{display:flex}}
     .lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
     .lb-col{list-style:none;padding:0;margin:0}
     .lb-item{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18);margin-bottom:8px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.06em;font-size:12px}
@@ -40,20 +43,8 @@
     <div class="badge" id="px-badge" title="Click to change initials on home page">???</div>
   </div>
 
-  <div class="mobile-tabs" id="px-tabs">
-    <button class="tabbtn is-active" data-view="game">GAME</button>
-    <button class="tabbtn" data-view="how">HOW</button>
-    <button class="tabbtn" data-view="board">BOARD</button>
-  </div>
-
-  <div class="mobile-tabs" id="px-tabs">
-    <button class="tabbtn is-active" data-view="game">GAME</button>
-    <button class="tabbtn" data-view="how">HOW</button>
-    <button class="tabbtn" data-view="board">BOARD</button>
-  </div>
-
   <div class="layout">
-    <aside class="panel" id="px-how">
+    <aside class="panel">
       <h3 class="title">HOW TO PLAY</h3>
       <div class="muted">
         <p><b>Move:</b> Arrow Keys / WASD</p>
@@ -63,15 +54,21 @@
       <div class="lb-meta">Initials are set on the homepage. Click the badge (top-right) to change.</div>
     </aside>
 
-    <main class="panel gamewrap px-panel--active" id="px-gamepanel">
+    <main class="panel gamewrap">
       <h3 class="title">VECTOR DUEL</h3>
       <div class="gamebox">
         <canvas id="gameCanvas"></canvas>
       </div>
+      <div class="mobile-controls" id="mobile-controls" aria-label="Mobile controls">
+        <button class="mbtn" data-code="ArrowLeft">◀</button>
+        <button class="mbtn" data-code="ArrowUp">▲</button>
+        <button class="mbtn" data-code="ArrowRight">▶</button>
+        <button class="mbtn" data-code="Space">FIRE</button>
+      </div>
       <div class="muted">Leaderboard refreshes automatically.</div>
     </main>
 
-    <aside class="panel" id="px-board">
+    <aside class="panel">
       <h3 class="title">LEADERBOARD</h3>
       <div class="muted">Top 10</div>
       <div class="lb-grid">
@@ -94,12 +91,6 @@
       badge.onclick = () => location.href = "../../index.html";
 
       document.getElementById("px-exit").onclick = () => location.href = "../../index.html";
-
-      // Mobile tabs
-      const tabs = document.getElementById("px-tabs");
-      const panels = { game: document.getElementById("px-gamepanel"), how: document.getElementById("px-how"), board: document.getElementById("px-board") };
-      function setView(v){ Object.values(panels).forEach(p=>p&&p.classList.remove("px-panel--active")); if(panels[v]) panels[v].classList.add("px-panel--active"); if(tabs) tabs.querySelectorAll(".tabbtn").forEach(b=>b.classList.toggle("is-active", b.dataset.view===v)); }
-      if(tabs){ tabs.addEventListener("click", (e)=>{ const b=e.target.closest(".tabbtn"); if(!b) return; setView(b.dataset.view); }); setView("game"); }
 
       async function renderLeaderboard(){
         const status = document.getElementById("lb-status");

@@ -75,6 +75,36 @@
     }
   });
 
+  // Mobile: swipe on the canvas to change direction.
+  // Touch events are bound to the canvas only so the page can still scroll
+  // when the user swipes outside the game.
+  let t0 = null;
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+      t0 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  }, { passive: true });
+  canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+  canvas.addEventListener('touchend', (e) => {
+    if (!t0) return;
+    const t1 = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+    if (!t1) return;
+    const dx = t1.clientX - t0.x;
+    const dy = t1.clientY - t0.y;
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    if (ax < 18 && ay < 18) {
+      if (gameOver) init();
+      return;
+    }
+    if (ax > ay) {
+      if (dx < 0 && dir.x === 0) dir = { x: -1, y: 0 };
+      else if (dx > 0 && dir.x === 0) dir = { x: 1, y: 0 };
+    } else {
+      if (dy < 0 && dir.y === 0) dir = { x: 0, y: -1 };
+      else if (dy > 0 && dir.y === 0) dir = { x: 0, y: 1 };
+    }
+  }, { passive: true });
+
   function maybeSubmitScore() {
     if (submitted) return;
     if (!window.PixelNet || !PixelNet.submitScore) return;
