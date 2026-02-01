@@ -143,7 +143,18 @@
     .lb-name{ opacity:.95; }
     .lb-score{ font-weight:800; }
     .lb-meta{ color:var(--muted); font-size:11px; margin-top:10px; }
-  </style>
+  
+/* PX-MOBILE-OVERRIDE */
+@media (max-width:980px){
+  .play-grid,.layout{grid-template-columns:1fr; gap:10px; padding:10px}
+  .panel{padding:10px}
+  .title{margin:0 0 6px; font-size:13px}
+  .muted{display:none}
+  .game-title{display:none}
+  .gamebox{height:calc(100dvh - 56px - 24px); min-height:0}
+}
+/* PX-MOBILE-OVERRIDE-END */
+</style>
 </head>
 <body>
 
@@ -192,12 +203,11 @@
   <script>
     // Sync homepage initials -> engine initials
     (function(){
-      const ls = localStorage.getItem("px_player_initials") || "";
-      if(ls) sessionStorage.setItem("playerInitials", ls);
+      const initials = (window.PixelNet && PixelNet._getInitialsNow) ? PixelNet._getInitialsNow() : (sessionStorage.getItem("playerInitials") || localStorage.getItem("px_player_initials") || "???");
+      sessionStorage.setItem("playerInitials", initials);
       if(window.PixelNet && PixelNet.init) PixelNet.init();
-
       const badge = document.getElementById("px-badge");
-      badge.textContent = ls || "???";
+      if(badge) badge.textContent = initials;
       badge.onclick = () => location.href = "../../index.html";
 
       document.getElementById("px-exit").onclick = () => location.href = "../../index.html";

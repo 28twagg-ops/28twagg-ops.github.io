@@ -24,7 +24,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            height: 100%;
             width: 100vw;
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -38,10 +38,10 @@
             border: 8px solid #2d5a2d;
             border-radius: 20px;
             background: var(--bg-color);
-            width: 90vmin;
-            height: 90vmin;
-            max-width: 600px;
-            max-height: 600px;
+            width:100%;
+            height:100%;
+            max-width:none;
+            max-height:none;
             overflow: hidden;
         }
 
@@ -264,42 +264,6 @@
             box-shadow: 0 0 0 #15803d, inset 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Controls */
-        #controls {
-            display: none; 
-            width: 100%;
-            max-width: 400px;
-            height: 120px;
-            margin-top: 15px;
-        }
-
-        .d-pad {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 8px;
-            width: 160px;
-            height: 110px;
-            margin: 0 auto;
-        }
-
-        .btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-            user-select: none;
-        }
-        .btn:active { background: rgba(255, 255, 255, 0.4); }
-        .up { grid-column: 2; grid-row: 1; }
-        .left { grid-column: 1; grid-row: 2; }
-        .down { grid-column: 2; grid-row: 2; }
-        .right { grid-column: 3; grid-row: 2; }
-
     </style>
 </head>
 <body>
@@ -377,17 +341,7 @@
         </div>
 
     </div>
-
-    <div id="controls">
-        <div class="d-pad">
-            <div class="btn up">▲</div>
-            <div class="btn left">◀</div>
-            <div class="btn down">▼</div>
-            <div class="btn right">▶</div>
-        </div>
-    </div>
-
-    <script>
+<script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const uiLevel = document.getElementById('level-display');
