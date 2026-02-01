@@ -1,167 +1,266 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Neon Chase</title>
-
-  <!-- PIXEL-NET Engine -->
-  <script src="../../js/engine.js"></script>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Neon Chase | PIXEL-NET</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
-    /* ========= PIXEL-NET WRAPPER (local, so it won't depend on global CSS) ========= */
     :root{
-      --pn-bg:#050010;
-      --pn-panel: rgba(5, 0, 16, 0.75);
-      --pn-border: rgba(255,255,255,0.10);
-      --pn-cyan:#00F0FF;
-      --pn-green:#00FF41;
-      --pn-pink:#FF0055;
-      --pn-muted:#9aa0b3;
+      --text:#e9ecff;
+      --muted:#a7b0d6;
+      --stroke: rgba(255,255,255,.10);
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --panel: rgba(15,19,36,.72);
     }
-
+    *{box-sizing:border-box}
+    html,body{height:100%}
     body{
       margin:0;
-      background: var(--pn-bg);
-      color:#fff;
-      font-family:'Orbitron', sans-serif;
-      /*
-        IMPORTANT:
-        - Do NOT lock scrolling for desktop users.
-        - On mobile, scrolling should work OUTSIDE the game.
-        - The game canvas will still prevent scroll via JS listeners.
-      */
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(255,0,122,.14), transparent 60%),
+        radial-gradient(900px 500px at 85% 20%, rgba(0,255,247,.12), transparent 55%),
+        linear-gradient(180deg, #050611 0%, #060716 100%);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      /* Allow scrolling outside the game area on mobile */
       overflow:auto;
-      touch-action: pan-y;
-      -webkit-user-select:none;
-      user-select:none;
+      touch-action:pan-y;
     }
-
-    /* Prevent touch scrolling on the actual game surface only */
-    canvas{ touch-action:none; }
-
-    .play-shell{
-      height:100vh;
-      display:flex;
-      flex-direction:column;
-    }
-
-    .play-topbar{
+    .topbar{
+      width:min(1200px, 92vw);
+      margin:14px auto 12px;
       display:flex;
       align-items:center;
-      gap:12px;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .btn{
+      font-family:"Orbitron", system-ui, sans-serif;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      border:1px solid rgba(0,255,247,.40);
+      background: rgba(0,255,247,.10);
+      color:#00f3ff;
       padding:10px 12px;
-      background: rgba(5, 0, 16, 0.85);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      z-index:10;
-      flex:0 0 auto;
-    }
-
-    .exit-btn{
-      text-decoration:none;
-      color: var(--pn-cyan);
-      border: 1px solid rgba(0,240,255,0.35);
-      padding:6px 10px;
-      border-radius:10px;
-      box-shadow: 0 0 12px rgba(0,240,255,0.18);
-      font-size:12px;
-      letter-spacing:1px;
-    }
-
-    .player-badge{
-      margin-left:auto;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.25);
-      color: var(--pn-cyan);
-      padding:6px 10px;
-      border-radius:999px;
-      font-weight:800;
-      letter-spacing:1px;
+      border-radius:14px;
       cursor:pointer;
     }
+    .btn:hover{ background: rgba(0,255,247,.16); box-shadow:0 0 14px rgba(0,243,255,.20); }
 
-    .play-title{
-      display:flex;
-      align-items:baseline;
-      gap:8px;
-      font-size:12px;
+    .badge{
+      font-family:"Orbitron", system-ui, sans-serif;
+      letter-spacing:.12em;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.28);
+      padding:10px 12px;
+      border-radius:18px;
+      cursor:pointer;
+      color:var(--text);
     }
-    .play-title .muted{ color: var(--pn-muted); }
-    .play-title strong{ color: var(--pn-cyan); letter-spacing:1px; }
 
-    .play-grid{
-      flex:1 1 auto;
+    .layout{
+      width:min(1200px, 92vw);
+      margin:0 auto 16px;
       display:grid;
-      grid-template-columns: 300px 1fr 300px;
-      gap:12px;
-      padding:12px;
-      box-sizing:border-box;
-      align-items:stretch;
-      min-height:0;
+      grid-template-columns: 320px 1fr 320px;
+      gap:14px;
+      height: calc(100vh - 86px);
+      min-height: 520px;
     }
-
     .panel{
-      background: var(--pn-panel);
-      border: 1px solid var(--pn-border);
-      border-radius:12px;
-      padding:12px;
-      box-sizing:border-box;
-      min-height:0;
-      overflow:auto;
+      border:1px solid var(--stroke);
+      background: var(--panel);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      padding:14px;
+      overflow:hidden;
     }
-
-    .panel h3{
+    .title{
       margin:0 0 10px 0;
-      font-size:14px;
-      letter-spacing:1px;
-      color: var(--pn-pink);
-      text-shadow: 0 0 6px rgba(255,0,85,0.30);
+      font-family:"Orbitron", system-ui, sans-serif;
+      letter-spacing:.10em;
+      font-size:13px;
+      color: rgba(233,236,255,.92);
+    }
+    .muted{ color:var(--muted); font-size:13px; line-height:1.35; }
+    .lb-meta{ margin-top:10px; font-size:12px; color:var(--muted); opacity:.9; }
+
+    .gamewrap{ display:flex; flex-direction:column; gap:10px; }
+    .gamebox{
+      position:relative;
+      flex:1;
+      min-height: 420px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.35);
+      overflow:hidden;
+      touch-action:none; /* capture touch for joysticks */
     }
 
-    .panel ul{
-      margin:0;
-      padding-left:18px;
-      font-size:12px;
-      line-height:1.6;
-      color:#d6d6d6;
-    }
-
-    .lb-status{
-      font-size:11px;
-      color: var(--pn-muted);
-      margin-bottom:8px;
-    }
-
-    .lb-list{
-      margin:0;
-      padding-left:18px;
-      font-size:12px;
-      line-height:1.55;
-      color:#e8e8e8;
-    }
-
-    .lb-list li{
-      margin:4px 0;
-    }
-
-    .center-wrap{
+    /* Robo Arena internal styles (scoped) */
+    #game-container{
+      position:absolute;
+      inset:0;
       display:flex;
-      align-items:center;
       justify-content:center;
-      min-height:0;
+      align-items:center;
+      background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+    }
+    canvas{
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.15);
+      border: 4px solid #222;
+      background-color: #000;
+      max-width:100%;
+      max-height:100%;
+    }
+    #ui-layer{
+      position:absolute;
+      top:0; left:0;
+      width:100%; height:100%;
+      pointer-events:none;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .hud-top{
+      display:flex;
+      justify-content:space-between;
+      padding:10px 20px;
+      font-size:20px;
+      text-shadow:0 0 5px currentColor;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .hud-score{ color:#0ff; }
+    .hud-lives{ color:#f0f; }
+    .hud-level{ color:#ff0; }
+
+    #start-screen, #game-over-screen{
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,0.9);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      pointer-events:auto;
+      z-index:10;
+      padding: 18px;
+    }
+    #game-over-screen.hidden{ display:none !important; }
+    h1{
+      font-size: 3rem;
+      margin: 0 0 6px 0;
+      color:#f00;
+      text-transform:uppercase;
+      text-shadow:4px 4px 0px #fff;
+      letter-spacing:5px;
+      text-align:center;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    p{
+      font-size:1rem;
+      margin: 0 0 16px 0;
+      color:#ddd;
+      text-align:center;
+      line-height:1.4;
+      max-width:600px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .btn2{
+      background: transparent;
+      color:#0f0;
+      border:2px solid #0f0;
+      padding:10px 30px;
+      font-size:1.2rem;
+      font-family: 'Courier New', Courier, monospace;
+      cursor:pointer;
+      text-transform:uppercase;
+      transition: all 0.2s;
+      box-shadow: 0 0 10px #0f0;
+      margin-top: 12px;
+    }
+    .btn2:hover{ background:#0f0; color:#000; box-shadow:0 0 20px #0f0; }
+
+    .controls-info{
+      display:flex;
+      gap:40px;
+      margin-bottom:18px;
+      font-size:0.8rem;
+      color:#aaa;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .key-group{text-align:center}
+    .key{display:inline-block;border:1px solid #666;padding:2px 6px;border-radius:4px;color:#fff;background:#222}
+
+    .leaderboard{
+      margin-top: 8px;
+      border:2px solid #444;
+      padding: 15px;
+      background: rgba(20,20,20,0.8);
+      width: 300px;
+      box-shadow: 0 0 15px rgba(0,255,255,0.1);
+    }
+    .leaderboard h3{
+      color:#ff0;
+      margin:0 0 10px 0;
+      text-align:center;
+      text-transform:uppercase;
+      letter-spacing:2px;
+      border-bottom:1px solid #444;
+      padding-bottom:5px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .score-row{ display:flex; justify-content:space-between; margin:5px 0; font-family: monospace; font-size:1.1rem; }
+    .score-rank{ color:#888; margin-right:10px; }
+    .score-name{ color:#0ff; }
+    .score-val{ color:#fff; }
+
+    #mobile-controls{
+      display:none;
+      position:absolute;
+      bottom: 14px;
+      left:0;
+      width:100%;
+      height:150px;
+      pointer-events:none;
+      justify-content:space-between;
+      padding:0 26px;
+      box-sizing:border-box;
+      z-index: 20;
+    }
+    .joystick-zone{
+      width:120px; height:120px;
+      background: rgba(255,255,255,0.10);
+      border-radius:50%;
+      border:2px solid rgba(255,255,255,0.30);
+      position:relative;
+      pointer-events:auto;
+    }
+    .joystick-knob{
+      width:50px;height:50px;
+      background: rgba(255,255,255,0.50);
+      border-radius:50%;
+      position:absolute;
+      top:50%; left:50%;
+      transform: translate(-50%, -50%);
+      pointer-events:none;
     }
 
-    /* Mobile: stack panels, keep game big */
-    @media (max-width: 980px){
-      .play-grid{ grid-template-columns: 1fr; }
-      .panel{ max-height: 28vh; }
-      .center-wrap{ min-height: 44vh; }
+    @media (max-width: 1100px){
+      .layout{ grid-template-columns: 1fr; height:auto; min-height:0; }
+      body{ overflow:auto; }
+      .gamebox{ min-height: 62vh; }
     }
-
-    /* ========= GAME CSS (your original, preserved) ========= */
-    #game-container {
+    @media (max-width: 768px){
+      h1{ font-size:2rem; }
+      .controls-info{ display:none; }
+      #mobile-controls{ display:flex; }
+      .leaderboard{ width: 90%; font-size:0.9rem; }
+    }
+  
+#game-container {
       position: relative;
       box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
       border: 4px solid #333;
@@ -169,7 +268,7 @@
       background-color: #000;
     }
 
-    canvas {
+    #game-container canvas {
       display: block;
       background-color: #080808;
     }
@@ -266,32 +365,37 @@
     @media (max-width: 600px) {
       .mobile-hint { display: block; }
     }
+  
   </style>
 </head>
-
 <body>
-  <div class="play-shell">
-    <header class="play-topbar">
-      <a class="exit-btn" href="../../index.html">✕ EXIT</a>
-      <div style="flex:1"></div>
-      <button class="player-badge" id="playerBadge" title="Player initials">
-        <span id="playInitials">---</span>
-      </button>
-    </header>
 
-    <div class="play-grid">
-      <aside class="panel">
-        <h3>How to Play</h3>
-        <ul>
-          <li>Move: Arrow Keys / Swipe</li>
-          <li>Collect Bits (+10)</li>
-          <li>Power Bit (+50) → Hack drones</li>
-          <li>Clear all bits to advance Zones</li>
-        </ul>
-      </aside>
+  <header class="topbar">
+    <button class="btn" id="px-exit">✕ EXIT</button>
+    <div class="title">
+      <span class="muted">PIXEL-NET</span>
+      <strong>NEON CHASE</strong>
+    </div>
+    <button class="badge" id="px-badge" title="Click to change initials">
+      <span class="dot"></span>
+      <span id="px-initials">???</span>
+    </button>
+  </header>
 
-      <main class="center-wrap">
-        <div id="game-container">
+  <div class="layout">
+    <aside class="panel howto">
+      <h2>HOW TO PLAY</h2>
+      <ul class="howto-list"><li><strong>Move</strong><br><span class="muted">Arrow Keys / Swipe</span></li><li><strong>Collect Bits</strong><br><span class="muted">+10 each</span></li><li><strong>Power Bit</strong><br><span class="muted">+50 → Hack drones</span></li><li><strong>Advance</strong><br><span class="muted">Clear all bits to advance zones</span></li></ul>
+      <div class="hint muted">Initials are set on the homepage. Click the badge (top-right) to change.</div>
+    </aside>
+
+    <main class="panel center">
+      <div class="center-head">
+        <h1>NEON CHASE</h1>
+      </div>
+      <div class="gamewrap">
+        <div class="gamebox" id="px-gamebox">
+          <div id="game-container">
           <canvas id="gameCanvas"></canvas>
 
           <div id="ui-layer">
@@ -307,17 +411,85 @@
 
           <div id="overlay"><!-- injected by JS --></div>
         </div>
-      </main>
+      
+        </div>
+      </div>
+      <div class="foot muted">Leaderboard refreshes automatically.</div>
+    </main>
 
-      <aside class="panel">
-        <h3>Leaderboard</h3>
-        <div id="lbStatus" class="lb-status">Loading…</div>
-        <ol id="lbList" class="lb-list"></ol>
-      </aside>
-    </div>
+    <aside class="panel lb">
+      <h2>LEADERBOARD</h2>
+      <div class="lb-sub muted">Top 10</div>
+      <div id="px-lb" class="lb-list">
+        <div class="muted">Loading…</div>
+      </div>
+    </aside>
   </div>
 
+  <script src="../../js/engine.js"></script>
+  <script>
+    (function() {
+      const SLUG = "neon-chase";
+      const lbEl = document.getElementById('px-lb');
+      const initialsEl = document.getElementById('px-initials');
+      const badge = document.getElementById('px-badge');
+      const exitBtn = document.getElementById('px-exit');
+
+      function getInitials() {
+        const v = localStorage.getItem('px_player_initials') || localStorage.getItem('pixelnet_initials') || '';
+        return (v || '???').toString().trim().toUpperCase().slice(0, 3);
+      }
+
+      function setInitialsUI() {
+        initialsEl.textContent = getInitials();
+      }
+
+      badge.addEventListener('click', () => {
+        const cur = getInitials();
+        const v = prompt('Enter your initials (3 letters):', cur);
+        if (!v) return;
+        const clean = v.toString().replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,3);
+        if (!clean) return;
+        localStorage.setItem('px_player_initials', clean);
+        localStorage.setItem('pixelnet_initials', clean);
+        setInitialsUI();
+      });
+
+      exitBtn.addEventListener('click', () => {
+        window.location.href = '../../index.html';
+      });
+
+      async function renderLeaderboard() {
+        try {
+          const data = await PixelNet.getLeaderboard(SLUG);
+          const rows = (data && (data.scores || data.leaderboard || data)) || [];
+          if (!rows.length) {
+            lbEl.innerHTML = '<div class="muted">No scores yet.</div>';
+            return;
+          }
+          const top = rows.slice(0, 10);
+          lbEl.innerHTML = top.map((r, i) => {
+            const name = (r.initials || r.player || r.name || '???').toString().toUpperCase().slice(0,3);
+            const score = (r.score ?? r.points ?? 0);
+            return `<div class="lb-row"><span class="rk">#${i+1}</span><span class="nm">${name}</span><span class="sc">${score}</span></div>`;
+          }).join('');
+        } catch (e) {
+          lbEl.innerHTML = '<div class="muted">Leaderboard failed to load.</div>';
+        }
+      }
+
+      setInitialsUI();
+      renderLeaderboard();
+      setInterval(renderLeaderboard, 5000);
+
+      // Mobile: allow scrolling outside gamebox, but prevent scroll gestures inside game area.
+      const gamebox = document.getElementById('px-gamebox');
+      gamebox.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive:false });
+    })();
+  </script>
+
 <script>
+
 /**
  * NEON CHASE (PIXEL-NET INTEGRATION)
  * Your gameplay is preserved; only leaderboard/initials are moved to PIXEL-NET backend.
@@ -673,25 +845,7 @@ function init() {
     canvas.width = COLS * TILE_SIZE;
     canvas.height = ROWS * TILE_SIZE;
 
-    const setInitialsUI = () => {
-      const v = getInitialsFromStorage();
-      const el = document.getElementById("playInitials");
-      if (el) el.textContent = v;
-    };
-    setInitialsUI();
-
-    const badge = document.getElementById("playerBadge");
-    if (badge) {
-      badge.addEventListener("click", () => {
-        const current = getInitialsFromStorage();
-        const next = prompt("Enter your initials (2-3 letters):", current === "---" ? "" : current);
-        if (!next) return;
-        const cleaned = next.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3);
-        if (cleaned.length < 2) return;
-        localStorage.setItem("px_player_initials", cleaned);
-        setInitialsUI();
-      });
-    }
+    document.getElementById("playInitials").textContent = getInitialsFromStorage();
     refreshLeaderboard();
 
     window.addEventListener('keydown', handleKey);
@@ -937,6 +1091,7 @@ function handleTouchEnd(e) {
 }
 
 init();
+
 </script>
 </body>
 </html>
