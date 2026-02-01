@@ -12,6 +12,14 @@
 
 Further updates will continue to expand the PIXEL‑NET arcade with more original titles.
 
+## [2026‑02‑01] – QA & Bug Fixes
+
+After a comprehensive QA pass across the entire PIXEL‑NET arcade, only one minor issue was discovered:
+
+- **Player initials badge alignment:** The text inside the navigation badge on the home page was not vertically centered.  A CSS update to `.px-badge--nav` adds `display: inline-flex` with `align-items: center` and `justify-content: center` to fix the alignment.  No other functional bugs were found.
+
+The QA process and results are documented in detail in `QA_REPORT.md`.
+
 ### Neon Arena Assault
 
 * Added **Neon Arena Assault**, a twin‑stick style arena shooter.
