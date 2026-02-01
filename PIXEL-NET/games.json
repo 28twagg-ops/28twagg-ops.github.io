@@ -42,17 +42,14 @@
     "description": "Neon maze survival. Collect bits. Hack drones."
   },
   {
-    "name": "NEON TRAIL RIDERS",
-    "type": "iframe",
-    "path": "games/neon-trail-riders/index.html",
-    "thumb": "assets/neon-trail-riders_thumb.png",
-    "description": "Ride a glowing cycle and outmaneuver your own trail."
-  },
-  {
-    "name": "NEON ARENA ASSAULT",
-    "type": "iframe",
-    "path": "games/neon-arena-assault/index.html",
-    "thumb": "assets/neon-arena-assault_thumb.png",
-    "description": "Twin‑stick arena shooter. Survive waves, chain combos, climb the leaderboard."
+    "id": "caked-up-cats",
+    "title": "CAKED UP CATS",
+    "subtitle": "Maze Mayhem",
+    "thumb": "assets/caked-up-cats_thumb.png",
+    "href": "games/caked-up-cats/index.html",
+    "genre": "maze",
+    "players": "1P",
+    "controls": "Arrow Keys / WASD",
+    "status": "new"
   }
 ]
