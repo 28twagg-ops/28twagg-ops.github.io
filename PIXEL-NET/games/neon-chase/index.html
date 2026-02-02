@@ -844,8 +844,8 @@ function init() {
     ctx = canvas.getContext('2d');
     canvas.width = COLS * TILE_SIZE;
     canvas.height = ROWS * TILE_SIZE;
-
-    document.getElementById("playInitials").textContent = getInitialsFromStorage();
+    const _pi = document.getElementById("playInitials");
+    if (_pi) _pi.textContent = getInitialsFromStorage();
     refreshLeaderboard();
 
     window.addEventListener('keydown', handleKey);
