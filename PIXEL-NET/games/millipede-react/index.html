@@ -10,99 +10,51 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
-:root{--text:#e9ecff;--muted:#a7b0d6;--card1:rgba(15,19,36,.72);--card2:rgba(10,12,26,.55);--stroke:rgba(255,255,255,.10);--shadow:0 14px 40px rgba(0,0,0,.35)}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  height:100vh;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-  padding:10px 0 10px;
-  color:var(--text);
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  background:
-    radial-gradient(1200px 700px at 20% 10%, rgba(255,0,122,.14), transparent 60%),
-    radial-gradient(900px 500px at 85% 20%, rgba(0,255,247,.12), transparent 55%),
-    linear-gradient(180deg,#050611 0%,#060716 100%);
-  color-scheme:dark;
-  touch-action:none;
-  overscroll-behavior:none;
-}
-.topbar{
-  width:min(1300px,94vw);
-  margin:0 auto 8px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  flex:0 0 auto;
-}
-.btn,.badge{
-  height:38px;
-  padding:0 12px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(10,12,26,.72);
-  color:var(--text);
-  font:700 13px/1 "Orbitron",system-ui,sans-serif;
-  letter-spacing:.10em;
-  cursor:pointer;
-}
-.badge{min-width:54px;display:inline-grid;place-items:center}
-.layout{
-  width:min(1300px,94vw);
-  margin:0 auto;
-  display:grid;
-  grid-template-columns:280px 1fr 320px;
-  gap:14px;
-  align-items:stretch;
-  flex:1 1 auto;
-  min-height:0;
-}
-@media (max-width:1100px){.layout{grid-template-columns:1fr;gap:10px}}
-.panel{
-  background:linear-gradient(180deg,var(--card1),var(--card2));
-  border:1px solid var(--stroke);
-  border-radius:18px;
-  box-shadow:var(--shadow);
-  padding:14px;
-  min-height:0;
-  overflow:auto;
-}
-.title{font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.10em;margin:0 0 10px;font-size:14px}
-.muted{color:var(--muted)}
-.hint{color:var(--muted);font-size:12px;margin-top:10px}
+    :root{--text:#e9ecff;--muted:#a7b0d6;--card1:rgba(15,19,36,.72);--card2:rgba(10,12,26,.55);--stroke:rgba(255,255,255,.10);--shadow:0 14px 40px rgba(0,0,0,.35);--topbar-h:58px}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
 
-main.panel{display:flex;flex-direction:column;min-height:0}
-.gamebox{
-  position:relative;
-  border-radius:16px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(0,0,0,.28);
-  min-height:0;
-  touch-action:none;
-  flex:1 1 auto;
-}
-#root{width:100%;height:100%;min-height:0}
-#root > div{height:100%}
-#root canvas{width:100% !important;height:100% !important;display:block}
+    /*
+      HARD REQUIREMENTS FOR THIS WRAPPER:
+      - The PAGE must never scroll (desktop or mobile).
+      - The GAME must always be fully visible (no top/bottom cutoff).
+      - Side panels may scroll internally if their content overflows.
+    */
+    body{overflow:hidden;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(1200px 700px at 20% 10%, rgba(255,0,122,.14), transparent 60%),radial-gradient(900px 500px at 85% 20%, rgba(0,255,247,.12), transparent 55%),linear-gradient(180deg,#050611 0%,#060716 100%);color-scheme:dark;display:flex;flex-direction:column}
+    .topbar{width:min(1300px,94vw);height:var(--topbar-h);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex:0 0 auto}
+    .btn{height:38px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(10,12,26,.72);color:var(--text);font:700 13px/1 "Orbitron",system-ui,sans-serif;letter-spacing:.10em;cursor:pointer}
+    .badge{min-width:54px;display:inline-grid;place-items:center;height:38px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(10,12,26,.72);color:var(--text);font:700 13px/1 "Orbitron",system-ui,sans-serif;letter-spacing:.10em;cursor:pointer}
+    .layout{width:min(1300px,94vw);margin:0 auto 12px;display:grid;grid-template-columns:280px 1fr 320px;gap:14px;align-items:stretch;height:calc(100dvh - var(--topbar-h));min-height:0}
+    .panel{background:linear-gradient(180deg,var(--card1),var(--card2));border:1px solid var(--stroke);border-radius:18px;box-shadow:var(--shadow);padding:14px;min-height:0;overflow:auto;overscroll-behavior:contain}
+    .title{font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.10em;margin:0 0 10px;font-size:14px}
+    .muted{color:var(--muted)}
+    main.panel{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+    .gamebox{position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.28);min-height:0;flex:1 1 auto;display:flex}
+    #root{width:100%;height:100%;min-height:0;flex:1 1 auto}
+    .lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .lb-col{list-style:none;padding:0;margin:0}
+    .lb-item{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18);margin-bottom:8px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.06em;font-size:12px}
+    .lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
+    .lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
+    .hint{color:var(--muted);font-size:12px;margin-top:10px}
+    @media (max-width:1100px){
+      /* Single column, but still NO PAGE SCROLL: allocate fixed viewport slices */
+      .layout{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;height:calc(100dvh - var(--topbar-h))}
+      aside.panel{max-height:22vh}
+      main.panel{overflow:hidden}
+      .panel{padding:12px}
+    }
+    .lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .lb-col{list-style:none;padding:0;margin:0}
+    .lb-item{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18);margin-bottom:8px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.06em;font-size:12px}
+    .lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
+    .lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
+    .hint{color:var(--muted);font-size:12px;margin-top:10px}
+  
+    /* Make sure touch on the game never scrolls the page */
+    .gamebox, .gamebox *{touch-action:none}
 
-.lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.lb-col{list-style:none;padding:0;margin:0}
-.lb-item{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18);margin-bottom:8px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.06em;font-size:12px}
-.lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
-.lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
-
-@media (max-width:1100px){
-  /* Keep everything on-screen: panels become compact; game stays fully visible */
-  .panel{max-height:18vh}
-  main.panel{max-height:none;flex:1 1 auto}
-  main.panel .gamebox{flex:1 1 auto}
-}
-  </style>
+</style>
 
   <!-- React build -->
   <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
@@ -123,19 +75,13 @@ main.panel{display:flex;flex-direction:column;min-height:0}
         <p><b>Goal:</b> Clear the swarm, survive, score high.</p>
       </div>
       <div class="hint">Initials are set on the homepage. Click the badge (top-right) to change.</div>
-      <div class="hint"><b>Game Over:</b> score auto-saves. Press <b>Enter</b> to restart.</div>
+      <div class="hint"><b>Game Over:</b> enter initials in-game to save your score.</div>
     </aside>
 
     <main class="panel">
       <h3 class="title">MILLIPEDE CHAOS</h3>
       <div class="gamebox">
         <div id="root"></div>
-        <div id="px-play-again">
-          <div class="inner">
-            <h3>GAME OVER</h3>
-            <button id="px-play-again-btn">PLAY AGAIN</button>
-          </div>
-        </div>
       </div>
       <div class="muted">Leaderboard refreshes automatically.</div>
     </main>
@@ -157,220 +103,71 @@ main.panel{display:flex;flex-direction:column;min-height:0}
       const SLUG = "millipede-react";
 
       function norm(v){ return String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3) || "???"; }
-      const initials = norm(localStorage.getItem("px_player_initials") || sessionStorage.getItem("playerInitials") || "???");
 
-      // Keep storages in sync for PixelNet + the React build (various keys observed)
-      sessionStorage.setItem("playerInitials", initials);
-      try{
-        localStorage.setItem("p", initials);
-        localStorage.setItem("u", initials);
-        localStorage.setItem("n", initials);
-        localStorage.setItem("nm", initials);
-      }catch(_){}
-
-      if(window.PixelNet && PixelNet.init) PixelNet.init();
+      // Sync initials (PixelNet engine reads session/local keys)
+      const initials = norm(
+        (sessionStorage.getItem("playerInitials") || localStorage.getItem("px_player_initials") || "???")
+      );
+      try{ sessionStorage.setItem("playerInitials", initials); }catch(_){}
+      try{ localStorage.setItem("px_player_initials", initials); }catch(_){}
 
       const badge = document.getElementById("px-badge");
-      badge.textContent = initials || "???";
-      badge.onclick = () => location.href = "../../index.html";
-      document.getElementById("px-exit").onclick = () => location.href = "../../index.html";
-
-      // ---- Block duplicate /api/score submissions (even if React game tries) ----
-      // We allow ONE real POST per page-load for this slug.
-      let sentOnce = false;
-
-      function shouldBlockScorePost(url, bodyText){
-        if(!url || typeof url !== "string") return false;
-        if(url.indexOf("/api/score") === -1) return false;
-        try{
-          const obj = bodyText ? JSON.parse(bodyText) : null;
-          const slug = obj && (obj.game_slug || obj.gameSlug);
-          if(slug && String(slug) !== SLUG) return false;
-        }catch(_){
-          // If we can't parse, still treat as score post and gate it.
-        }
-        if(sentOnce) return true;
-        sentOnce = true;
-        return false;
+      if(badge){
+        badge.textContent = initials;
+        badge.onclick = () => { location.href = "../../index.html"; };
+      }
+      const exitBtn = document.getElementById("px-exit");
+      if(exitBtn){
+        exitBtn.onclick = () => { location.href = "../../index.html"; };
       }
 
-      const _fetch = window.fetch ? window.fetch.bind(window) : null;
-      if(_fetch){
-        window.fetch = async function(input, init){
-          const url = (typeof input === "string") ? input : (input && input.url) || "";
-          const bodyText = init && init.body ? String(init.body) : "";
-          if(shouldBlockScorePost(url, bodyText)){
-            console.warn("[Millipede wrapper] blocked duplicate /api/score");
-            return new Response("", {status: 204});
-          }
-          return _fetch(input, init);
-        };
+      // Render Top-10 leaderboard in two columns (1–5, 6–10).
+      const left = document.getElementById("lb-left");
+      const right = document.getElementById("lb-right");
+      const status = document.getElementById("lb-status");
+
+      function renderRow(rank, ini, score){
+        const li = document.createElement("li");
+        li.className = "lb-item";
+        li.innerHTML = `<span class="lb-rank">${rank}.</span><span style="font-weight:900;color:#fff">${ini}</span><span class="lb-score">${score}</span>`;
+        return li;
       }
 
-      // XHR guard (some bundles still use it)
-      const _open = XMLHttpRequest.prototype.open;
-      const _send = XMLHttpRequest.prototype.send;
-      XMLHttpRequest.prototype.open = function(method, url){
-        this.__px_url = url;
-        this.__px_method = method;
-        return _open.apply(this, arguments);
-      };
-      XMLHttpRequest.prototype.send = function(body){
-        const url = this.__px_url || "";
-        const bodyText = body ? String(body) : "";
-        if(shouldBlockScorePost(url, bodyText)){
-          console.warn("[Millipede wrapper] blocked duplicate XHR /api/score");
-          try{ this.abort(); }catch(_){}
+      async function renderLeaderboard(){
+        if(!window.PixelNet || !PixelNet.getLeaderboard){
+          if(status) status.textContent = "Leaderboard unavailable";
           return;
         }
-        return _send.apply(this, arguments);
-      };
-
-      // ---- LEADERBOARD RENDER ----
-      async function renderLeaderboard(){
-        const status = document.getElementById("lb-status");
-        const L = document.getElementById("lb-left");
-        const R = document.getElementById("lb-right");
-        L.innerHTML=""; R.innerHTML="";
         try{
+          if(status) status.textContent = "Loading…";
           const rows = await PixelNet.getLeaderboard(SLUG);
-          const top = (rows || []).slice(0,10);
-          if(!top.length){ status.textContent="No scores yet."; return; }
-          top.forEach((row,i)=>{
-            const ini = norm(row.initials || row.name || "???");
-            const sc = Number(row.score ?? row.points ?? row.value ?? 0) || 0;
-            const li=document.createElement("li");
-            li.className="lb-item";
-            li.innerHTML=`<span class="lb-rank">${i+1}.</span><span>${ini}</span><span class="lb-score">${sc}</span>`;
-            (i<5?L:R).appendChild(li);
+          const top = (Array.isArray(rows) ? rows : []).slice(0,10);
+
+          if(left) left.innerHTML = "";
+          if(right) right.innerHTML = "";
+
+          top.forEach((r, idx)=>{
+            const ini = norm(r.initials || r.player || r.name || "???");
+            const sc = Number(r.score ?? r.points ?? r.value ?? 0) || 0;
+            const li = renderRow(idx+1, ini, sc);
+            if(idx < 5) left && left.appendChild(li);
+            else right && right.appendChild(li);
           });
-          status.textContent="Auto-refreshing…";
-        }catch(e){
-          console.error("[Millipede wrapper] leaderboard fetch failed:", e);
-          status.textContent="Failed to load leaderboard (backend sleeping?).";
-        }
-      }
-      renderLeaderboard();
-      setInterval(renderLeaderboard, 6000);
 
-      // ---- Auto-save on GAME OVER, remove SAVE UI, Enter to restart ----
-      let gameOverSeen = false;
-      let savedThisDeath = false;
-      let lastScoreSaved = -1;
-
-      function readScoreNow(){
-        // Overlay shows "SCORE: 1,344"
-        const txt = document.body.innerText || "";
-        const m = txt.match(/SCORE:\s*([0-9][0-9,]*)/i);
-        if(m && m[1]) return parseInt(m[1].replace(/,/g,""),10) || 0;
-
-        const overIdx = txt.toUpperCase().indexOf("GAME OVER");
-        const slice = overIdx>=0 ? txt.slice(overIdx, overIdx+220) : txt;
-        const m2 = slice.match(/([0-9][0-9,]{2,})/);
-        return m2 ? (parseInt(m2[1].replace(/,/g,""),10) || 0) : 0;
-      }
-
-      function hideSaveUI(){
-        // Hide any "SAVE" / initials UI that a React build might still render.
-        const root = document.getElementById("root");
-        const killRe = /(ENTER\s+YOUR?\s*INITIALS|TYPE\s+YOUR?\s*INITIALS|ENTER\s+INITIALS|YOUR\s+INITIALS)/i;
-
-        for (const b of Array.from(document.querySelectorAll("button"))){
-          const t = ((b.textContent||"").trim()).toUpperCase();
-          if(t==="SAVE" || t==="ENTER INITIALS" || t==="SUBMIT" || t==="OK"){
-            b.style.display="none";
-            b.disabled=true;
-          }
-          if(killRe.test(t)){
-            b.style.display="none";
-            b.disabled=true;
-          }
-        }
-
-        // Hide likely initials inputs (maxlength=3 or placeholder underscores)
-        for (const inp of Array.from(document.querySelectorAll("input"))){
-          const ml = inp.getAttribute("maxlength");
-          const ph = (inp.getAttribute("placeholder")||"").trim();
-          if(ml==="3" || ph.includes("_")){
-            inp.style.display="none";
-            inp.disabled=true;
-          }
-        }
-
-        // Hide leaf text nodes that mention initials
-        if(root){
-          for (const el of Array.from(root.querySelectorAll("*"))){
-            if(el.childElementCount>0) continue;
-            const txt = (el.textContent||"").trim();
-            if(!txt || txt.length>80) continue;
-            if(killRe.test(txt)){
-              el.textContent = "";
-              el.style.display="none";
-              el.setAttribute("aria-hidden","true");
-            }
-          }
-        }
-      }
-
-      async function autoSaveIfGameOver(){
-        // Game-over signal should come from the game overlay itself (NOT our side panels).
-        // We treat "SAVE"/"ENTER INITIALS" UI as the reliable marker.
-        const buttons = Array.from(document.querySelectorAll("#root button, button"));
-        const hasSaveBtn = buttons.some(b => (b.textContent||"").trim().toUpperCase()==="SAVE");
-        const hasEnterInitials = Array.from(document.querySelectorAll("#root *")).some(el => (el.textContent||"").trim().toUpperCase()==="ENTER INITIALS");
-
-        // Extra fallback: a "GAME OVER" element inside the game container (#root / gamebox)
-        const hasGameOverInRoot = Array.from(document.querySelectorAll("#root *")).some(el => (el.textContent||"").trim().toUpperCase()==="GAME OVER");
-
-        const isOver = hasSaveBtn || hasEnterInitials || hasGameOverInRoot;
-        if(!isOver) return;
-
-        gameOverSeen = true;
-        hideSaveUI();
-
-        const score = readScoreNow();
-        if(savedThisDeath) return;
-
-        // Prevent saving same score repeatedly
-        if(score === lastScoreSaved) return;
-
-        savedThisDeath = true;
-        lastScoreSaved = score;
-
-        try{
-          console.log("[Millipede wrapper] auto-saving on death", {slug: SLUG, initials, score});
-          if(window.PixelNet && PixelNet.submitScore){
-            await PixelNet.submitScore(SLUG, score);
-          }
-          // Refresh leaderboard after save
-          setTimeout(renderLeaderboard, 600);
-
-          // Show PLAY AGAIN overlay after we have attempted save
-          const pa = document.getElementById("px-play-again");
-          if(pa) pa.style.display = "flex";
+          if(status) status.textContent = top.length ? "Updated" : "No scores yet";
         }catch(err){
-          console.error("[Millipede wrapper] auto-save failed:", err);
-          const pa = document.getElementById("px-play-again");
-          if(pa) pa.style.display = "flex";
+          console.error("[Millipede wrapper] leaderboard error:", err);
+          if(status) status.textContent = "Failed to load leaderboard";
         }
       }
 
-      // Observe DOM changes so we catch the moment GAME OVER appears.
-      const obs = new MutationObserver(()=>autoSaveIfGameOver());
-      obs.observe(document.body, {subtree:true, childList:true, characterData:true});
-      autoSaveIfGameOver();
+      renderLeaderboard();
+      setInterval(renderLeaderboard, 8000);
 
-      // Enter to restart once game over seen
-      const paBtn = document.querySelector('#px-play-again button');
-      if(paBtn){ paBtn.onclick = ()=>location.reload(); }
-
-      window.addEventListener("keydown", (e)=>{
-        if((e.code==="Enter" || e.key==="Enter") && gameOverSeen){
-          e.preventDefault();
-          // Hard reset for a clean new run (prevents stuck overlay)
-          location.reload();
-        }
-      }, {capture:true});
+      // IMPORTANT:
+      // - No auto-saving
+      // - No hiding the game's initials UI
+      // - No post-game overlays
     })();
   </script>
 </body>
