@@ -49,10 +49,10 @@
     "description": "Garden maze arcade. Eat cake, catch mice, avoid hazards."
   },
   {
-    "name": "LOGIC BOMB",
+    "name": "ASTROTYPE",
     "type": "iframe",
-    "path": "games/logic-bomb/index.html",
-    "thumb": "assets/logic-bomb_thumb.png",
-    "description": "Plant the payload. Crash the system."
+    "path": "games/astrotype/index.html",
+    "thumb": "assets/astrotype_thumb.png",
+    "description": "Type alien codes to defend the lunar base."
   }
 ]
