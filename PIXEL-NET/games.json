@@ -47,5 +47,12 @@
     "path": "games/caked-up-cats/index.html",
     "thumb": "assets/caked-up-cats_thumb.png",
     "description": "Garden maze arcade. Eat cake, catch mice, avoid hazards."
+  },
+  {
+    "name": "LOGIC BOMB",
+    "type": "iframe",
+    "path": "games/logic-bomb/index.html",
+    "thumb": "assets/logic-bomb_thumb.png",
+    "description": "Plant the payload. Crash the system."
   }
 ]
