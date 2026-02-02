@@ -1,5 +1,4 @@
 <!-- FORCE_PAGES_REDEPLOY -->
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -15,10 +14,12 @@
 :root{--text:#e9ecff;--muted:#a7b0d6;--card1:rgba(15,19,36,.72);--card2:rgba(10,12,26,.55);--stroke:rgba(255,255,255,.10);--shadow:0 14px 40px rgba(0,0,0,.35)}
 *{box-sizing:border-box}
 html,body{height:100%}
+
+/* ✅ allow scrolling + normal touch on the page */
 body{
   margin:0;
-  height:100vh;
-  overflow:hidden;
+  min-height:100dvh;
+  overflow:auto;
   display:flex;
   flex-direction:column;
   padding:10px 0 10px;
@@ -29,9 +30,10 @@ body{
     radial-gradient(900px 500px at 85% 20%, rgba(0,255,247,.12), transparent 55%),
     linear-gradient(180deg,#050611 0%,#060716 100%);
   color-scheme:dark;
-  touch-action:none;
-  overscroll-behavior:none;
+  touch-action:auto;
+  overscroll-behavior:auto;
 }
+
 .topbar{
   width:min(1300px,94vw);
   margin:0 auto 8px;
@@ -78,6 +80,8 @@ body{
 .hint{color:var(--muted);font-size:12px;margin-top:10px}
 
 main.panel{display:flex;flex-direction:column;min-height:0}
+
+/* ✅ lock touch + overscroll ONLY inside the game box */
 .gamebox{
   position:relative;
   border-radius:16px;
@@ -86,8 +90,10 @@ main.panel{display:flex;flex-direction:column;min-height:0}
   background:rgba(0,0,0,.28);
   min-height:0;
   touch-action:none;
+  overscroll-behavior:contain;
   flex:1 1 auto;
 }
+
 #root{width:100%;height:100%;min-height:0}
 #root > div{height:100%}
 #root canvas{width:100% !important;height:100% !important;display:block}
@@ -99,12 +105,11 @@ main.panel{display:flex;flex-direction:column;min-height:0}
 .lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
 
 @media (max-width:1100px){
-  /* Keep everything on-screen: panels become compact; game stays fully visible */
   .panel{max-height:18vh}
   main.panel{max-height:none;flex:1 1 auto}
   main.panel .gamebox{flex:1 1 auto}
 }
-  
+
 /* VERSION BANNER */
 #pn-version-banner{
   position:fixed;
@@ -124,9 +129,8 @@ body{ padding-top:28px; }
   <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
 </head>
 <body>
-<!-- PATCH_VERSION:MILLIPede_WRAPPER_v2026-02-02_1420cst -->
-<div id="pn-version-banner">PIXEL-NET · Millipede wrapper · <strong>MILLIPede_WRAPPER_v2026-02-02_1420cst</strong></div>
-
+<!-- PATCH_VERSION:MILLIPede_WRAPPER_scrollfix_v2026-02-02_1625cst -->
+<div id="pn-version-banner">PIXEL-NET · Millipede wrapper · <strong>MILLIPede_WRAPPER_scrollfix_v2026-02-02_1625cst</strong></div>
 
   <div class="topbar">
     <button class="btn" id="px-exit">EXIT</button>
@@ -290,7 +294,6 @@ body{ padding-top:28px; }
       }
 
       function hideSaveUI(){
-        // Hide any "SAVE" / initials UI that a React build might still render.
         const root = document.getElementById("root");
         const killRe = /(ENTER\s+YOUR?\s*INITIALS|TYPE\s+YOUR?\s*INITIALS|ENTER\s+INITIALS|YOUR\s+INITIALS)/i;
 
@@ -306,7 +309,6 @@ body{ padding-top:28px; }
           }
         }
 
-        // Hide likely initials inputs (maxlength=3 or placeholder underscores)
         for (const inp of Array.from(document.querySelectorAll("input"))){
           const ml = inp.getAttribute("maxlength");
           const ph = (inp.getAttribute("placeholder")||"").trim();
@@ -316,7 +318,6 @@ body{ padding-top:28px; }
           }
         }
 
-        // Hide leaf text nodes that mention initials
         if(root){
           for (const el of Array.from(root.querySelectorAll("*"))){
             if(el.childElementCount>0) continue;
@@ -332,13 +333,9 @@ body{ padding-top:28px; }
       }
 
       async function autoSaveIfGameOver(){
-        // Game-over signal should come from the game overlay itself (NOT our side panels).
-        // We treat "SAVE"/"ENTER INITIALS" UI as the reliable marker.
         const buttons = Array.from(document.querySelectorAll("#root button, button"));
         const hasSaveBtn = buttons.some(b => (b.textContent||"").trim().toUpperCase()==="SAVE");
         const hasEnterInitials = Array.from(document.querySelectorAll("#root *")).some(el => (el.textContent||"").trim().toUpperCase()==="ENTER INITIALS");
-
-        // Extra fallback: a "GAME OVER" element inside the game container (#root / gamebox)
         const hasGameOverInRoot = Array.from(document.querySelectorAll("#root *")).some(el => (el.textContent||"").trim().toUpperCase()==="GAME OVER");
 
         const isOver = hasSaveBtn || hasEnterInitials || hasGameOverInRoot;
@@ -349,8 +346,6 @@ body{ padding-top:28px; }
 
         const score = readScoreNow();
         if(savedThisDeath) return;
-
-        // Prevent saving same score repeatedly
         if(score === lastScoreSaved) return;
 
         savedThisDeath = true;
@@ -361,10 +356,8 @@ body{ padding-top:28px; }
           if(window.PixelNet && PixelNet.submitScore){
             await PixelNet.submitScore(SLUG, score);
           }
-          // Refresh leaderboard after save
           setTimeout(renderLeaderboard, 600);
 
-          // Show PLAY AGAIN overlay after we have attempted save
           const pa = document.getElementById("px-play-again");
           if(pa) pa.style.display = "flex";
         }catch(err){
@@ -374,19 +367,16 @@ body{ padding-top:28px; }
         }
       }
 
-      // Observe DOM changes so we catch the moment GAME OVER appears.
       const obs = new MutationObserver(()=>autoSaveIfGameOver());
       obs.observe(document.body, {subtree:true, childList:true, characterData:true});
       autoSaveIfGameOver();
 
-      // Enter to restart once game over seen
       const paBtn = document.querySelector('#px-play-again button');
       if(paBtn){ paBtn.onclick = ()=>location.reload(); }
 
       window.addEventListener("keydown", (e)=>{
         if((e.code==="Enter" || e.key==="Enter") && gameOverSeen){
           e.preventDefault();
-          // Hard reset for a clean new run (prevents stuck overlay)
           location.reload();
         }
       }, {capture:true});
