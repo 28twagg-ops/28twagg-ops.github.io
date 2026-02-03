@@ -18,8 +18,8 @@ html,body{height:100%}
 /* ✅ allow scrolling + normal touch on the page */
 body{
   margin:0;
-  min-height:100dvh;
-  overflow:auto;
+  height:100dvh;
+  overflow:hidden;
   display:flex;
   flex-direction:column;
   padding:10px 0 10px;
@@ -64,8 +64,11 @@ body{
   align-items:stretch;
   flex:1 1 auto;
   min-height:0;
+  height:100%;
 }
 @media (max-width:1100px){.layout{grid-template-columns:1fr;gap:10px}}
+main.panel{display:flex;flex-direction:column;gap:10px;}
+
 .panel{
   background:linear-gradient(180deg,var(--card1),var(--card2));
   border:1px solid var(--stroke);
@@ -86,20 +89,25 @@ main.panel{display:flex;flex-direction:column;min-height:0}
   position:relative;
   border-radius:16px;
   overflow:hidden;
+  flex:1 1 auto;
+  min-height:420px;
+  height:min(72dvh, 860px);
   border:1px solid rgba(255,255,255,.10);
   background:rgba(0,0,0,.28);
   min-height:0;
-  touch-action:none;
+  touch-action:auto;
   overscroll-behavior:contain;
-  flex:1 1 auto;
 }
 
 #root{width:100%;height:100%;min-height:0}
+#root>*{height:100%;min-height:0}
 #root > div{height:100%}
 #root canvas{width:100% !important;height:100% !important;display:block}
 
-.lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.lb-col{list-style:none;padding:0;margin:0}
+.lb-grid{overflow-anchor:none;
+display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.lb-col{overflow-anchor:none;
+list-style:none;padding:0;margin:0}
 .lb-item{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18);margin-bottom:8px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.06em;font-size:12px}
 .lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
 .lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
@@ -123,17 +131,36 @@ main.panel{display:flex;flex-direction:column;min-height:0}
   pointer-events:none;
 }
 body{ padding-top:28px; }
+
+/* Fullscreen (mobile game-only) */
+body.is-fs #pn-version-banner{display:none}
+body.is-fs .layout{grid-template-columns:1fr;width:min(900px,96vw);height:100%}
+body.is-fs .layout>aside{display:none}
+body.is-fs main.panel{padding:0;border:none;background:transparent;box-shadow:none}
+body.is-fs main.panel .title, body.is-fs main.panel .muted{display:none}
+body.is-fs .gamebox{border:none;border-radius:0;height:100dvh;min-height:0}
+body.is-fs .topbar{position:fixed;top:10px;left:10px;right:10px;z-index:9999;justify-content:space-between;background:rgba(10,12,20,.55);backdrop-filter:blur(10px);padding:8px 10px;border-radius:14px;border:1px solid rgba(255,255,255,.10)}
+body.is-fs .btn{padding:10px 14px}
+
+@media (max-width:1100px){
+  body{height:auto;min-height:100dvh;overflow:auto}
+  .layout{height:auto}
+  main.panel{display:block}
+  .gamebox{height:min(78dvh, 920px)}
+}
+
 </style>
 
   <!-- React build -->
-  <script type="module" crossorigin src="./assets/index-Bec7F-Vf.js"></script>
+  <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
 </head>
 <body>
-<!-- PATCH_VERSION:MILLIPede_WRAPPER_scrollfix_v2026-02-02_1625cst -->
-<div id="pn-version-banner">PIXEL-NET · Millipede wrapper · <strong>MILLIPede_WRAPPER_scrollfix_v2026-02-02_1625cst</strong></div>
+<!-- PATCH_VERSION:MILLIPede_WRAPPER_viewfix_v2026-02-02_1705cst -->
+<div id="pn-version-banner">PIXEL-NET · Millipede wrapper · <strong>MILLIPede_WRAPPER_viewfix_v2026-02-02_1705cst</strong></div>
 
   <div class="topbar">
     <button class="btn" id="px-exit">EXIT</button>
+    <button class="btn" id="px-fs" title="Fullscreen">FULL</button>
     <div class="badge" id="px-badge" title="Click to change initials on home page">???</div>
   </div>
 
@@ -374,7 +401,30 @@ body{ padding-top:28px; }
       const paBtn = document.querySelector('#px-play-again button');
       if(paBtn){ paBtn.onclick = ()=>location.reload(); }
 
-      window.addEventListener("keydown", (e)=>{
+      
+      // Fullscreen toggle (best on mobile)
+      const fsBtn = document.getElementById("px-fs");
+      const fsTarget = document.querySelector(".gamebox") || document.documentElement;
+      function syncFS(){
+        const on = !!document.fullscreenElement;
+        document.body.classList.toggle("is-fs", on);
+        if(fsBtn) fsBtn.textContent = on ? "EXIT FULL" : "FULL";
+      }
+      if(fsBtn){
+        fsBtn.addEventListener("click", async ()=>{
+          try{
+            if(!document.fullscreenElement){
+              await fsTarget.requestFullscreen?.({ navigationUI: "hide" });
+            }else{
+              await document.exitFullscreen?.();
+            }
+          }catch(e){ /* ignore */ }
+        });
+      }
+      document.addEventListener("fullscreenchange", syncFS);
+      syncFS();
+
+window.addEventListener("keydown", (e)=>{
         if((e.code==="Enter" || e.key==="Enter") && gameOverSeen){
           e.preventDefault();
           location.reload();
