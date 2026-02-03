@@ -12,295 +12,221 @@
 
   <style>
 
-:root{--text:#e9ecff;--muted:#a7b0d6;--card1:rgba(15,19,36,.72);--card2:rgba(10,12,26,.55);--stroke:rgba(255,255,255,.10);--shadow:0 14px 40px rgba(0,0,0,.35)}
+:root{
+  --text:#e9ecff;
+  --muted:#a7b0d6;
+  --card1:rgba(15,19,36,.72);
+  --card2:rgba(10,12,26,.55);
+  --stroke:rgba(255,255,255,.10);
+  --shadow:0 14px 40px rgba(0,0,0,.35);
+  --radius:22px;
+  --gap:18px;
+  --topbarH:54px;
+  --tabsH:44px;
+}
 *{box-sizing:border-box}
 html,body{height:100%}
-
-/* ✅ allow scrolling + normal touch on the page */
 body{
   margin:0;
-  min-height:100dvh;
-  overflow:auto;
-  display:flex;
-  flex-direction:column;
-  padding:10px 0 10px;
+  height:100dvh;
+  overflow:hidden; /* prevent page jumping; panels scroll internally */
   color:var(--text);
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   background:
-    radial-gradient(1200px 700px at 20% 10%, rgba(255,0,122,.14), transparent 60%),
-    radial-gradient(900px 500px at 85% 20%, rgba(0,255,247,.12), transparent 55%),
-    linear-gradient(180deg,#050611 0%,#060716 100%);
-  color-scheme:dark;
-  touch-action:auto;
-  overscroll-behavior:auto;
+    radial-gradient(1200px 700px at 20% 0%, rgba(158,66,255,.24), transparent 55%),
+    radial-gradient(1200px 700px at 90% 10%, rgba(0,186,255,.18), transparent 55%),
+    linear-gradient(180deg,#070812 0%, #050611 55%, #040510 100%);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
+/* Version pill */
+#pn-version-pill{
+  position:fixed;
+  left:10px; top:10px;
+  z-index:99999;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(0,0,0,.55);
+  border:1px solid var(--stroke);
+  box-shadow:var(--shadow);
+  font:700 12px/1 Orbitron, ui-sans-serif, system-ui;
+  letter-spacing:.08em;
+}
+
+/* Top bar */
 .topbar{
-  width:min(1300px,94vw);
-  margin:0 auto 8px;
+  position:fixed;
+  left:0; right:0; top:0;
+  z-index:9999;
+  height:var(--topbarH);
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
-  flex:0 0 auto;
+  padding:10px 14px;
+  pointer-events:none;
 }
-.btn,.badge{
-  height:38px;
-  padding:0 12px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(10,12,26,.72);
+.topbar > *{pointer-events:auto}
+
+.btn{
+  border:1px solid var(--stroke);
+  background:rgba(0,0,0,.35);
   color:var(--text);
-  font:700 13px/1 "Orbitron",system-ui,sans-serif;
-  letter-spacing:.10em;
+  padding:10px 14px;
+  border-radius:999px;
+  font:800 14px/1 Orbitron, ui-sans-serif, system-ui;
+  letter-spacing:.08em;
   cursor:pointer;
 }
-.badge{min-width:54px;display:inline-grid;place-items:center}
-.layout{
-  width:min(1300px,94vw);
-  margin:0 auto;
-  display:grid;
-  grid-template-columns:280px 1fr 320px;
-  gap:14px;
-  align-items:stretch;
-  flex:1 1 auto;
-  min-height:0;
+.btn:hover{background:rgba(255,255,255,.06)}
+.badge{
+  border:1px solid var(--stroke);
+  background:rgba(0,0,0,.35);
+  padding:10px 14px;
+  border-radius:999px;
+  font:900 14px/1 Orbitron, ui-sans-serif, system-ui;
+  letter-spacing:.12em;
 }
-@media (max-width:1100px){.layout{grid-template-columns:1fr;gap:10px}}
+
+/* Layout grid */
+.layout{
+  height:100dvh;
+  padding:calc(var(--topbarH) + 10px) 14px 14px;
+  display:grid;
+  grid-template-columns: minmax(260px, 360px) minmax(420px, 1fr) minmax(260px, 360px);
+  gap:var(--gap);
+  align-items:stretch;
+}
 .panel{
   background:linear-gradient(180deg,var(--card1),var(--card2));
   border:1px solid var(--stroke);
-  border-radius:18px;
+  border-radius:var(--radius);
   box-shadow:var(--shadow);
-  padding:14px;
-  min-height:0;
-  overflow:auto;
+  padding:16px 16px 14px;
+  min-height:0; /* allow inner scroll */
+  display:flex;
+  flex-direction:column;
 }
-.title{font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.10em;margin:0 0 10px;font-size:14px}
-.muted{color:var(--muted)}
-.hint{color:var(--muted);font-size:12px;margin-top:10px}
+.title{
+  margin:0 0 12px;
+  font:900 16px/1.1 Orbitron, ui-sans-serif, system-ui;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.muted{color:var(--muted);font-size:14px;line-height:1.45}
+.hint{color:var(--muted);font-size:12px;line-height:1.45;margin-top:10px}
 
-main.panel{display:flex;flex-direction:column;min-height:0}
-
-/* ✅ lock touch + overscroll ONLY inside the game box */
+/* Center game */
+main.panel{padding-bottom:12px}
 .gamebox{
-  position:relative;
-  border-radius:16px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(0,0,0,.28);
-  min-height:0;
-  touch-action:none;
-  overscroll-behavior:contain;
   flex:1 1 auto;
-}
-
-#root{width:100%;height:100%;min-height:0}
-#root > div{height:100%}
-#root canvas{width:100% !important;height:100% !important;display:block}
-
-.lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.lb-col{list-style:none;padding:0;margin:0}
-.lb-item{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18);margin-bottom:8px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.06em;font-size:12px}
-.lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
-.lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
-
-@media (max-width:1100px){
-  .panel{max-height:18vh}
-  main.panel{max-height:none;flex:1 1 auto}
-  main.panel .gamebox{flex:1 1 auto}
-}
-
-/* VERSION BANNER */
-#pn-version-banner{
-  position:fixed;
-  left:0; right:0; top:0;
-  z-index:999999;
-  font:12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  padding:6px 10px;
-  background:rgba(0,0,0,0.78);
-  color:#e9ecff;
-  border-bottom:1px solid rgba(255,255,255,0.15);
-  pointer-events:none;
-}
-body{ padding-top:28px; }
-
-/* ===== V1.4 MOBILE TABS + TRUE ASPECT + FULLSCREEN ===== */
-#pn-version-banner{
-  position:fixed; left:14px; top:10px;
-  z-index:50;
-  padding:6px 10px;
-  border-radius:999px;
-  font:700 12px/1 "Orbitron", system-ui, sans-serif;
-  letter-spacing:.06em;
-  color:var(--text);
-  background:rgba(0,0,0,.28);
-  border:1px solid rgba(255,255,255,.12);
-  backdrop-filter: blur(10px);
-}
-.layout{
-  /* give center more room on desktop */
-  grid-template-columns: 360px minmax(560px, 1fr) 360px;
-  gap:18px;
-}
-#panel-game .gamebox{
-  /* let the game breathe more on desktop */
-  width:100%;
+  min-height:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:10px;
 }
-#panel-game #root{
-  width:100%;
-  max-width:720px;
-}
-
-/* Tabs default hidden on desktop */
-.m-tabs{ display:none; }
-
-/* Prevent scroll jump on mobile when leaderboard refreshes */
-html{ overflow-anchor:none; }
-#panel-leader{ overflow-anchor:none; }
-
-/* Mobile layout: single column + tabs control visibility */
-@media (max-width: 980px){
-  html,body{height:100dvh;overflow:hidden}
-  .wrap{min-height:100dvh}
-  .layout{min-height:0;max-height:calc(100dvh - 120px);overflow:hidden}
-  .panel{max-height:100%;overflow:auto}
-
-  .layout{
-    grid-template-columns: 1fr;
-    gap:12px;
-  }
-  /* show tabs above game */
-  .m-tabs{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    margin:10px 0 6px;
-  }
-  .m-tab{
-    flex:1 1 auto;
-    padding:10px 12px;
-    border-radius:12px;
-    border:1px solid rgba(255,255,255,.14);
-    background:rgba(0,0,0,.22);
-    color:var(--text);
-    font:700 12px/1 "Orbitron", system-ui, sans-serif;
-    letter-spacing:.06em;
-    text-transform:uppercase;
-  }
-  .m-tab.is-active{
-    background:rgba(255,255,255,.10);
-    border-color:rgba(255,255,255,.22);
-  }
-  .m-tab-primary{
-    flex:1 1 100%;
-  }
-
-  /* hide side panels unless selected */
-  body[data-tab="game"] #panel-howto,
-  body[data-tab="game"] #panel-leader{ display:none; }
-
-  body[data-tab="howto"] #panel-game,
-  body[data-tab="howto"] #panel-leader{ display:none; }
-
-  body[data-tab="leader"] #panel-game,
-  body[data-tab="leader"] #panel-howto{ display:none; }
-
-  /* Make game taller on mobile without distortion (game root controls aspect) */
-  #panel-game #root{ max-width: min(92vw, 560px); }
-  #panel-game .gamebox{ padding:8px; }
-}
-
-/* Fullscreen: game-only */
-body.fs-on .topbar,
-body.fs-on #panel-howto,
-body.fs-on #panel-leader{ display:none !important; }
-
-body.fs-on{
+.gameframe{
+  height:min(78dvh, 880px);
+  max-height:100%;
+  aspect-ratio:20/32;
+  width:auto;
+  max-width:100%;
+  border-radius:18px;
+  overflow:hidden;
   background:#000;
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 10px 30px rgba(0,0,0,.35) inset;
 }
-body.fs-on .layout{
-  grid-template-columns: 1fr !important;
+#root{width:100%;height:100%}
+
+/* Leaderboard */
+.lb-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+  min-height:0;
+}
+.lb-col{
+  list-style:none;
   padding:0;
   margin:0;
-}
-body.fs-on #panel-game{
-  border-radius:0;
-  background:#000;
-}
-body.fs-on #panel-game .title,
-body.fs-on #panel-game .muted{ display:none; }
-body.fs-on #panel-game .gamebox{
-  padding:0;
-  height:100dvh;
-}
-body.fs-on #panel-game #root{
-  max-width:none;
-  width:100vw;
-  height:100dvh;
-}
-body.fs-on #tab-fullscreen{
-  position:fixed;
-  top:12px;
-  left:50%;
-  transform:translateX(-50%);
-  z-index:60;
-  width:auto;
-  padding:10px 14px;
-}
-body.fs-on #pn-version-banner{
-  top:12px;
-}
-body.fs-on .fs-corners{
   display:flex;
+  flex-direction:column;
+  gap:8px;
 }
-.fs-corners{
-  display:none;
-  position:fixed;
-  inset:12px 12px auto 12px;
-  z-index:60;
+.lb-col li{
+  display:flex;
   justify-content:space-between;
-  pointer-events:none;
+  gap:10px;
+  padding:7px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(0,0,0,.22);
+  font:800 13px/1 Orbitron, ui-sans-serif, system-ui;
 }
-.fs-corners .btn, .fs-corners .badge{
-  pointer-events:auto;
+.lb-meta{margin-top:auto;color:var(--muted);font-size:12px;padding-top:12px}
+
+/* Mobile tabs (hidden on desktop) */
+.mobile-tabs{display:none}
+
+/* Mobile / narrow screens */
+@media (max-width: 980px){
+  :root{--gap:12px}
+  .layout{
+    grid-template-columns: 1fr;
+    padding:calc(var(--topbarH) + 10px) 10px 10px;
+    gap:12px;
+  }
+  /* tabs show */
+  .mobile-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .tab-btn{
+    flex:1 1 auto;
+    min-width:110px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(0,0,0,.28);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:999px;
+    font:900 12px/1 Orbitron, ui-sans-serif, system-ui;
+    letter-spacing:.08em;
+    cursor:pointer;
+  }
+  .tab-btn.is-active{background:rgba(255,255,255,.10)}
+  .tab-fs{min-width:140px}
+  /* panels: only active shows */
+  .panel[data-panel]{display:none}
+  .panel[data-panel].is-active{display:flex}
+  /* Make game bigger on mobile */
+  .gameframe{height:min(72dvh, 720px)}
 }
 
+/* Fullscreen mode helpers */
+body.is-fs .layout{padding-top:calc(var(--topbarH) + 10px)}
+body.is-fs .panel[data-panel="howto"],
+body.is-fs .panel[data-panel="lb"]{display:none !important}
+body.is-fs main.panel{display:flex !important}
+body.is-fs .gameframe{height:calc(100dvh - var(--topbarH) - 28px); max-width:100%}
 
-  </style>
+</style>
 
   <!-- React build -->
   <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
 </head>
 <body>
-<!-- PATCH_VERSION:MILLIPede_WRAPPER_scrollfix_v2026-02-02_1625cst -->
-<div id="pn-version-banner">V1.5</div>
-
-  
-  <div class="fs-corners">
-    <button class="btn" id="fs-exit">EXIT</button>
-    <div class="badge" id="fs-badge">???</div>
-  </div>
+<div id="pn-version-pill">V1.6</div>
 
   <div class="topbar">
     <button class="btn" id="px-exit">EXIT</button>
     <div class="badge" id="px-badge" title="Click to change initials on home page">???</div>
-
-  <div class="m-tabs" role="tablist" aria-label="Millipede panels">
-        <button class="m-tab is-active" id="tab-game" data-tab="game" type="button">GAME</button>
-        <button class="m-tab" id="tab-howto" data-tab="howto" type="button">HOW TO PLAY</button>
-        <button class="m-tab" id="tab-leader" data-tab="leader" type="button">LEADERBOARD</button>
-        <button class="m-tab m-tab-primary" id="tab-fullscreen" data-tab="fullscreen" type="button">FULL SCREEN</button>
-      </div>
-
   </div>
 
   <div class="layout">
-    <aside class="panel" id="panel-howto">
+    <aside class="panel" data-panel="howto">
       <h3 class="title">HOW TO PLAY</h3>
       <div class="muted">
         <p><b>Move:</b> Arrow Keys / WASD</p>
@@ -311,19 +237,25 @@ body.fs-on .fs-corners{
       <div class="hint"><b>Game Over:</b> score auto-saves. Press <b>Enter</b> to restart.</div>
     </aside>
 
-    <main class="panel" id="panel-game">
+    <main class="panel" data-panel="game">
       <h3 class="title">MILLIPEDE CHAOS</h3>
-
-      
+      <div class="mobile-tabs" role="tablist" aria-label="Millipede tabs">
+        <button class="tab-btn is-active" data-tab="game" type="button">GAME</button>
+        <button class="tab-btn" data-tab="howto" type="button">HOW TO PLAY</button>
+        <button class="tab-btn" data-tab="lb" type="button">LEADERBOARD</button>
+        <button class="tab-btn tab-fs" data-action="fs" type="button">FULL SCREEN</button>
+      </div>
 
       <div class="gamebox">
-        <div id="root"></div>
+        <div class="gameframe" id="px-gameframe">
+          <div id="root"></div>
         </div>
 </div>
+      </div>
       <div class="muted">Leaderboard refreshes automatically.</div>
     </main>
 
-    <aside class="panel" id="panel-leader">
+    <aside class="panel" data-panel="lb">
       <h3 class="title">LEADERBOARD</h3>
       <div class="muted">Top 10</div>
       <div class="lb-grid">
@@ -357,6 +289,91 @@ body.fs-on .fs-corners{
       badge.textContent = initials || "???";
       badge.onclick = () => location.href = "../../index.html";
       document.getElementById("px-exit").onclick = () => location.href = "../../index.html";
+
+      // ---- Mobile tabs ----
+      const panels = Array.from(document.querySelectorAll('.panel[data-panel]'));
+      const tabBtns = Array.from(document.querySelectorAll('.mobile-tabs .tab-btn[data-tab]'));
+
+      function setActive(tab){
+        panels.forEach(p=>{
+          p.classList.toggle('is-active', p.getAttribute('data-panel') === tab);
+        });
+        tabBtns.forEach(b=>{
+          b.classList.toggle('is-active', b.getAttribute('data-tab') === tab);
+        });
+      }
+
+      // Default: show GAME on mobile
+      setActive('game');
+
+      tabBtns.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const tab = btn.getAttribute('data-tab');
+          if(tab) setActive(tab);
+        });
+      });
+
+      // ---- Fullscreen (game-only) ----
+      const fsBtn = document.querySelector('.mobile-tabs .tab-btn[data-action="fs"]');
+      const gameFrame = document.getElementById('px-gameframe');
+
+      function isFs(){
+        return !!(document.fullscreenElement || document.webkitFullscreenElement);
+      }
+
+      async function enterFs(){
+        document.body.classList.add('is-fs'); // pseudo-fs fallback styling
+        if(gameFrame){
+          try{
+            const el = gameFrame;
+            if(el.requestFullscreen) await el.requestFullscreen();
+            else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+          }catch(_){}
+        }
+        if(fsBtn) fsBtn.textContent = 'EXIT FULL SCREEN';
+      }
+
+      async function exitFs(){
+        try{
+          if(document.exitFullscreen) await document.exitFullscreen();
+          else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }catch(_){}
+        document.body.classList.remove('is-fs');
+        if(fsBtn) fsBtn.textContent = 'FULL SCREEN';
+      }
+
+      if(fsBtn){
+        fsBtn.addEventListener('click', ()=>{
+          if(isFs()) exitFs();
+          else enterFs();
+        });
+      }
+
+      document.addEventListener('fullscreenchange', ()=>{
+        if(!isFs()){
+          document.body.classList.remove('is-fs');
+          if(fsBtn) fsBtn.textContent = 'FULL SCREEN';
+        }else{
+          document.body.classList.add('is-fs');
+          if(fsBtn) fsBtn.textContent = 'EXIT FULL SCREEN';
+        }
+      });
+
+      // ---- Tap to restart when GAME OVER is visible ----
+      // If the React overlay is showing "GAME OVER", a tap/click on the game area reloads.
+      function gameOverVisible(){
+        const txt = document.body.innerText || "";
+        return txt.toUpperCase().indexOf("GAME OVER") !== -1;
+      }
+      if(gameFrame){
+        gameFrame.addEventListener('click', ()=>{
+          if(gameOverVisible()) location.reload();
+        }, {passive:true});
+        gameFrame.addEventListener('touchend', ()=>{
+          if(gameOverVisible()) location.reload();
+        }, {passive:true});
+      }
+
 
       // ---- Block duplicate /api/score submissions (even if React game tries) ----
       // We allow ONE real POST per page-load for this slug.
@@ -525,79 +542,12 @@ body.fs-on .fs-corners{
       const obs = new MutationObserver(()=>autoSaveIfGameOver());
       obs.observe(document.body, {subtree:true, childList:true, characterData:true});
       autoSaveIfGameOver();
-
-      const paBtn = document.querySelector('window.addEventListener("keydown", (e)=>{
+window.addEventListener("keydown", (e)=>{
         if((e.code==="Enter" || e.key==="Enter") && gameOverSeen){
           e.preventDefault();
           location.reload();
         }
       }, {capture:true});
-
-      // ===== V1.4 Mobile tabs =====
-      function setTab(t){
-        document.body.dataset.tab = t;
-        const map = {game:"tab-game", howto:"tab-howto", leader:"tab-leader"};
-        ["tab-game","tab-howto","tab-leader"].forEach(id=>{
-          const el=document.getElementById(id);
-          if(el) el.classList.toggle("is-active", id===map[t]);
-        });
-      }
-      // default
-      if(!document.body.dataset.tab) setTab("game");
-      ["tab-game","tab-howto","tab-leader"].forEach(id=>{
-        const el=document.getElementById(id);
-        if(!el) return;
-        el.addEventListener("click", ()=> setTab(el.dataset.tab));
-      });
-
-      // ===== V1.4 Fullscreen (game-only) =====
-      const fsBtn = document.getElementById("tab-fullscreen");
-      const fsExit = document.getElementById("fs-exit");
-      const fsBadge = document.getElementById("fs-badge");
-      function syncFsBadge(){ if(fsBadge) fsBadge.textContent = badge?.textContent || initials; }
-      syncFsBadge();
-
-      async function enterFs(){
-        // Prefer real Fullscreen API (Android/Chrome, most desktop)
-        const target = document.getElementById("panel-game");
-        try{
-          if(target && target.requestFullscreen) await target.requestFullscreen();
-        }catch(_){}
-        document.body.classList.add("fs-on");
-        if(fsBtn) fsBtn.textContent = "EXIT FULL SCREEN";
-        syncFsBadge();
-      }
-      async function exitFs(){
-        try{
-          if(document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen();
-        }catch(_){}
-        document.body.classList.remove("fs-on");
-        if(fsBtn) fsBtn.textContent = "FULL SCREEN";
-        // return to game tab on mobile
-        setTab("game");
-      }
-      function isFs(){ return document.body.classList.contains("fs-on") || !!document.fullscreenElement; }
-
-      if(fsBtn){
-        fsBtn.addEventListener("click", ()=>{
-          if(isFs()) exitFs(); else enterFs();
-        });
-      }
-      if(fsExit){
-        fsExit.addEventListener("click", ()=> {
-          exitFs();
-          // same as normal exit
-          location.href = "../../index.html";
-        });
-      }
-
-      document.addEventListener("fullscreenchange", ()=>{
-        if(!document.fullscreenElement){
-          // if user swiped out or browser exited fullscreen
-          if(document.body.classList.contains("fs-on")) exitFs();
-        }
-      });
-
     })();
   </script>
 </body>
