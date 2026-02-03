@@ -182,6 +182,33 @@
 }
 </style>
 
+
+<style id="pn-embed-style">
+/* PATCH_VERSION:EMBED_MODE_v2026-02-03 */
+html.pn-embed, body.pn-embed{height:100%;}
+html.pn-embed, body.pn-embed{background:transparent !important;}
+html.pn-embed, body.pn-embed{margin:0 !important; overflow:hidden !important; padding:0 !important;}
+html.pn-embed body{touch-action:none !important; overscroll-behavior:contain !important;}
+html.pn-embed .layout{width:100% !important; max-width:none !important; height:100% !important; min-height:0 !important; margin:0 !important; display:block !important;}
+html.pn-embed .panel{border:0 !important; box-shadow:none !important; border-radius:0 !important; background:transparent !important; padding:0 !important; overflow:hidden !important;}
+html.pn-embed main.panel{padding:0 !important;}
+html.pn-embed .gamewrap, html.pn-embed .gamebox{width:100% !important; height:100% !important; min-height:0 !important;}
+html.pn-embed #game-container{width:100% !important; height:100% !important;}
+html.pn-embed canvas{display:block; width:100% !important; height:100% !important;}
+</style>
+<script id="pn-embed-script">
+(function(){
+  try{
+    var p=new URLSearchParams(location.search);
+    var embed = (p.get('embed')==='1') || (window.self!==window.top);
+    if(embed){
+      document.documentElement.classList.add('pn-embed');
+      document.addEventListener('DOMContentLoaded', function(){ document.body && document.body.classList.add('pn-embed'); });
+      if(document.body) document.body.classList.add('pn-embed');
+    }
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 
@@ -540,6 +567,36 @@
 
     document.getElementById('start-btn').addEventListener('click', initGame);
     document.getElementById('restart-btn').addEventListener('click', initGame);
+</script>
+
+<script id="pn-embed-resize">
+/* PATCH_VERSION:EMBED_MODE_v2026-02-03_RESIZE */
+(function(){
+  function isEmbed(){ try{ return document.documentElement.classList.contains('pn-embed'); }catch(e){ return false; } }
+  function fit(){
+    if(!isEmbed()) return;
+    var c = document.getElementById('gameCanvas');
+    if(!c) return;
+    var box = document.getElementById('game-container');
+    if(!box) return;
+    var w = box.clientWidth || 0;
+    var h = box.clientHeight || 0;
+    if(w<=0 || h<=0) return;
+    var dpr = window.devicePixelRatio || 1;
+    var nw = Math.max(1, Math.floor(w*dpr));
+    var nh = Math.max(1, Math.floor(h*dpr));
+    if(c.width!==nw) c.width = nw;
+    if(c.height!==nh) c.height = nh;
+    // CSS size already forced by pn-embed-style
+  }
+  function hook(){
+    fit();
+    try{ new ResizeObserver(fit).observe(document.body); }catch(e){}
+    window.addEventListener('resize', fit);
+    setInterval(fit, 750);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', hook); else hook();
+})();
 </script>
 </body>
 </html>
