@@ -39,7 +39,7 @@ body{
   margin:0 auto 8px;
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-start;
   gap:12px;
   flex:0 0 auto;
 }
@@ -53,8 +53,8 @@ body{
   font:700 13px/1 "Orbitron",system-ui,sans-serif;
   letter-spacing:.10em;
   cursor:pointer;
-}
-.badge{min-width:54px;display:inline-grid;place-items:center}
+margin-left:auto;}
+.badge{min-width:54px;display:inline-grid;place-items:centermargin-left:auto;}
 .layout{
   width:min(1300px,94vw);
   margin:0 auto;
@@ -91,7 +91,7 @@ main.panel{display:flex;flex-direction:column;min-height:0}
   overflow:hidden;
   flex:1 1 auto;
   min-height:420px;
-  height:min(72dvh, 860px);
+  height:min(82dvh, 980px);
   border:1px solid rgba(255,255,255,.10);
   background:rgba(0,0,0,.28);
   min-height:0;
@@ -108,7 +108,7 @@ main.panel{display:flex;flex-direction:column;min-height:0}
 display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .lb-col{overflow-anchor:none;
 list-style:none;padding:0;margin:0}
-.lb-item{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18);margin-bottom:8px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.06em;font-size:12px}
+.lb-item{display:flex;justify-content:flex-start;gap:10px;padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18);margin-bottom:8px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.06em;font-size:12px}
 .lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
 .lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
 
@@ -121,15 +121,21 @@ list-style:none;padding:0;margin:0}
 /* VERSION BANNER */
 #pn-version-banner{
   position:fixed;
-  left:0; right:0; top:0;
+  left:50%;
+  top:10px;
+  transform:translateX(-50%);
   z-index:999999;
-  font:12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font:700 11px/1 "Orbitron",system-ui,sans-serif;
+  letter-spacing:.14em;
   padding:6px 10px;
-  background:rgba(0,0,0,0.78);
-  color:#e9ecff;
-  border-bottom:1px solid rgba(255,255,255,0.15);
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(10,12,26,.55);
+  color:rgba(255,255,255,.75);
   pointer-events:none;
+  backdrop-filter:blur(6px);
 }
+
 body{ padding-top:28px; }
 
 /* Fullscreen (mobile game-only) */
@@ -139,7 +145,7 @@ body.is-fs .layout>aside{display:none}
 body.is-fs main.panel{padding:0;border:none;background:transparent;box-shadow:none}
 body.is-fs main.panel .title, body.is-fs main.panel .muted{display:none}
 body.is-fs .gamebox{border:none;border-radius:0;height:100dvh;min-height:0}
-body.is-fs .topbar{position:fixed;top:10px;left:10px;right:10px;z-index:9999;justify-content:space-between;background:rgba(10,12,20,.55);backdrop-filter:blur(10px);padding:8px 10px;border-radius:14px;border:1px solid rgba(255,255,255,.10)}
+body.is-fs .topbar{position:fixed;top:10px;left:10px;right:10px;z-index:9999;justify-content:flex-start;background:rgba(10,12,20,.55);backdrop-filter:blur(10px);padding:8px 10px;border-radius:14px;border:1px solid rgba(255,255,255,.10)}
 body.is-fs .btn{padding:10px 14px}
 
 @media (max-width:1100px){
@@ -149,6 +155,25 @@ body.is-fs .btn{padding:10px 14px}
   .gamebox{height:min(78dvh, 920px)}
 }
 
+
+
+@media (max-width:700px){
+  .topbar{gap:8px;margin:10px auto 8px;}
+  .btn,.badge{height:34px;padding:0 10px;font-size:12px;border-radius:12px}
+  #pn-version-banner{top:6px;font-size:10px;padding:5px 9px}
+}
+
+
+/* Pseudo-fullscreen fallback (for mobile browsers without Fullscreen API) */
+body.is-fs{overflow:hidden;}
+body.is-fs .layout{grid-template-columns:1fr !important;width:100vw !important;margin:0 !important;gap:0 !important;}
+body.is-fs aside.panel, body.is-fs .right.panel{display:none !important;}
+body.is-fs main.panel{border-radius:0 !important;border:none !important;box-shadow:none !important;padding:0 !important;background:#000 !important;}
+body.is-fs .gamebox{height:100dvh !important;max-height:none !important;border-radius:0 !important;border:none !important;}
+body.is-fs .muted{display:none !important;}
+body.is-fs .topbar{position:fixed;left:0;right:0;top:0;z-index:999999;background:rgba(0,0,0,.25);backdrop-filter:blur(6px);padding:8px 10px;width:100vw !important;margin:0 !important;}
+body.is-fs #px-exit{display:none !important;}
+body.is-fs .badge{display:none !important;}
 </style>
 
   <!-- React build -->
@@ -156,7 +181,7 @@ body.is-fs .btn{padding:10px 14px}
 </head>
 <body>
 <!-- PATCH_VERSION:MILLIPede_WRAPPER_viewfix_v2026-02-02_1705cst -->
-<div id="pn-version-banner">PIXEL-NET · Millipede wrapper · <strong>MILLIPede_WRAPPER_viewfix_v2026-02-02_1705cst</strong></div>
+<div id="pn-version-banner">V1.1</div>
 
   <div class="topbar">
     <button class="btn" id="px-exit">EXIT</button>
@@ -406,17 +431,24 @@ body.is-fs .btn{padding:10px 14px}
       const fsBtn = document.getElementById("px-fs");
       const fsTarget = document.querySelector(".gamebox") || document.documentElement;
       function syncFS(){
-        const on = !!document.fullscreenElement;
+        const on = !!document.fullscreenElement || document.body.classList.contains("is-fs");
         document.body.classList.toggle("is-fs", on);
         if(fsBtn) fsBtn.textContent = on ? "EXIT FULL" : "FULL";
       }
       if(fsBtn){
         fsBtn.addEventListener("click", async ()=>{
           try{
-            if(!document.fullscreenElement){
-              await fsTarget.requestFullscreen?.({ navigationUI: "hide" });
+            const canFS = !!fsTarget.requestFullscreen && !!document.exitFullscreen;
+            if(canFS){
+              if(!document.fullscreenElement){
+                await fsTarget.requestFullscreen({ navigationUI: "hide" });
+              }else{
+                await document.exitFullscreen();
+              }
             }else{
-              await document.exitFullscreen?.();
+              // iOS/Safari fallback: pseudo fullscreen (CSS)
+              const on = document.body.classList.toggle("is-fs");
+              if(fsBtn) fsBtn.textContent = on ? "EXIT FULL" : "FULL";
             }
           }catch(e){ /* ignore */ }
         });
