@@ -1,5 +1,5 @@
-<!-- PIXEL-NET Millipede Wrapper -->
-<!-- Version: V3.5 -->
+<!-- PIXEL-NET VECTOR DUEL Wrapper -->
+<!-- Version: V3.6 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet"/>
+
 
 <style>
 /* ========================================================
@@ -30,22 +31,22 @@
   --glow-cyan:   rgba(0, 255, 247, .15);
   --font-ui:     system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   --font-arcade: "Orbitron", var(--font-ui);
-  --banner-h:    28px;   /* version banner height */
+  --banner-h:    0px;
   --topbar-h:    38px;
   --gap:         14px;
 
   /* ── Millipede game-theme palette ── */
   /* Deep mossy greens for panel fills */
-  --game-card-top:  rgba(10, 16, 30, .88);   /* dark forest */
-  --game-card-bot:  rgba(4, 8, 16, .74);   /* deeper moss */
+  --game-card-top:  rgba(10, 28, 16, .80);   /* dark forest */
+  --game-card-bot:  rgba(6,  16, 10, .65);   /* deeper moss */
   /* Warm mushroom-cap accent (the red-orange caps in-game) */
-  --game-accent:    rgba(90, 180, 255, .55);  /* burnt mushroom */
-  --game-glow:      rgba(90, 180, 255, .20);  /* subtle warm glow */
+  --game-accent:    rgba(255, 255, 255, .22);
+  --game-glow:      rgba(180, 60, 30, .18);  /* subtle warm glow */
   /* Leaf-green stroke */
-  --game-stroke:    rgba(255, 255, 255, .14); /* soft green edge */
+  --game-stroke:    rgba(80, 200, 100, .22); /* soft green edge */
   /* Leaderboard item tint — very faint green wash */
-  --game-item-bg:   rgba(90, 180, 255, .16);
-  --game-item-stroke: rgba(90, 180, 255, .14);
+  --game-item-bg:   rgba(20, 55, 30, .35);
+  --game-item-stroke: rgba(80, 200, 100, .12);
 }
 
 /* --- Reset --- */
@@ -58,7 +59,7 @@ body {
   overflow: auto;                          /* page-level scroll allowed */
   display: flex;
   flex-direction: column;
-  padding: var(--banner-h) 0 10px;         /* top pad = banner height */
+  padding: 0 0 10px;         /* top pad = banner height */
   color: var(--text);
   font-family: var(--font-ui);
   background:
@@ -68,24 +69,6 @@ body {
   color-scheme: dark;
   touch-action: auto;
   overscroll-behavior: auto;
-}
-
-/* --------------------------------------------------------
-   VERSION BANNER  (fixed top strip)
-   -------------------------------------------------------- */
-#pn-version-banner {
-  position: fixed;
-  inset: 0 0 auto 0;                      /* top-left-right */
-  height: var(--banner-h);
-  z-index: 999999;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  font: 12px/1.2 var(--font-ui);
-  background: rgba(0, 0, 0, .78);
-  color: var(--text);
-  border-bottom: 1px solid var(--stroke);
-  pointer-events: none;
 }
 
 /* --------------------------------------------------------
@@ -224,11 +207,14 @@ main.panel {
   position: relative;
   overflow: hidden;
   border-radius: 12px;
-  background: rgba(0,0,0,.22);
 }
 .game-stage-inner #root            { width: 100%; height: 100%; min-height: 0; }
 .game-stage-inner #root > div      { height: 100%; }
 .game-stage-inner #root canvas     { width: 100% !important; height: 100% !important; display: block; }
+
+/* Suppress any legend / initials-entry UI rendered by the React bundle */
+#root .legend,
+#root [class*="legend"] { display: none !important; }
 
 /* --------------------------------------------------------
    LEADERBOARD  (right column)
@@ -440,8 +426,7 @@ main.panel {
   }
   /* Reuse the same stage classes; fitStage JS targets #pn-stage-inner */
   #m-game .game-stage        { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index:1; }
-  #m-game .game-stage-inner  { position: relative; overflow: hidden; border-radius: 12px;
-  background: rgba(0,0,0,.22); }
+  #m-game .game-stage-inner  { position: relative; overflow: hidden; border-radius: 12px; }
   #m-game .game-stage-inner #root            { width: 100%; height: 100%; min-height: 0; }
   #m-game .game-stage-inner #root > div      { height: 100%; }
   #m-game .game-stage-inner #root canvas     { width: 100% !important; height: 100% !important; display: block; }
@@ -494,13 +479,6 @@ main.panel {
 <body>
 
 <!-- ============================================================
-     VERSION BANNER
-     ============================================================ -->
-<div id="pn-version-banner">
-  PIXEL-NET · Millipede · <strong>V2.4</strong>
-</div>
-
-<!-- ============================================================
      INITIALS MODAL  (opened by badge click, not navigation)
      ============================================================ -->
 <section id="px-init-modal" class="px-init-modal hidden" aria-hidden="true">
@@ -543,10 +521,9 @@ main.panel {
   <aside class="panel">
     <h3 class="title">HOW TO PLAY</h3>
     <div class="muted">
-      
-      <p><b>Move:</b> WASD / Arrow Keys</p>
-      <p><b>Fire:</b> Space / Click (if available)</p>
-      <p><b>Goal:</b> Win duels, dodge shots, climb the ranks.</p>
+      <p><b>Move:</b> Arrow Keys / WASD</p>
+      <p><b>Shoot:</b> Space</p>
+      <p><b>Goal:</b> Clear the swarm, survive, score high.</p>
     </div>
     <div class="hint">
       Initials are set on the homepage. Click the badge (top-right) to change them here.
@@ -562,7 +539,7 @@ main.panel {
     <div class="gamebox">
       <div class="game-stage" id="pn-stage">
         <div class="game-stage-inner" id="pn-stage-inner">
-          <iframe id="pn-iframe" title="VECTOR DUEL" src="./game.html" style="border:0; width:100%; height:100%; display:block; background:transparent;"></iframe>
+          <div id="root"><iframe id="pn-embed" src="./game.html" title="Game" loading="eager" style="width:100%;height:100%;border:0;display:block;background:transparent;" allow="fullscreen"></iframe></div>
         </div>
       </div>
     </div>
@@ -589,10 +566,9 @@ main.panel {
 <div id="m-howto" class="m-panel hidden">
   <h3 class="title">HOW TO PLAY</h3>
   <div class="muted">
-    
-      <p><b>Move:</b> WASD / Arrow Keys</p>
-      <p><b>Fire:</b> Space / Click (if available)</p>
-      <p><b>Goal:</b> Win duels, dodge shots, climb the ranks.</p>
+    <p><b>Move:</b> Arrow Keys / WASD</p>
+    <p><b>Shoot:</b> Space</p>
+    <p><b>Goal:</b> Clear the swarm, survive, score high.</p>
   </div>
   <div class="hint">Click the badge (top-right) to change initials.</div>
   <div class="hint"><b>Game Over:</b> score auto-saves. Press <b>Enter</b> to restart.</div>
@@ -601,7 +577,7 @@ main.panel {
 <div id="m-game" class="m-panel hidden">
   <div class="gamebox">
     <!-- On mobile, fitStage targets this inner shell via #pn-stage-inner.
-         The game iframe is moved between desktop and mobile containers. -->
+         The React app mounts into #root wherever it is in the DOM. -->
     <div class="game-stage">
       <div class="game-stage-inner" id="pn-stage-inner-mobile">
         <!-- #root lives in the desktop panel; mobile just shows the same viewport.
@@ -639,18 +615,15 @@ main.panel {
   // ============================================================
   var GAME_CONFIG = {
     // Slugs: leaderboard fetch tries each in order; first one is used for score submission.
-    slugs:        ["vector-duel", "vectorduel"],
+    slugs:        ["vector-duel", "vector duel"],
 
-
-    // If false, wrapper lets the game fill the panel (no letterboxing).
-    lockAspect:   false,
     // Native grid dimensions (columns × rows).
     // fitStage() uses width/height to lock the aspect ratio.
     //   Millipede  →  20 × 32
     //   Example 4:3 game → e.g. 40 × 30
     //   Example 16:9 game → e.g. 16 × 9
-    gridCols:     20,
-    gridRows:     32
+    gridCols:     4,
+    gridRows:     3
   };
   // Derived — don't edit these.
   var SLUGS = GAME_CONFIG.slugs;
@@ -755,35 +728,6 @@ main.panel {
   var saveBtn = document.getElementById("px-init-save");
   if (saveBtn) saveBtn.addEventListener("click", saveInitials);
 
-  
-  // --------------------------------------------------------
-  // IFRAME TWEAKS  (embed mode: no white, no desktop joysticks)
-  // --------------------------------------------------------
-  function applyIframeTweaks() {
-    var frame = document.getElementById("pn-iframe");
-    if (!frame) return;
-    var doc = null;
-    try { doc = frame.contentDocument; } catch(_) { doc = null; }
-    if (!doc) return;
-
-    // Inject once
-    if (!doc.getElementById("px-embed-style")) {
-      var style = doc.createElement("style");
-      style.id = "px-embed-style";
-      style.textContent = `
-        html, body { margin:0 !important; padding:0 !important; height:100% !important; background: #050611 !important; overflow:hidden !important; }
-        canvas { display:block; }
-        /* Hide virtual sticks on desktop */
-        @media (min-width: 1001px) {
-          .joystick, .joysticks, .touch-joystick, .touch-controls,
-          #joystick, #joystick-left, #joystick-right, #left-joystick, #right-joystick,
-          [class*="joystick"], [id*="joystick"] { display:none !important; opacity:0 !important; pointer-events:none !important; }
-        }
-      `;
-      doc.head.appendChild(style);
-    }
-  }
-
   // --------------------------------------------------------
   // ASPECT-FIT  (uses GAME_CONFIG.gridCols / gridRows)
   // --------------------------------------------------------
@@ -791,17 +735,6 @@ main.panel {
   var gamebox    = document.querySelector(".gamebox");   // desktop gamebox
 
   function fitStage() {
-    // If this game is freeform/fullscreen, let it fill the panel.
-    if (GAME_CONFIG.lockAspect === false) {
-      var boxF = (window.innerWidth <= 1000) ? document.querySelector("#m-game .gamebox") : document.querySelector(".gamebox");
-      var innerF = (window.innerWidth <= 1000) ? document.getElementById("pn-stage-inner-mobile") : document.getElementById("pn-stage-inner");
-      if (innerF && boxF) {
-        innerF.style.width = boxF.clientWidth + "px";
-        innerF.style.height = boxF.clientHeight + "px";
-      }
-      return;
-    }
-
     // On mobile the gamebox reference may differ; grab the visible one.
     var box = gamebox;
     var inner = stageInner;
@@ -831,9 +764,8 @@ main.panel {
     inner.style.height = h + "px";
   }
 
-  applyIframeTweaks();
   fitStage();
-  window.addEventListener("resize", function(){ applyIframeTweaks(); fitStage(); });
+  window.addEventListener("resize", fitStage);
 
   // --------------------------------------------------------
   // DUPLICATE-SCORE GUARD
@@ -974,10 +906,9 @@ main.panel {
 
   /** Read the visible score out of the page text (React renders it). */
   function readScoreNow() {
-    var frame = document.getElementById("pn-iframe");
-    var txt = "";
-    try { txt = (frame && frame.contentDocument && frame.contentDocument.body && frame.contentDocument.body.innerText) ? frame.contentDocument.body.innerText : ""; } catch(_) { txt = ""; }
-// Primary: "SCORE: 1,234" anywhere on page
+    var txt = document.body.innerText || "";
+
+    // Primary: "SCORE: 1,234" anywhere on page
     var m = txt.match(/SCORE:\s*([0-9][0-9,]*)/i);
     if (m && m[1]) return parseInt(m[1].replace(/,/g, ""), 10) || 0;
 
@@ -993,7 +924,7 @@ main.panel {
     var killRe = /(ENTER\s+YOUR?\s*INITIALS|TYPE\s+YOUR?\s*INITIALS|ENTER\s+INITIALS|YOUR\s+INITIALS)/i;
 
     // Kill matching buttons
-    Array.from((frameD||document).querySelectorAll("button")).forEach(function (b) {
+    Array.from(document.querySelectorAll("button")).forEach(function (b) {
       if (b.id === "px-init-save") return;   // leave OUR modal SAVE button alone
       var t = (b.textContent || "").trim().toUpperCase();
       if (t === "SAVE" || t === "ENTER INITIALS" || t === "SUBMIT" || t === "OK" || killRe.test(t)) {
@@ -1003,7 +934,7 @@ main.panel {
     });
 
     // Kill 3-char inputs (initials entry)
-    Array.from((frameD||document).querySelectorAll("input")).forEach(function (inp) {
+    Array.from(document.querySelectorAll("input")).forEach(function (inp) {
       if (inp.id === "px-init-input") return;   // leave OUR modal input alone
       var ml = inp.getAttribute("maxlength");
       var ph = (inp.getAttribute("placeholder") || "").trim();
@@ -1014,7 +945,7 @@ main.panel {
     });
 
     // Kill bare text nodes that match the prompt
-    var root = frameD ? frameD.body : null;
+    var root = document.getElementById("root");
     if (root) {
       Array.from(root.querySelectorAll("*")).forEach(function (el) {
         if (el.childElementCount > 0) return;
@@ -1035,7 +966,7 @@ main.panel {
     var hasSaveBtn = rootButtons.some(function (b) {
       return (b.textContent || "").trim().toUpperCase() === "SAVE";
     });
-    var rootEls = Array.from(frameD.querySelectorAll("*"));
+    var rootEls = Array.from(document.querySelectorAll("#root *"));
     var hasInitialsPrompt = rootEls.some(function (el) {
       return (el.textContent || "").trim().toUpperCase() === "ENTER INITIALS";
     });
@@ -1128,7 +1059,7 @@ main.panel {
   // --------------------------------------------------------
   // MOBILE TAB SWITCHING
   // --------------------------------------------------------
-  var mobileRoot = document.getElementById("pn-iframe");
+  var mobileRoot = document.getElementById("root");
   var tabButtons = document.querySelectorAll("#m-tabs button");
   var mGame      = document.getElementById("m-game");
   var mHowTo     = document.getElementById("m-howto");
@@ -1160,7 +1091,7 @@ main.panel {
   }
 
   // Cache the #root element for potential re-parenting on mobile.
-  var mRoot = document.getElementById("pn-iframe");
+  var mRoot = document.getElementById("root");
 
   tabButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -1172,10 +1103,6 @@ main.panel {
   if (window.innerWidth <= 1000) {
     showMobileTab("game");
   }
-
-  // Ensure iframe tweaks applied after load
-  var _f = document.getElementById("pn-iframe");
-  if (_f) _f.addEventListener("load", applyIframeTweaks);
 
   // Also re-check on resize (desktop ↔ mobile transition)
   window.addEventListener("resize", function () {

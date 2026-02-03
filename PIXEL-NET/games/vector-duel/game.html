@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script>(function(){try{if(window.top!==window.self){document.documentElement.classList.add("px-embed");}}catch(e){}})();</script>
-<title>VECTOR DUEL</title>
+  <title>VECTOR DUEL</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
@@ -36,46 +35,26 @@
     .lb-item{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18);margin-bottom:8px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.06em;font-size:12px}
     .lb-rank{opacity:.85;min-width:22px}.lb-score{font-weight:800}
     .lb-meta{color:var(--muted);font-size:11px;margin-top:10px}
-  /* =========================================================
-   PIXEL-NET EMBED MODE (when loaded inside wrapper iframe)
-   Hides the game's internal chrome (topbar/howto/leaderboard)
-   so ONLY the game viewport renders in the canonical wrapper.
-   ========================================================= */
-html.px-embed, html.px-embed body { height:100% !important; margin:0 !important; padding:0 !important; overflow:hidden !important; background:transparent !important; }
+  </style>
 
-/* Common internal chrome */
-html.px-embed header,
-html.px-embed .topbar,
-html.px-embed #px-exit,
-html.px-embed #px-badge,
-html.px-embed #px-initials,
-html.px-embed nav,
-html.px-embed aside,
-html.px-embed .howto,
-html.px-embed .leaderboard,
-html.px-embed #howto,
-html.px-embed #leaderboard,
-html.px-embed #px-lb,
-html.px-embed .center-head { display:none !important; }
-
-/* If the game uses a 3-col layout, collapse to just the center area */
-html.px-embed .layout { display:block !important; width:100% !important; height:100% !important; margin:0 !important; padding:0 !important; }
-
-/* Make the main game surface fill the iframe */
-html.px-embed main,
-html.px-embed .panel,
-html.px-embed .panel.center,
-html.px-embed .panel.main,
-html.px-embed .center,
-html.px-embed #game-container,
-html.px-embed .gamewrap,
-html.px-embed .gamebox,
-html.px-embed #px-gamebox { width:100% !important; height:100% !important; max-width:none !important; max-height:none !important; margin:0 !important; padding:0 !important; border:none !important; border-radius:0 !important; background:transparent !important; box-shadow:none !important; }
-
-/* Canvas fills */
-html.px-embed canvas { width:100% !important; height:100% !important; display:block !important; }
-
+<style id="pn-embed-css">
+html, body { height:100%; margin:0; overflow:hidden; background:#000; }
+canvas { display:block; margin:auto; max-width:100%; max-height:100%; }
+.pn-embed-hide { display:none !important; }
+@media (min-width:1000px) and (pointer:fine){
+  /* try to kill touch overlays on desktop */
+  [id*="joy" i], [class*="joy" i], [id*="stick" i], [class*="stick" i], [id*="joystick" i], [class*="joystick" i],
+  [id*="touch" i], [class*="touch" i], [id*="pad" i], [class*="pad" i] { display:none !important; }
+}
 </style>
+<script>
+(function(){
+  try{
+    if (window.self !== window.top) document.documentElement.classList.add('pn-embed');
+  }catch(e){}
+})();
+</script>
+
 </head>
 <body>
   <div class="topbar">
