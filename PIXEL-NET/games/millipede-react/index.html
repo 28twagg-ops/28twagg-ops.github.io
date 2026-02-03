@@ -14,13 +14,12 @@
 :root{--text:#e9ecff;--muted:#a7b0d6;--card1:rgba(15,19,36,.72);--card2:rgba(10,12,26,.55);--stroke:rgba(255,255,255,.10);--shadow:0 14px 40px rgba(0,0,0,.35)}
 *{box-sizing:border-box}
 html,body{height:100%}
-html{overflow-anchor:none}
 
 /* ✅ allow scrolling + normal touch on the page */
 body{
   margin:0;
   min-height:100dvh;
-  overflow:hidden;
+  overflow:auto;
   display:flex;
   flex-direction:column;
   padding:10px 0 10px;
@@ -57,7 +56,6 @@ body{
 }
 .badge{min-width:54px;display:inline-grid;place-items:center}
 .layout{
-  height:calc(100dvh - 60px);
   width:min(1300px,94vw);
   margin:0 auto;
   display:grid;
@@ -75,13 +73,13 @@ body{
   box-shadow:var(--shadow);
   padding:14px;
   min-height:0;
-  overflow:hidden;
+  overflow:auto;
 }
 .title{font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.10em;margin:0 0 10px;font-size:14px}
 .muted{color:var(--muted)}
 .hint{color:var(--muted);font-size:12px;margin-top:10px}
 
-main.panel{display:flex;flex-direction:column;min-height:0}
+main.panel{display:flex;flex-direction:column;min-height:0;align-items:stretch}
 
 /* ✅ lock touch + overscroll ONLY inside the game box */
 .gamebox{
@@ -93,10 +91,15 @@ main.panel{display:flex;flex-direction:column;min-height:0}
   min-height:0;
   touch-action:none;
   overscroll-behavior:contain;
-  flex:1 1 auto;
+  flex:0 0 auto;
+  aspect-ratio: 20 / 32;
+  width: auto;
+  max-width: 100%;
+  height: clamp(460px, calc(100dvh - 230px), 840px);
+  align-self: center;
 }
 
-#root{width:100%;height:100%;min-height:0}
+#root{width:100%;height:100%;min-height:0;padding-top:6px;box-sizing:border-box}
 #root > div{height:100%}
 #root canvas{width:100% !important;height:100% !important;display:block}
 
@@ -112,128 +115,116 @@ main.panel{display:flex;flex-direction:column;min-height:0}
   main.panel .gamebox{flex:1 1 auto}
 }
 
-
-.gamebar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin:0 0 10px;
-}
-.btn-small{
-  height:34px;
-  padding:0 10px;
-  border-radius:12px;
-  font-size:12px;
-}
-.mobile-only{display:none}
-
-/* Fullscreen / Game-only mode (real fullscreen OR fallback) */
-body.fs-mode{padding:0; overflow:hidden}
-body.fs-mode .topbar{display:none}
-body.fs-mode #pn-version-banner{display:none}
-body.fs-mode #px-modal{display:none}
-body.fs-mode .layout{
-  width:100vw;
-  height:100dvh;
-  margin:0;
-  grid-template-columns:1fr;
-  gap:0;
-}
-body.fs-mode main.panel{
-  border-radius:0;
-  border-left:0;
-  border-right:0;
-  height:100dvh;
-  padding:12px;
-}
-body.fs-mode .gamebox{
-  border-radius:14px;
-}
-
-
-.px-modal{
+/* VERSION */
+#pn-version-pill{
   position:fixed;
-  inset:0;
-  display:none;
-  align-items:flex-end;
-  justify-content:center;
-  background:rgba(0,0,0,.55);
-  z-index:999998;
-  padding:14px;
-}
-.px-modal.open{display:flex}
-.px-modal-card{
-  width:min(720px,94vw);
-  max-height:82dvh;
-  overflow:hidden;
-  background:linear-gradient(180deg,var(--card1),var(--card2));
-  border:1px solid var(--stroke);
-  border-radius:18px;
-  box-shadow:var(--shadow);
-  display:flex;
-  flex-direction:column;
-}
-.px-modal-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:12px 12px 10px;
-  border-bottom:1px solid rgba(255,255,255,.10);
-}
-.px-modal-title{
-  font-family:"Orbitron",system-ui,sans-serif;
-  letter-spacing:.10em;
-  font-size:13px;
-}
-.px-modal-body{
-  padding:12px;
-  overflow:auto;
-  min-height:0;
-  color:var(--text);
-}
-
-/* Mobile: show buttons, hide side panels (access via modal), maximize game */
-@media (max-width:1100px){
-  .mobile-only{display:inline-flex}
-  #px-howto, #px-leaderboard{display:none}
-  .layout{height:calc(100dvh - 56px)}
-  main.panel{padding:12px}
-  .muted{display:none}
-}
-
-/* VERSION BANNER */
-#pn-version-banner{
-  position:fixed;
-  top:10px; left:12px;
+  left:14px; top:12px;
   z-index:999999;
-  font:700 11px/1 "Orbitron",system-ui,sans-serif;
-  letter-spacing:.14em;
+  font:800 12px/1 "Orbitron", system-ui, sans-serif;
+  letter-spacing:.08em;
   padding:8px 10px;
   border-radius:999px;
-  background:rgba(0,0,0,.55);
-  border:1px solid rgba(255,255,255,.14);
-  color:#e9ecff;
+  background:rgba(0,0,0,0.55);
+  color:var(--text);
+  border:1px solid rgba(255,255,255,0.16);
+  box-shadow:0 10px 30px rgba(0,0,0,0.35);
   pointer-events:none;
-  backdrop-filter: blur(6px);
 }
+body{ padding-top:28px; }
+
+.fs-row{display:flex;gap:10px;margin:0 0 10px}
+.btn-wide{padding:10px 12px;letter-spacing:.14em}
+
+/* Prevent scroll-jumps from leaderboard refresh */
+html{overflow-anchor:none}
+body{overscroll-behavior:none}
+
+/* Fullscreen (real + pseudo) */
+body.px-fs{
+  overflow:hidden;
+}
+body.px-fs .layout{
+  grid-template-columns: 1fr !important;
+  padding: 10px !important;
+}
+body.px-fs aside.panel{display:none !important;}
+body.px-fs .topbar{position:fixed;left:0;right:0;top:0;z-index:999998;}
+body.px-fs main.panel{max-width:none !important;}
+body.px-fs main.panel .muted{display:none;}
+body.px-fs .gamebox{
+  height: calc(100dvh - 86px) !important;
+  max-height: none !important;
+}
+body.px-fs #pn-version-pill{top:70px}
+
+/* Mobile layout: tabs, no page scroll; panels become one shared sheet */
+@media (max-width: 900px){
+  body{height:100dvh;overflow:hidden}
+  .layout{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    gap: 10px;
+    padding: 10px;
+    height: calc(100dvh - 64px);
+  }
+  aside.panel{
+    display:none;
+  }
+  main.panel{
+    min-height:0;
+  }
+  .gamebox{
+    height: clamp(440px, calc(100dvh - 220px), 78dvh);
+  }
+  .mobile-tabs{
+    display:flex;
+    gap:10px;
+    padding: 0 10px 12px;
+  }
+  .mobile-tabs .tab{
+    flex:1 1 0;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.16);
+    background:rgba(0,0,0,0.35);
+    color:var(--text);
+    font:800 12px/1 "Orbitron",system-ui,sans-serif;
+    letter-spacing:.10em;
+    padding:10px 12px;
+  }
+  .mobile-tabs .tab.active{
+    background:rgba(255,255,255,0.08);
+    border-color:rgba(255,255,255,0.22);
+  }
+  /* Mobile sheets */
+  .panel.px-sheet{
+    display:block;
+    max-height: 26dvh;
+    overflow:auto;
+    padding:14px;
+  }
+  .panel.px-sheet .title{margin-top:0}
+  .panel.px-sheet .lb-grid{grid-template-columns:1fr 1fr}
+  .panel.px-sheet .lb-meta{margin-top:8px}
+}
+@media (min-width: 901px){
+  .mobile-tabs{display:none}
+}
+
 </style>
 
   <!-- React build -->
   <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
 </head>
 <body>
-<!-- PATCH_VERSION:MILLIPede_WRAPPER_scrollfix_v2026-02-02_1625cst -->
-<div id="pn-version-banner">V1.2</div>
-
-  <div class="topbar">
+<!-- PATCH_VERSION:V1.3 -->
+<div id="pn-version-pill">V1.3</div>
+<div class="topbar">
     <button class="btn" id="px-exit">EXIT</button>
     <div class="badge" id="px-badge" title="Click to change initials on home page">???</div>
   </div>
 
   <div class="layout">
-    <aside class="panel" id="px-howto">
+    <aside class="panel">
       <h3 class="title">HOW TO PLAY</h3>
       <div class="muted">
         <p><b>Move:</b> Arrow Keys / WASD</p>
@@ -246,13 +237,7 @@ body.fs-mode .gamebox{
 
     <main class="panel">
       <h3 class="title">MILLIPEDE CHAOS</h3>
-
-      <div class="gamebar">
-        <button class="btn btn-small mobile-only" id="px-open-howto">HOW TO PLAY</button>
-        <button class="btn btn-small" id="px-fullscreen">FULL SCREEN</button>
-        <button class="btn btn-small mobile-only" id="px-open-leaderboard">LEADERBOARD</button>
-      </div>
-
+      <div class="fs-row"><button class="btn btn-wide" id="px-fullscreen">FULL SCREEN</button></div>
       <div class="gamebox">
         <div id="root"></div>
         <div id="px-play-again">
@@ -265,7 +250,7 @@ body.fs-mode .gamebox{
       <div class="muted">Leaderboard refreshes automatically.</div>
     </main>
 
-    <aside class="panel" id="px-leaderboard">
+    <aside class="panel">
       <h3 class="title">LEADERBOARD</h3>
       <div class="muted">Top 10</div>
       <div class="lb-grid">
@@ -274,6 +259,11 @@ body.fs-mode .gamebox{
       </div>
       <div class="lb-meta" id="lb-status">Loading…</div>
     </aside>
+
+  <div class="mobile-tabs" id="px-mobile-tabs" aria-hidden="true">
+    <button class="tab active" data-tab="how">HOW TO PLAY</button>
+    <button class="tab" data-tab="lb">LEADERBOARD</button>
+  </div>
   </div>
 
   <script src="../../js/engine.js"></script>
@@ -286,6 +276,92 @@ body.fs-mode .gamebox{
 
       // Keep storages in sync for PixelNet + the React build (various keys observed)
       sessionStorage.setItem("playerInitials", initials);
+
+      // Fullscreen button (real if supported; otherwise pseudo-fullscreen)
+      const fsBtn = document.getElementById("px-fullscreen");
+      function setFsLabel(){
+        if(!fsBtn) return;
+        const isFs = !!document.fullscreenElement || document.body.classList.contains("px-fs");
+        fsBtn.textContent = isFs ? "EXIT FULL SCREEN" : "FULL SCREEN";
+      }
+      async function enterFs(){
+        const gamebox = document.querySelector("main.panel .gamebox");
+        if(gamebox && gamebox.requestFullscreen){
+          try{ await gamebox.requestFullscreen(); }catch(_e){ document.body.classList.add("px-fs"); }
+        }else{
+          document.body.classList.add("px-fs");
+        }
+        setFsLabel();
+      }
+      async function exitFs(){
+        if(document.fullscreenElement){
+          try{ await document.exitFullscreen(); }catch(_e){}
+        }
+        document.body.classList.remove("px-fs");
+        setFsLabel();
+      }
+      if(fsBtn){
+        fsBtn.addEventListener("click", ()=>{
+          const isFs = !!document.fullscreenElement || document.body.classList.contains("px-fs");
+          if(isFs) exitFs(); else enterFs();
+        });
+      }
+      document.addEventListener("fullscreenchange", setFsLabel);
+      setFsLabel();
+
+      // Mobile tabs: convert left/right panels into a single sheet without page scroll
+      const mobileTabs = document.getElementById("px-mobile-tabs");
+      const panels = document.querySelectorAll(".layout > aside.panel");
+      const howPanel = panels[0];
+      const lbPanel = panels[1];
+      function ensureSheet(){
+        if(!howPanel || !lbPanel) return;
+        howPanel.classList.add("px-sheet");
+        lbPanel.classList.add("px-sheet");
+      }
+      function showTab(which){
+        ensureSheet();
+        if(window.matchMedia("(max-width: 900px)").matches){
+          if(which === "lb"){
+            howPanel.style.display = "none";
+            lbPanel.style.display = "block";
+          }else{
+            lbPanel.style.display = "none";
+            howPanel.style.display = "block";
+          }
+          if(mobileTabs){
+            mobileTabs.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab === (which==="lb"?"lb":"how")));
+          }
+        }else{
+          if(howPanel) howPanel.style.display = "";
+          if(lbPanel) lbPanel.style.display = "";
+        }
+      }
+      if(mobileTabs){
+        mobileTabs.addEventListener("click", (e)=>{
+          const btn = e.target.closest(".tab");
+          if(!btn) return;
+          showTab(btn.dataset.tab);
+        });
+      }
+      window.addEventListener("resize", ()=>showTab("how"));
+      showTab("how");
+
+      // Tap-to-restart on mobile: clicking the wrapper play-again overlay triggers Enter (existing restart behavior)
+      const againOverlay = document.getElementById("px-play-again");
+      function sendEnter(){
+        try{
+          window.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter"}));
+          window.dispatchEvent(new KeyboardEvent("keyup",{key:"Enter"}));
+        }catch(_e){}
+      }
+      if(againOverlay){
+        againOverlay.addEventListener("click", (e)=>{
+          // any tap/click restarts
+          sendEnter();
+        });
+      }
+
       try{
         localStorage.setItem("p", initials);
         localStorage.setItem("u", initials);
@@ -379,7 +455,7 @@ body.fs-mode .gamebox{
       setInterval(renderLeaderboard, 6000);
 
       // ---- Auto-save on GAME OVER, remove SAVE UI, Enter to restart ----
-      let gameOverSeen = false; window.gameOverSeen = false;
+      let gameOverSeen = false;
       let savedThisDeath = false;
       let lastScoreSaved = -1;
 
@@ -443,7 +519,7 @@ body.fs-mode .gamebox{
         const isOver = hasSaveBtn || hasEnterInitials || hasGameOverInRoot;
         if(!isOver) return;
 
-        gameOverSeen = true; window.gameOverSeen = true;
+        gameOverSeen = true;
         hideSaveUI();
 
         const score = readScoreNow();
@@ -484,116 +560,5 @@ body.fs-mode .gamebox{
       }, {capture:true});
     })();
   </script>
-  <script>
-    (function(){
-      const fsBtn = document.getElementById('px-fullscreen');
-      const openHowto = document.getElementById('px-open-howto');
-      const openLb = document.getElementById('px-open-leaderboard');
-      const modal = document.getElementById('px-modal');
-      const modalTitle = document.getElementById('px-modal-title');
-      const modalBody = document.getElementById('px-modal-body');
-      const modalClose = document.getElementById('px-modal-close');
-      const howto = document.getElementById('px-howto');
-      const lb = document.getElementById('px-leaderboard');
-      const gamebox = document.querySelector('.gamebox');
-
-      // --- Modal helpers (mobile panels) ---
-      function openModal(title, html){
-        modalTitle.textContent = title;
-        modalBody.innerHTML = html;
-        modal.classList.add('open');
-        modal.setAttribute('aria-hidden','false');
-      }
-      function closeModal(){
-        modal.classList.remove('open');
-        modal.setAttribute('aria-hidden','true');
-      }
-      if(modalClose) modalClose.addEventListener('click', closeModal);
-      if(modal) modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-
-      function panelInner(panel){
-        // Strip the panel title so it doesn't duplicate in modal
-        const clone = panel.cloneNode(true);
-        const h = clone.querySelector('h3'); if(h) h.remove();
-        return clone.innerHTML;
-      }
-      if(openHowto && howto) openHowto.addEventListener('click', ()=> openModal('HOW TO PLAY', panelInner(howto)));
-      if(openLb && lb) openLb.addEventListener('click', ()=> openModal('LEADERBOARD', panelInner(lb)));
-
-      // --- Fullscreen (real if available, fallback to "fs-mode") ---
-      async function enterFS(){
-        try{
-          // Prefer real fullscreen if supported
-          if(gamebox && gamebox.requestFullscreen){
-            await gamebox.requestFullscreen();
-          }else{
-            document.body.classList.add('fs-mode');
-          }
-        }catch(_){
-          document.body.classList.add('fs-mode');
-        }
-        if(fsBtn) fsBtn.textContent = 'EXIT FULL SCREEN';
-      }
-      async function exitFS(){
-        try{
-          if(document.fullscreenElement && document.exitFullscreen){
-            await document.exitFullscreen();
-          }
-        }catch(_){}
-        document.body.classList.remove('fs-mode');
-        if(fsBtn) fsBtn.textContent = 'FULL SCREEN';
-      }
-      if(fsBtn){
-        fsBtn.addEventListener('click', ()=>{
-          if(document.fullscreenElement || document.body.classList.contains('fs-mode')) exitFS();
-          else enterFS();
-        });
-      }
-      document.addEventListener('fullscreenchange', ()=>{
-        if(!document.fullscreenElement){
-          document.body.classList.remove('fs-mode');
-          if(fsBtn) fsBtn.textContent = 'FULL SCREEN';
-        }else{
-          if(fsBtn) fsBtn.textContent = 'EXIT FULL SCREEN';
-        }
-      });
-
-      // --- Tap-to-restart on mobile when GAME OVER seen ---
-      if(gamebox){
-        gamebox.addEventListener('pointerdown', ()=>{
-          // gameOverSeen is defined in the wrapper script above
-          try{
-            if(window.gameOverSeen){
-              location.reload();
-            }
-          }catch(_){}
-        });
-      }
-
-      // --- Remove confusing legend (DDT/Poison) if present ---
-      function stripLegend(){
-        const spans = Array.from(document.querySelectorAll('span'));
-        const hit = spans.find(s => /DDT Bomb/i.test(s.textContent||'') || /\bPoison\b/i.test(s.textContent||''));
-        if(hit){
-          const row = hit.closest('div');
-          if(row) row.remove();
-        }
-      }
-      const legendTimer = setInterval(stripLegend, 600);
-      setTimeout(()=>clearInterval(legendTimer), 8000);
-    })();
-  </script>
-
-
-  <div id="px-modal" class="px-modal" aria-hidden="true">
-    <div class="px-modal-card">
-      <div class="px-modal-top">
-        <div class="px-modal-title" id="px-modal-title">MENU</div>
-        <button class="btn btn-small" id="px-modal-close">CLOSE</button>
-      </div>
-      <div class="px-modal-body" id="px-modal-body"></div>
-    </div>
-  </div>
-
 </body>
 </html>
