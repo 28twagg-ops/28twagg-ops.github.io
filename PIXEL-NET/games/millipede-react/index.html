@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
+
 :root{--text:#e9ecff;--muted:#a7b0d6;--card1:rgba(15,19,36,.72);--card2:rgba(10,12,26,.55);--stroke:rgba(255,255,255,.10);--shadow:0 14px 40px rgba(0,0,0,.35)}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -164,6 +165,11 @@ html{ overflow-anchor:none; }
 
 /* Mobile layout: single column + tabs control visibility */
 @media (max-width: 980px){
+  html,body{height:100dvh;overflow:hidden}
+  .wrap{min-height:100dvh}
+  .layout{min-height:0;max-height:calc(100dvh - 120px);overflow:hidden}
+  .panel{max-height:100%;overflow:auto}
+
   .layout{
     grid-template-columns: 1fr;
     gap:12px;
@@ -264,14 +270,15 @@ body.fs-on .fs-corners{
   pointer-events:auto;
 }
 
-</style>
+
+  </style>
 
   <!-- React build -->
   <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
 </head>
 <body>
 <!-- PATCH_VERSION:MILLIPede_WRAPPER_scrollfix_v2026-02-02_1625cst -->
-<div id="pn-version-banner">V1.4</div>
+<div id="pn-version-banner">V1.5</div>
 
   
   <div class="fs-corners">
@@ -282,6 +289,14 @@ body.fs-on .fs-corners{
   <div class="topbar">
     <button class="btn" id="px-exit">EXIT</button>
     <div class="badge" id="px-badge" title="Click to change initials on home page">???</div>
+
+  <div class="m-tabs" role="tablist" aria-label="Millipede panels">
+        <button class="m-tab is-active" id="tab-game" data-tab="game" type="button">GAME</button>
+        <button class="m-tab" id="tab-howto" data-tab="howto" type="button">HOW TO PLAY</button>
+        <button class="m-tab" id="tab-leader" data-tab="leader" type="button">LEADERBOARD</button>
+        <button class="m-tab m-tab-primary" id="tab-fullscreen" data-tab="fullscreen" type="button">FULL SCREEN</button>
+      </div>
+
   </div>
 
   <div class="layout">
@@ -299,22 +314,12 @@ body.fs-on .fs-corners{
     <main class="panel" id="panel-game">
       <h3 class="title">MILLIPEDE CHAOS</h3>
 
-      <div class="m-tabs" role="tablist" aria-label="Millipede panels">
-        <button class="m-tab is-active" id="tab-game" data-tab="game" type="button">GAME</button>
-        <button class="m-tab" id="tab-howto" data-tab="howto" type="button">HOW TO PLAY</button>
-        <button class="m-tab" id="tab-leader" data-tab="leader" type="button">LEADERBOARD</button>
-        <button class="m-tab m-tab-primary" id="tab-fullscreen" data-tab="fullscreen" type="button">FULL SCREEN</button>
-      </div>
+      
 
       <div class="gamebox">
         <div id="root"></div>
-        <div id="px-play-again">
-          <div class="inner">
-            <h3>GAME OVER</h3>
-            <button id="px-play-again-btn">PLAY AGAIN</button>
-          </div>
         </div>
-      </div>
+</div>
       <div class="muted">Leaderboard refreshes automatically.</div>
     </main>
 
@@ -512,24 +517,16 @@ body.fs-on .fs-corners{
             await PixelNet.submitScore(SLUG, score);
           }
           setTimeout(renderLeaderboard, 600);
-
-          const pa = document.getElementById("px-play-again");
-          if(pa) pa.style.display = "flex";
-        }catch(err){
+}catch(err){
           console.error("[Millipede wrapper] auto-save failed:", err);
-          const pa = document.getElementById("px-play-again");
-          if(pa) pa.style.display = "flex";
-        }
+}
       }
 
       const obs = new MutationObserver(()=>autoSaveIfGameOver());
       obs.observe(document.body, {subtree:true, childList:true, characterData:true});
       autoSaveIfGameOver();
 
-      const paBtn = document.querySelector('#px-play-again button');
-      if(paBtn){ paBtn.onclick = ()=>location.reload(); }
-
-      window.addEventListener("keydown", (e)=>{
+      const paBtn = document.querySelector('window.addEventListener("keydown", (e)=>{
         if((e.code==="Enter" || e.key==="Enter") && gameOverSeen){
           e.preventDefault();
           location.reload();
