@@ -1,16 +1,15 @@
 <!-- FORCE_PAGES_REDEPLOY -->
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MILLIPEDE CHAOS</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>MILLIPEDE CHAOS</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<style>
 
 :root{
   --text:#e9ecff;
@@ -263,208 +262,99 @@ main.panel{padding-bottom:12px}
 #px-init-save:hover{background:rgba(255,255,255,.14)}
 .px-init-hint{margin-top:10px; color:var(--muted); font-size:12px;}
 
-</style>
 
-  <!-- React build -->
-  <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
+/* V1.9 fixes */
+.px-init-modal{position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;}
+.px-init-modal.hidden{display:none !important;}
+.panel{min-width:0;}
+.layout{grid-template-areas:'howto game lb';}
+.layout > aside[data-panel='howto']{grid-area:howto;}
+.layout > main[data-panel='game']{grid-area:game;}
+.layout > aside[data-panel='lb']{grid-area:lb;}
+</style>
+<!-- React build -->
+<script crossorigin="" src="./assets/index-BTthQfIO.js" type="module"></script>
 </head>
 <body>
-
-<section id="px-init-modal" class="px-init-modal hidden" aria-hidden="true">
-  <div class="px-init-backdrop"></div>
-  <div class="px-init-card" role="dialog" aria-modal="true" aria-label="Enter Initials">
-    <div class="px-init-header">
-      <span>ENTER INITIALS</span>
-      <button id="px-init-close" type="button" aria-label="Close">×</button>
-    </div>
-    <input id="px-init-input" type="text" maxlength="3" placeholder="_ _ _" autocomplete="off"
-      autocapitalize="characters" spellcheck="false" />
-    <button id="px-init-save" type="button">SAVE</button>
-    <div class="px-init-hint">Press Enter to save</div>
-  </div>
+<section aria-hidden="true" class="px-init-modal hidden" id="px-init-modal">
+<div class="px-init-backdrop"></div>
+<div aria-label="Enter Initials" aria-modal="true" class="px-init-card" role="dialog">
+<div class="px-init-header">
+<span>ENTER INITIALS</span>
+<button aria-label="Close" id="px-init-close" type="button">×</button>
+</div>
+<input autocapitalize="characters" autocomplete="off" id="px-init-input" maxlength="3" placeholder="_ _ _" spellcheck="false" type="text"/>
+<button id="px-init-save" type="button">SAVE</button>
+<div class="px-init-hint">Press Enter to save</div>
+</div>
 </section>
-<div id="pn-version-pill">V1.8</div>
-
-  <div class="topbar">
-    <button class="btn" id="px-exit">EXIT</button>
-    <div class="badge" id="px-badge" title="Click to change initials">???</div>
-  </div>
-
-  <div class="layout">
-    <aside class="panel" data-panel="howto">
-      <h3 class="title">HOW TO PLAY</h3>
-      <div class="muted">
-        <p><b>Move:</b> Arrow Keys / WASD</p>
-        <p><b>Shoot:</b> Space</p>
-        <p><b>Goal:</b> Clear the swarm, survive, score high.</p>
-        <p><b>DDT Bomb:</b> shoot it to create a gas cloud that clears enemies.</p>
-        <p><b>Poison:</b> poisoned mushrooms make the millipede dive downward.</p>
-
-      </div>
-      <div class="hint">Initials are set on the homepage. Click the badge (top-right) to change.</div>
-      <div class="hint"><b>Game Over:</b> score auto-saves. Press <b>Enter</b> to restart.</div>
-    </aside>
-
-    <main class="panel" data-panel="game">
-      <h3 class="title">MILLIPEDE CHAOS</h3>
-      <div class="mobile-tabs" role="tablist" aria-label="Millipede tabs">
-        <button class="tab-btn is-active" data-tab="game" type="button">GAME</button>
-        <button class="tab-btn" data-tab="howto" type="button">HOW TO PLAY</button>
-        <button class="tab-btn" data-tab="lb" type="button">LEADERBOARD</button>
+<div id="pn-version-pill">V1.9</div>
+<div class="topbar">
+<button class="btn" id="px-exit">EXIT</button>
+<div class="badge" id="px-badge" title="Click to change initials">???</div>
 </div>
-      <div class="tabviews">
-        <section class="view is-active" data-view="game">
-
-
-      <div class="gamebox">
-        <div class="gameframe" id="px-gameframe">
-          <div id="root"></div>
-        </div>
+<div class="layout">
+<aside class="panel" data-panel="howto">
+<h3 class="title">HOW TO PLAY</h3>
+<div class="muted">
+<p><b>Move:</b> Arrow Keys / WASD</p>
+<p><b>Shoot:</b> Space</p>
+<p><b>Goal:</b> Clear the swarm, survive, score high.</p>
+<p><b>DDT Bomb:</b> shoot it to create a gas cloud that clears enemies.</p>
+<p><b>Poison:</b> poisoned mushrooms make the millipede dive downward.</p>
 </div>
-      </div>
-      <div class="muted">Leaderboard refreshes automatically.</div>
-    
-        </section>
-        <section class="view" data-view="howto">
+<div class="hint">Initials are set on the homepage. Click the badge (top-right) to change.</div>
+<div class="hint"><b>Game Over:</b> score auto-saves. Press <b>Enter</b> to restart.</div>
+</aside>
+<main class="panel" data-panel="game">
+<h3 class="title">MILLIPEDE CHAOS</h3>
+<div aria-label="Millipede tabs" class="mobile-tabs" role="tablist">
+<button class="tab-btn is-active" data-tab="game" type="button">GAME</button>
+<button class="tab-btn" data-tab="howto" type="button">HOW TO PLAY</button>
+<button class="tab-btn" data-tab="lb" type="button">LEADERBOARD</button>
+</div>
+<div class="tabviews">
+<section class="view is-active" data-view="game">
+<div class="gamebox">
+<div class="gameframe" id="px-gameframe">
+<div id="root"></div>
+</div>
+</div>
+</section></div>
+<div class="muted">Leaderboard refreshes automatically.</div>
 
-      <h3 class="title">HOW TO PLAY</h3>
-      <div class="muted">
-        <p><b>Move:</b> Arrow Keys / WASD</p>
-        <p><b>Shoot:</b> Space</p>
-        <p><b>Goal:</b> Clear the swarm, survive, score high.</p>
-        <p><b>DDT Bomb:</b> shoot it to create a gas cloud that clears enemies.</p>
-        <p><b>Poison:</b> poisoned mushrooms make the millipede dive downward.</p>
-
-      </div>
-      <div class="hint">Initials are set on the homepage. Click the badge (top-right) to change.</div>
-      <div class="hint"><b>Game Over:</b> score auto-saves. Press <b>Enter</b> to restart.</div>
-    
-        </section>
-        <section class="view" data-view="lb">
-          <h3 class="title">LEADERBOARD</h3>
-          <div class="muted">Top 10</div>
-          <div class="lb-grid">
-            <ol class="lb-col" id="lb-left-m"></ol>
-            <ol class="lb-col" id="lb-right-m"></ol>
-          </div>
-          <div class="lb-meta" id="lb-status-m">Loading…</div>
-        </section>
-      </div>
-
-    </main>
-
-    <aside class="panel" data-panel="lb">
-      <h3 class="title">LEADERBOARD</h3>
-      <div class="muted">Top 10</div>
-      <div class="lb-grid">
-        <ol class="lb-col" id="lb-left"></ol>
-        <ol class="lb-col" id="lb-right"></ol>
-      </div>
-      <div class="lb-meta" id="lb-status">Loading…</div>
-    </aside>
-  </div>
-
-  <script src="../../js/engine.js"></script>
-  <script>
-    (function(){
-      const SLUG = "millipede-react";
-
-      function norm(v){ return String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3) || "???"; }
-      const initials = norm(localStorage.getItem("px_player_initials") || sessionStorage.getItem("playerInitials") || "???");
-
-      // Keep storages in sync for PixelNet + the React build (various keys observed)
-      sessionStorage.setItem("playerInitials", initials);
-      try{
-        localStorage.setItem("p", initials);
-        localStorage.setItem("u", initials);
-        localStorage.setItem("n", initials);
-        localStorage.setItem("nm", initials);
-      }catch(_){}
-
-      if(window.PixelNet && PixelNet.init) PixelNet.init();
-
-      const badge = document.getElementById("px-badge");
-      badge.textContent = initials || "???";
-      document.getElementById("px-exit").onclick = () => location.href = "../../index.html";
-
-      // ---- Initials modal (badge click) ----
-      const modal = document.getElementById("px-init-modal");
-      const modalInput = document.getElementById("px-init-input");
-      const modalSave = document.getElementById("px-init-save");
-      const modalClose = document.getElementById("px-init-close");
-      const backdrop = modal ? modal.querySelector(".px-init-backdrop") : null;
-
-      function openInitials(){
-        if(!modal) return;
-        modal.classList.remove("hidden");
-        modal.setAttribute("aria-hidden","false");
-        if(modalInput){
-          modalInput.value = initials;
-          setTimeout(()=>modalInput.focus(), 0);
-          modalInput.select?.();
-        }
-      }
-      function closeInitials(){
-        if(!modal) return;
-        modal.classList.add("hidden");
-        modal.setAttribute("aria-hidden","true");
-      }
-      function applyInitials(v){
-        const nv = norm(v);
-        localStorage.setItem("px_player_initials", nv);
-        sessionStorage.setItem("playerInitials", nv);
-        try{
-          localStorage.setItem("p", nv);
-          localStorage.setItem("u", nv);
-          localStorage.setItem("n", nv);
-          localStorage.setItem("nm", nv);
-        }catch(_){}
-        badge.textContent = nv;
-      }
-
-      badge.addEventListener("click", openInitials);
-      if(modalClose) modalClose.addEventListener("click", closeInitials);
-      if(backdrop) backdrop.addEventListener("click", closeInitials);
-
-      if(modalSave){
-        modalSave.addEventListener("click", ()=>{
-          applyInitials(modalInput ? modalInput.value : "");
-          closeInitials();
-        });
-      }
-      if(modalInput){
-        modalInput.addEventListener("keydown", (e)=>{
-          if(e.key === "Enter"){ e.preventDefault(); applyInitials(modalInput.value); closeInitials(); }
-          if(e.key === "Escape"){ e.preventDefault(); closeInitials(); }
-        });
-        modalInput.addEventListener("input", ()=>{
-          modalInput.value = norm(modalInput.value);
-        });
-      }
+<section class="view" data-view="howto">
+<h3 class="title">HOW TO PLAY</h3>
+<div class="muted">
+<p><b>Move:</b> Arrow Keys / WASD</p>
+<p><b>Shoot:</b> Space</p>
+<p><b>Goal:</b> Clear the swarm, survive, score high.</p>
+<p><b>DDT Bomb:</b> shoot it to create a gas cloud that clears enemies.</p>
+<p><b>Poison:</b> poisoned mushrooms make the millipede dive downward.</p>
+</div>
+<div class="hint">Initials are set on the homepage. Click the badge (top-right) to change.</div>
+<div class="hint"><b>Game Over:</b> score auto-saves. Press <b>Enter</b> to restart.</div>
+</section>
+<section class="view" data-view="lb">
+<h3 class="title">LEADERBOARD</h3>
+<div class="muted">Top 10</div>
+<div class="lb-grid">
+<ol class="lb-col" id="lb-left-m"></ol>
+<ol class="lb-col" id="lb-right-m"></ol>
+</div>
+<div class="lb-meta" id="lb-status-m">Loading…</div>
+</section>
+</main><aside class="panel" data-panel="lb">
+<h3 class="title">LEADERBOARD</h3>
+<div class="muted">Top 10</div>
+<div class="lb-grid">
+<ol class="lb-col" id="lb-left"></ol>
+<ol class="lb-col" id="lb-right"></ol>
+</div>
+<div class="lb-meta" id="lb-status">Loading…</div>
+</aside></div>
 
 
-      // ---- Mobile tabs ----
-      const views = Array.from(document.querySelectorAll('.tabviews .view[data-view]'));
-      const tabBtns = Array.from(document.querySelectorAll('.mobile-tabs .tab-btn[data-tab]'));
 
-      function setActive(tab){
-        // swap views (inside main)
-        views.forEach(v=>{
-          v.classList.toggle('is-active', v.getAttribute('data-view') === tab);
-        });
-        tabBtns.forEach(b=>{
-          b.classList.toggle('is-active', b.getAttribute('data-tab') === tab);
-        });
-      }
-
-      // Default: show GAME view
-      setActive('game');
-
-      tabBtns.forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const tab = btn.getAttribute('data-tab');
-          if(tab) setActive(tab);
-        });
-      });
-      
-
+<script src="../../js/engine.js"></script>
+<script></script></body></html>
