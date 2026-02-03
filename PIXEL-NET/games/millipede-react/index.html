@@ -79,7 +79,7 @@ body{
 .muted{color:var(--muted)}
 .hint{color:var(--muted);font-size:12px;margin-top:10px}
 
-main.panel{display:flex;flex-direction:column;min-height:0;align-items:stretch}
+main.panel{display:flex;flex-direction:column;min-height:0}
 
 /* ✅ lock touch + overscroll ONLY inside the game box */
 .gamebox{
@@ -91,15 +91,10 @@ main.panel{display:flex;flex-direction:column;min-height:0;align-items:stretch}
   min-height:0;
   touch-action:none;
   overscroll-behavior:contain;
-  flex:0 0 auto;
-  aspect-ratio: 20 / 32;
-  width: auto;
-  max-width: 100%;
-  height: clamp(460px, calc(100dvh - 230px), 840px);
-  align-self: center;
+  flex:1 1 auto;
 }
 
-#root{width:100%;height:100%;min-height:0;padding-top:6px;box-sizing:border-box}
+#root{width:100%;height:100%;min-height:0}
 #root > div{height:100%}
 #root canvas{width:100% !important;height:100% !important;display:block}
 
@@ -115,99 +110,158 @@ main.panel{display:flex;flex-direction:column;min-height:0;align-items:stretch}
   main.panel .gamebox{flex:1 1 auto}
 }
 
-/* VERSION */
-#pn-version-pill{
+/* VERSION BANNER */
+#pn-version-banner{
   position:fixed;
-  left:14px; top:12px;
+  left:0; right:0; top:0;
   z-index:999999;
-  font:800 12px/1 "Orbitron", system-ui, sans-serif;
-  letter-spacing:.08em;
-  padding:8px 10px;
-  border-radius:999px;
-  background:rgba(0,0,0,0.55);
-  color:var(--text);
-  border:1px solid rgba(255,255,255,0.16);
-  box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  font:12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  padding:6px 10px;
+  background:rgba(0,0,0,0.78);
+  color:#e9ecff;
+  border-bottom:1px solid rgba(255,255,255,0.15);
   pointer-events:none;
 }
 body{ padding-top:28px; }
 
-.fs-row{display:flex;gap:10px;margin:0 0 10px}
-.btn-wide{padding:10px 12px;letter-spacing:.14em}
-
-/* Prevent scroll-jumps from leaderboard refresh */
-html{overflow-anchor:none}
-body{overscroll-behavior:none}
-
-/* Fullscreen (real + pseudo) */
-body.px-fs{
-  overflow:hidden;
+/* ===== V1.4 MOBILE TABS + TRUE ASPECT + FULLSCREEN ===== */
+#pn-version-banner{
+  position:fixed; left:14px; top:10px;
+  z-index:50;
+  padding:6px 10px;
+  border-radius:999px;
+  font:700 12px/1 "Orbitron", system-ui, sans-serif;
+  letter-spacing:.06em;
+  color:var(--text);
+  background:rgba(0,0,0,.28);
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(10px);
 }
-body.px-fs .layout{
-  grid-template-columns: 1fr !important;
-  padding: 10px !important;
+.layout{
+  /* give center more room on desktop */
+  grid-template-columns: 360px minmax(560px, 1fr) 360px;
+  gap:18px;
 }
-body.px-fs aside.panel{display:none !important;}
-body.px-fs .topbar{position:fixed;left:0;right:0;top:0;z-index:999998;}
-body.px-fs main.panel{max-width:none !important;}
-body.px-fs main.panel .muted{display:none;}
-body.px-fs .gamebox{
-  height: calc(100dvh - 86px) !important;
-  max-height: none !important;
+#panel-game .gamebox{
+  /* let the game breathe more on desktop */
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px;
 }
-body.px-fs #pn-version-pill{top:70px}
+#panel-game #root{
+  width:100%;
+  max-width:720px;
+}
 
-/* Mobile layout: tabs, no page scroll; panels become one shared sheet */
-@media (max-width: 900px){
-  body{height:100dvh;overflow:hidden}
+/* Tabs default hidden on desktop */
+.m-tabs{ display:none; }
+
+/* Prevent scroll jump on mobile when leaderboard refreshes */
+html{ overflow-anchor:none; }
+#panel-leader{ overflow-anchor:none; }
+
+/* Mobile layout: single column + tabs control visibility */
+@media (max-width: 980px){
   .layout{
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
-    gap: 10px;
-    padding: 10px;
-    height: calc(100dvh - 64px);
+    gap:12px;
   }
-  aside.panel{
-    display:none;
-  }
-  main.panel{
-    min-height:0;
-  }
-  .gamebox{
-    height: clamp(440px, calc(100dvh - 220px), 78dvh);
-  }
-  .mobile-tabs{
+  /* show tabs above game */
+  .m-tabs{
     display:flex;
-    gap:10px;
-    padding: 0 10px 12px;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:10px 0 6px;
   }
-  .mobile-tabs .tab{
-    flex:1 1 0;
-    border-radius:999px;
-    border:1px solid rgba(255,255,255,0.16);
-    background:rgba(0,0,0,0.35);
-    color:var(--text);
-    font:800 12px/1 "Orbitron",system-ui,sans-serif;
-    letter-spacing:.10em;
+  .m-tab{
+    flex:1 1 auto;
     padding:10px 12px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(0,0,0,.22);
+    color:var(--text);
+    font:700 12px/1 "Orbitron", system-ui, sans-serif;
+    letter-spacing:.06em;
+    text-transform:uppercase;
   }
-  .mobile-tabs .tab.active{
-    background:rgba(255,255,255,0.08);
-    border-color:rgba(255,255,255,0.22);
+  .m-tab.is-active{
+    background:rgba(255,255,255,.10);
+    border-color:rgba(255,255,255,.22);
   }
-  /* Mobile sheets */
-  .panel.px-sheet{
-    display:block;
-    max-height: 26dvh;
-    overflow:auto;
-    padding:14px;
+  .m-tab-primary{
+    flex:1 1 100%;
   }
-  .panel.px-sheet .title{margin-top:0}
-  .panel.px-sheet .lb-grid{grid-template-columns:1fr 1fr}
-  .panel.px-sheet .lb-meta{margin-top:8px}
+
+  /* hide side panels unless selected */
+  body[data-tab="game"] #panel-howto,
+  body[data-tab="game"] #panel-leader{ display:none; }
+
+  body[data-tab="howto"] #panel-game,
+  body[data-tab="howto"] #panel-leader{ display:none; }
+
+  body[data-tab="leader"] #panel-game,
+  body[data-tab="leader"] #panel-howto{ display:none; }
+
+  /* Make game taller on mobile without distortion (game root controls aspect) */
+  #panel-game #root{ max-width: min(92vw, 560px); }
+  #panel-game .gamebox{ padding:8px; }
 }
-@media (min-width: 901px){
-  .mobile-tabs{display:none}
+
+/* Fullscreen: game-only */
+body.fs-on .topbar,
+body.fs-on #panel-howto,
+body.fs-on #panel-leader{ display:none !important; }
+
+body.fs-on{
+  background:#000;
+}
+body.fs-on .layout{
+  grid-template-columns: 1fr !important;
+  padding:0;
+  margin:0;
+}
+body.fs-on #panel-game{
+  border-radius:0;
+  background:#000;
+}
+body.fs-on #panel-game .title,
+body.fs-on #panel-game .muted{ display:none; }
+body.fs-on #panel-game .gamebox{
+  padding:0;
+  height:100dvh;
+}
+body.fs-on #panel-game #root{
+  max-width:none;
+  width:100vw;
+  height:100dvh;
+}
+body.fs-on #tab-fullscreen{
+  position:fixed;
+  top:12px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:60;
+  width:auto;
+  padding:10px 14px;
+}
+body.fs-on #pn-version-banner{
+  top:12px;
+}
+body.fs-on .fs-corners{
+  display:flex;
+}
+.fs-corners{
+  display:none;
+  position:fixed;
+  inset:12px 12px auto 12px;
+  z-index:60;
+  justify-content:space-between;
+  pointer-events:none;
+}
+.fs-corners .btn, .fs-corners .badge{
+  pointer-events:auto;
 }
 
 </style>
@@ -216,15 +270,22 @@ body.px-fs #pn-version-pill{top:70px}
   <script type="module" crossorigin src="./assets/index-BTthQfIO.js"></script>
 </head>
 <body>
-<!-- PATCH_VERSION:V1.3 -->
-<div id="pn-version-pill">V1.3</div>
-<div class="topbar">
+<!-- PATCH_VERSION:MILLIPede_WRAPPER_scrollfix_v2026-02-02_1625cst -->
+<div id="pn-version-banner">V1.4</div>
+
+  
+  <div class="fs-corners">
+    <button class="btn" id="fs-exit">EXIT</button>
+    <div class="badge" id="fs-badge">???</div>
+  </div>
+
+  <div class="topbar">
     <button class="btn" id="px-exit">EXIT</button>
     <div class="badge" id="px-badge" title="Click to change initials on home page">???</div>
   </div>
 
   <div class="layout">
-    <aside class="panel">
+    <aside class="panel" id="panel-howto">
       <h3 class="title">HOW TO PLAY</h3>
       <div class="muted">
         <p><b>Move:</b> Arrow Keys / WASD</p>
@@ -235,9 +296,16 @@ body.px-fs #pn-version-pill{top:70px}
       <div class="hint"><b>Game Over:</b> score auto-saves. Press <b>Enter</b> to restart.</div>
     </aside>
 
-    <main class="panel">
+    <main class="panel" id="panel-game">
       <h3 class="title">MILLIPEDE CHAOS</h3>
-      <div class="fs-row"><button class="btn btn-wide" id="px-fullscreen">FULL SCREEN</button></div>
+
+      <div class="m-tabs" role="tablist" aria-label="Millipede panels">
+        <button class="m-tab is-active" id="tab-game" data-tab="game" type="button">GAME</button>
+        <button class="m-tab" id="tab-howto" data-tab="howto" type="button">HOW TO PLAY</button>
+        <button class="m-tab" id="tab-leader" data-tab="leader" type="button">LEADERBOARD</button>
+        <button class="m-tab m-tab-primary" id="tab-fullscreen" data-tab="fullscreen" type="button">FULL SCREEN</button>
+      </div>
+
       <div class="gamebox">
         <div id="root"></div>
         <div id="px-play-again">
@@ -250,7 +318,7 @@ body.px-fs #pn-version-pill{top:70px}
       <div class="muted">Leaderboard refreshes automatically.</div>
     </main>
 
-    <aside class="panel">
+    <aside class="panel" id="panel-leader">
       <h3 class="title">LEADERBOARD</h3>
       <div class="muted">Top 10</div>
       <div class="lb-grid">
@@ -259,11 +327,6 @@ body.px-fs #pn-version-pill{top:70px}
       </div>
       <div class="lb-meta" id="lb-status">Loading…</div>
     </aside>
-
-  <div class="mobile-tabs" id="px-mobile-tabs" aria-hidden="true">
-    <button class="tab active" data-tab="how">HOW TO PLAY</button>
-    <button class="tab" data-tab="lb">LEADERBOARD</button>
-  </div>
   </div>
 
   <script src="../../js/engine.js"></script>
@@ -276,92 +339,6 @@ body.px-fs #pn-version-pill{top:70px}
 
       // Keep storages in sync for PixelNet + the React build (various keys observed)
       sessionStorage.setItem("playerInitials", initials);
-
-      // Fullscreen button (real if supported; otherwise pseudo-fullscreen)
-      const fsBtn = document.getElementById("px-fullscreen");
-      function setFsLabel(){
-        if(!fsBtn) return;
-        const isFs = !!document.fullscreenElement || document.body.classList.contains("px-fs");
-        fsBtn.textContent = isFs ? "EXIT FULL SCREEN" : "FULL SCREEN";
-      }
-      async function enterFs(){
-        const gamebox = document.querySelector("main.panel .gamebox");
-        if(gamebox && gamebox.requestFullscreen){
-          try{ await gamebox.requestFullscreen(); }catch(_e){ document.body.classList.add("px-fs"); }
-        }else{
-          document.body.classList.add("px-fs");
-        }
-        setFsLabel();
-      }
-      async function exitFs(){
-        if(document.fullscreenElement){
-          try{ await document.exitFullscreen(); }catch(_e){}
-        }
-        document.body.classList.remove("px-fs");
-        setFsLabel();
-      }
-      if(fsBtn){
-        fsBtn.addEventListener("click", ()=>{
-          const isFs = !!document.fullscreenElement || document.body.classList.contains("px-fs");
-          if(isFs) exitFs(); else enterFs();
-        });
-      }
-      document.addEventListener("fullscreenchange", setFsLabel);
-      setFsLabel();
-
-      // Mobile tabs: convert left/right panels into a single sheet without page scroll
-      const mobileTabs = document.getElementById("px-mobile-tabs");
-      const panels = document.querySelectorAll(".layout > aside.panel");
-      const howPanel = panels[0];
-      const lbPanel = panels[1];
-      function ensureSheet(){
-        if(!howPanel || !lbPanel) return;
-        howPanel.classList.add("px-sheet");
-        lbPanel.classList.add("px-sheet");
-      }
-      function showTab(which){
-        ensureSheet();
-        if(window.matchMedia("(max-width: 900px)").matches){
-          if(which === "lb"){
-            howPanel.style.display = "none";
-            lbPanel.style.display = "block";
-          }else{
-            lbPanel.style.display = "none";
-            howPanel.style.display = "block";
-          }
-          if(mobileTabs){
-            mobileTabs.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab === (which==="lb"?"lb":"how")));
-          }
-        }else{
-          if(howPanel) howPanel.style.display = "";
-          if(lbPanel) lbPanel.style.display = "";
-        }
-      }
-      if(mobileTabs){
-        mobileTabs.addEventListener("click", (e)=>{
-          const btn = e.target.closest(".tab");
-          if(!btn) return;
-          showTab(btn.dataset.tab);
-        });
-      }
-      window.addEventListener("resize", ()=>showTab("how"));
-      showTab("how");
-
-      // Tap-to-restart on mobile: clicking the wrapper play-again overlay triggers Enter (existing restart behavior)
-      const againOverlay = document.getElementById("px-play-again");
-      function sendEnter(){
-        try{
-          window.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter"}));
-          window.dispatchEvent(new KeyboardEvent("keyup",{key:"Enter"}));
-        }catch(_e){}
-      }
-      if(againOverlay){
-        againOverlay.addEventListener("click", (e)=>{
-          // any tap/click restarts
-          sendEnter();
-        });
-      }
-
       try{
         localStorage.setItem("p", initials);
         localStorage.setItem("u", initials);
@@ -558,6 +535,72 @@ body.px-fs #pn-version-pill{top:70px}
           location.reload();
         }
       }, {capture:true});
+
+      // ===== V1.4 Mobile tabs =====
+      function setTab(t){
+        document.body.dataset.tab = t;
+        const map = {game:"tab-game", howto:"tab-howto", leader:"tab-leader"};
+        ["tab-game","tab-howto","tab-leader"].forEach(id=>{
+          const el=document.getElementById(id);
+          if(el) el.classList.toggle("is-active", id===map[t]);
+        });
+      }
+      // default
+      if(!document.body.dataset.tab) setTab("game");
+      ["tab-game","tab-howto","tab-leader"].forEach(id=>{
+        const el=document.getElementById(id);
+        if(!el) return;
+        el.addEventListener("click", ()=> setTab(el.dataset.tab));
+      });
+
+      // ===== V1.4 Fullscreen (game-only) =====
+      const fsBtn = document.getElementById("tab-fullscreen");
+      const fsExit = document.getElementById("fs-exit");
+      const fsBadge = document.getElementById("fs-badge");
+      function syncFsBadge(){ if(fsBadge) fsBadge.textContent = badge?.textContent || initials; }
+      syncFsBadge();
+
+      async function enterFs(){
+        // Prefer real Fullscreen API (Android/Chrome, most desktop)
+        const target = document.getElementById("panel-game");
+        try{
+          if(target && target.requestFullscreen) await target.requestFullscreen();
+        }catch(_){}
+        document.body.classList.add("fs-on");
+        if(fsBtn) fsBtn.textContent = "EXIT FULL SCREEN";
+        syncFsBadge();
+      }
+      async function exitFs(){
+        try{
+          if(document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen();
+        }catch(_){}
+        document.body.classList.remove("fs-on");
+        if(fsBtn) fsBtn.textContent = "FULL SCREEN";
+        // return to game tab on mobile
+        setTab("game");
+      }
+      function isFs(){ return document.body.classList.contains("fs-on") || !!document.fullscreenElement; }
+
+      if(fsBtn){
+        fsBtn.addEventListener("click", ()=>{
+          if(isFs()) exitFs(); else enterFs();
+        });
+      }
+      if(fsExit){
+        fsExit.addEventListener("click", ()=> {
+          exitFs();
+          // same as normal exit
+          location.href = "../../index.html";
+        });
+      }
+
+      document.addEventListener("fullscreenchange", ()=>{
+        if(!document.fullscreenElement){
+          // if user swiped out or browser exited fullscreen
+          if(document.body.classList.contains("fs-on")) exitFs();
+        }
+      });
+
     })();
   </script>
 </body>
