@@ -1,5 +1,5 @@
 <!-- PIXEL-NET Millipede Wrapper -->
-<!-- Version: V2.3 -->
+<!-- Version: V2.4 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -502,7 +502,7 @@ main.panel {
      VERSION BANNER
      ============================================================ -->
 <div id="pn-version-banner">
-  PIXEL-NET · Millipede · <strong>V2.3</strong>
+  PIXEL-NET · Millipede · <strong>V2.4</strong>
 </div>
 
 <!-- ============================================================
@@ -927,6 +927,7 @@ main.panel {
   // approach works; we just need a faster cadence for the GAME OVER moment.
   // --------------------------------------------------------
   var gameOverSeen    = false;
+  var isGameOverNow   = false;
   var savedThisDeath  = false;
   var lastScoreSaved  = -1;
 
@@ -988,8 +989,8 @@ main.panel {
 
   /** Core check — called on every poll tick. */
   async function checkGameOver() {
-    var allButtons = Array.from(document.querySelectorAll("#root button, button"));
-    var hasSaveBtn = allButtons.some(function (b) {
+    var rootButtons = Array.from(document.querySelectorAll("#root button"));
+    var hasSaveBtn = rootButtons.some(function (b) {
       return (b.textContent || "").trim().toUpperCase() === "SAVE";
     });
     var rootEls = Array.from(document.querySelectorAll("#root *"));
@@ -1000,7 +1001,9 @@ main.panel {
       return (el.textContent || "").trim().toUpperCase() === "GAME OVER";
     });
 
-    if (!(hasSaveBtn || hasInitialsPrompt || hasGameOver)) return;   // not dead yet
+    isGameOverNow = (hasSaveBtn || hasInitialsPrompt || hasGameOver);
+
+    if (!isGameOverNow) return;   // not dead yet
 
     // --- We are in GAME OVER state ---
     gameOverSeen = true;
@@ -1040,6 +1043,7 @@ main.panel {
       e.preventDefault();
       // Reset death-tracking flags so the next death submits again.
       gameOverSeen   = false;
+      isGameOverNow  = false;
       savedThisDeath = false;
       sentOnce       = false;
       ACTIVE_SLUG   = SLUG;
@@ -1053,7 +1057,7 @@ main.panel {
   // so the user can immediately start again (no keyboard required).
   // --------------------------------------------------------
   function restartNowFromPointer(e) {
-    if (!gameOverSeen) return;
+    if (!gameOverSeen || !isGameOverNow) return;
     if (!modal.classList.contains("hidden")) return; // don't hijack modal taps
     // Don't treat dragging/swiping as a restart.
     if (e && e.type === "pointerup" && e.pointerType === "touch") {
@@ -1064,6 +1068,7 @@ main.panel {
       e.stopPropagation();
     }
     gameOverSeen   = false;
+    isGameOverNow  = false;
     savedThisDeath = false;
     sentOnce       = false;
     location.reload();
