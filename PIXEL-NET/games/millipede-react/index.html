@@ -124,7 +124,7 @@ main.panel{display:flex;flex-direction:column;min-height:0}
 body{ padding-top:28px; }
 
 
-/* V1.13 fixes */
+/* V1.14 fixes */
 .layout > *{min-width:0;}
 .panel{min-height:0;}
 .panel.leaderboard{overflow:hidden;}
@@ -138,36 +138,7 @@ body{ padding-top:28px; }
 #root .legend, #root [class*="legend"]{display:none !important;}
 /* initials modal (wrapper) */
 
-/* V1.13 fixes */
-#px-play-again{
-  position:absolute;
-  inset:0;
-  display:none; /* shown only on Game Over */
-  align-items:center;
-  justify-content:center;
-  background: rgba(0,0,0,.55);
-  z-index: 50;
-}
-#px-play-again .inner{
-  background: rgba(10,12,26,.86);
-  border:1px solid rgba(255,255,255,.14);
-  border-radius: 16px;
-  padding: 18px 22px;
-  text-align:center;
-}
-#px-play-again h3{margin:0 0 10px;font-family:"Orbitron",system-ui,sans-serif;letter-spacing:.10em}
-#px-play-again button{
-  height:42px;
-  padding:0 16px;
-  border-radius: 14px;
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(10,12,26,.72);
-  color: var(--text);
-  font: 800 13px/1 "Orbitron",system-ui,sans-serif;
-  letter-spacing: .10em;
-  cursor:pointer;
-}
-
+/* V1.14 fixes */
 .game-stage{
   position:absolute;
   inset:0;
@@ -288,7 +259,7 @@ body{ padding-top:28px; }
 </head>
 <body>
 <!-- PATCH_VERSION:MILLIPede_WRAPPER_scrollfix_v2026-02-02_1625cst -->
-<div id="pn-version-banner">PIXEL-NET · Millipede wrapper · <strong>V1.13</strong></div>
+<div id="pn-version-banner">PIXEL-NET · Millipede wrapper · <strong>V1.14</strong></div>
 <section id="px-init-modal" class="px-init-modal hidden" aria-hidden="true">
   <div class="px-init-backdrop"></div>
   <div class="px-init-card" role="dialog" aria-modal="true" aria-label="Enter Initials">
@@ -322,11 +293,6 @@ body{ padding-top:28px; }
 <h3 class="title">MILLIPEDE CHAOS</h3>
 <div class="gamebox">
 <div class="game-stage" id="pn-stage"><div class="game-stage-inner" id="pn-stage-inner"><div id="root"></div></div></div>
-<div id="px-play-again">
-<div class="inner">
-<h3>GAME OVER</h3>
-<button id="px-play-again-btn">PLAY AGAIN</button>
-</div>
 </div>
 </div>
 <div class="muted">Leaderboard refreshes automatically.</div>
@@ -364,7 +330,7 @@ body{ padding-top:28px; }
       badge.textContent = initials || "???";
       if(window.PixelNet && PixelNet.uiInit) PixelNet.uiInit();
       document.getElementById("px-exit").onclick = () => location.href = "../../index.html";
-      // --- V1.13: aspect-fit stage (20x32) to prevent horizontal stretch ---
+      // --- V1.14: aspect-fit stage (20x32) to prevent horizontal stretch ---
       const stageInner = document.getElementById("pn-stage-inner");
       const gamebox = document.querySelector(".gamebox");
       function fitStage(){
@@ -550,22 +516,14 @@ body{ padding-top:28px; }
             await PixelNet.submitScore(SLUG, score);
           }
           setTimeout(renderLeaderboard, 600);
-
-          const pa = document.getElementById("px-play-again");
-          if(pa) pa.style.display = "flex";
         }catch(err){
           console.error("[Millipede wrapper] auto-save failed:", err);
-          const pa = document.getElementById("px-play-again");
-          if(pa) pa.style.display = "flex";
         }
       }
 
       const obs = new MutationObserver(()=>autoSaveIfGameOver());
       obs.observe(document.body, {subtree:true, childList:true, characterData:true});
       autoSaveIfGameOver();
-
-      const paBtn = document.querySelector('#px-play-again button');
-      if(paBtn){ paBtn.onclick = ()=>location.reload(); }
 
       window.addEventListener("keydown", (e)=>{
         if((e.code==="Enter" || e.key==="Enter") && gameOverSeen){
