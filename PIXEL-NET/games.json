@@ -7,14 +7,6 @@
     "description": "Defend the garden from the swarm."
   },
   {
-    "id": "layout-tester",
-    "name": "LAYOUT TESTER",
-    "path": "games/layout-tester/index.html",
-    "thumb": "assets/layout-tester-thumb.png",
-    "featured": false,
-    "description": "Sandbox page to preview the golden game wrapper. Change aspect ratio + box size to see what different games will look like."
-  },
-  {
     "name": "NEON CHASE",
     "type": "iframe",
     "path": "games/neon-chase/index.html",
@@ -22,11 +14,25 @@
     "description": "High-speed neon survival."
   },
   {
+    "name": "NEON CHASE (EMBED A TEST)",
+    "type": "iframe",
+    "path": "games/neon-chase__embedA/index.html",
+    "thumb": "assets/neon-chase_thumb.png",
+    "description": "Test wrapper embed method A."
+  },
+  {
     "name": "ROBO ARENA",
     "type": "iframe",
     "path": "games/robo-arena/index.html",
     "thumb": "assets/robo-arena_thumb.jpg",
     "description": "Enter the arena. Win the fight."
+  },
+  {
+    "name": "ROBO ARENA (EMBED A TEST)",
+    "type": "iframe",
+    "path": "games/robo-arena__embedA/index.html",
+    "thumb": "assets/robo-arena_thumb.jpg",
+    "description": "Test wrapper embed method A (fixed 1:1 canvas)."
   },
   {
     "name": "VECTOR DUEL",
@@ -74,5 +80,12 @@
       "Arrow Keys / WASD",
       "Touch D-pad (mobile)"
     ]
+  },
+  {
+    "name": "CREEK CROSSER (EMBED A TEST)",
+    "type": "iframe",
+    "path": "games/creek-crosser__embedA/index.html",
+    "thumb": "assets/creek-crosser_thumb.png",
+    "description": "Test wrapper embed method A (full game HTML restored)."
   }
 ]

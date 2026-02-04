@@ -1,0 +1,1350 @@
+<!-- 
+Theme: Retro Arcade / Crossy Road Style
+Font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+Style: Vibrant Flat Arcade with Canvas Primitives
+Colors: 
+  - Background: #2c3e50
+  - UI Text: #ecf0f1
+  - Accent/Player Main: #f1c40f
+  - Player Feet/Beak: #e67e22
+  - Water: #3498db
+  - Grass: #27ae60
+  - Road: #34495e
+  - Lava: #e74c3c
+Gameplay Screen: <canvas id="gameCanvas"> inside #game-container
+Aspect Ratio: 1:1 (520x520px)
+Purpose: AI implementation for themes
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Creek Crosser</title>
+    <style>
+        :root {
+            --bg-color: #2c3e50;
+            --ui-color: #ecf0f1;
+            --accent-color: #f1c40f;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--ui-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-wrapper {
+            /* Wrapper to handle scaling context */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        #game-container {
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            /* Ensure container has explicit dimensions for scaling */
+            width: 520px; 
+            flex-shrink: 0;
+        }
+
+        canvas {
+            display: block;
+            background-color: #000;
+        }
+
+        #ui-layer {
+            position: relative;
+            width: 100%;
+            background: #34495e; 
+            padding: 10px 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 4px solid #2c3e50;
+            height: 60px; /* Fixed height for consistent scaling */
+        }
+
+        .hud-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .hud-text {
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #000;
+            color: var(--ui-color);
+            white-space: nowrap;
+        }
+
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 40px;
+            margin: 0 0 20px 0;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 3px 3px 0 #e67e22;
+        }
+
+        button {
+            background: var(--accent-color);
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: #f39c12;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        #mobile-controls {
+            display: none;
+            position: absolute;
+            bottom: 20px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 160px;
+            pointer-events: auto;
+            z-index: 5;
+            opacity: 0.6;
+        }
+
+        .d-btn {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            user-select: none;
+        }
+        
+        .d-btn:active { background: rgba(255, 255, 255, 0.5); }
+        .d-up { top: 0; left: 55px; }
+        .d-down { bottom: 0; left: 55px; }
+        .d-left { top: 55px; left: 0; }
+        .d-right { top: 55px; right: 0; }
+
+        @media (hover: none) and (pointer: coarse) {
+            #mobile-controls { display: block; }
+        }
+        
+        #mute-btn {
+            background: transparent;
+            color: var(--ui-color);
+            border: 2px solid rgba(236, 240, 241, 0.5);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            margin: 0 10px;
+            white-space: nowrap;
+        }
+
+        #mute-btn:hover {
+            background: var(--ui-color);
+            color: var(--bg-color);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <div id="game-container">
+            <canvas id="gameCanvas"></canvas>
+
+            <div id="ui-layer">
+                <div class="hud-group">
+                    <span class="hud-text" id="score-display">SCORE: 0</span>
+                    <span class="hud-text" id="level-display">LEVEL: 1</span>
+                </div>
+                
+                <button id="mute-btn">SOUND: ON</button>
+
+                <div class="hud-group">
+                    <span class="hud-text" id="time-display">TIME: 60</span>
+                    <span class="hud-text" id="lives-display">LIVES: 3</span>
+                </div>
+            </div>
+
+            <div id="game-over-screen">
+                <h1 id="end-title">GAME OVER</h1>
+                <p style="font-size: 24px; margin-bottom: 30px;">Final Score: <span id="final-score">0</span></p>
+                <button onclick="resetGame()">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="d-btn d-up" id="btn-up">▲</div>
+        <div class="d-btn d-left" id="btn-left">◀</div>
+        <div class="d-btn d-right" id="btn-right">▶</div>
+        <div class="d-btn d-down" id="btn-down">▼</div>
+    </div>
+
+<script>
+/**
+ * CREEK CROSSER
+ * Version 3.4: Auto-Scaling & UI Fixes
+ */
+
+// --- Constants & Config ---
+const GRID_SIZE = 40;
+const COLS = 13;
+const ROWS = 13;
+const CANVAS_WIDTH = COLS * GRID_SIZE;
+const CANVAS_HEIGHT = ROWS * GRID_SIZE;
+
+// --- Auto Scaling Logic ---
+function resizeGame() {
+    const container = document.getElementById('game-container');
+    const wrapper = document.getElementById('game-wrapper');
+    
+    // Original dimensions of the game container
+    const originalWidth = 520;
+    const originalHeight = 520 + 60; // Canvas + UI
+    
+    // Available dimensions
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    // Add some padding
+    const padding = 20;
+    const availWidth = windowWidth - padding;
+    const availHeight = windowHeight - padding;
+    
+    // Calculate scale
+    const scaleX = availWidth / originalWidth;
+    const scaleY = availHeight / originalHeight;
+    const scale = Math.min(scaleX, scaleY, 1); // Max scale 1 to prevent blurriness on huge screens
+    
+    // Apply scale
+    container.style.transform = `scale(${scale})`;
+}
+
+// Listen for resize
+window.addEventListener('resize', resizeGame);
+// Initial call
+window.addEventListener('load', resizeGame);
+// Fallback for immediate load
+setTimeout(resizeGame, 100);
+
+
+// --- Visual Themes ---
+const THEMES = [
+    { water: "#3498db", waterDark: "#2980b9", grass: "#27ae60", road: "#34495e", goal: "#2ecc71", name: "Summer Creek" },
+    { water: "#e67e22", waterDark: "#d35400", grass: "#f1c40f", road: "#5d4037", goal: "#d35400", name: "Sunset Valley" },
+    { water: "#7f8c8d", waterDark: "#95a5a6", grass: "#bdc3c7", road: "#2c3e50", goal: "#7f8c8d", name: "Iron Works" },
+    { water: "#81ecec", waterDark: "#00cec9", grass: "#a29bfe", road: "#74b9ff", goal: "#6c5ce7", name: "Cloud City" },
+    { water: "#e74c3c", waterDark: "#c0392b", grass: "#2c3e50", road: "#2c3e50", goal: "#c0392b", name: "Lava Land" }
+];
+
+// --- Audio System ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let isMuted = false;
+
+const SoundManager = {
+    playTone: (freq, type, duration, vol = 0.1) => {
+        if (isMuted || audioCtx.state === 'suspended') return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    },
+    jump: () => SoundManager.playTone(300, 'square', 0.1),
+    goal: () => {
+        SoundManager.playTone(600, 'sine', 0.1, 0.2);
+        setTimeout(() => SoundManager.playTone(900, 'sine', 0.2, 0.2), 100);
+    },
+    die: () => {
+        if (isMuted || audioCtx.state === 'suspended') return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    },
+    win: () => {
+        [440, 554, 659, 880].forEach((f, i) => setTimeout(() => SoundManager.playTone(f, 'square', 0.2, 0.15), i * 150));
+    },
+    timeWarning: () => SoundManager.playTone(150, 'square', 0.1, 0.1)
+};
+
+// Resume audio context on interaction
+document.body.addEventListener('click', () => { if(audioCtx.state === 'suspended') audioCtx.resume(); }, {once:true});
+document.body.addEventListener('touchstart', () => { if(audioCtx.state === 'suspended') audioCtx.resume(); }, {once:true});
+document.getElementById('mute-btn').addEventListener('click', (e) => {
+    isMuted = !isMuted;
+    e.target.innerText = isMuted ? "SOUND: OFF" : "SOUND: ON";
+    e.target.blur(); // Remove focus
+});
+
+
+// --- Game State ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let lastTime = 0;
+
+let gameState = {
+    score: 0,
+    lives: 3,
+    level: 1,
+    time: 60,
+    isGameOver: false,
+    isTransitioning: false, 
+    transitionX: -500,     
+    goalsReached: 0,
+    goalSlots: [false, false, false, false, false],
+    victory: false,
+    frameCount: 0,
+    particles: [],
+    roamingPlatforms: [] // For Level 4+
+};
+
+// --- Entities ---
+class Particle {
+    constructor(x, y, color) {
+        this.x = x; this.y = y;
+        this.vx = (Math.random() - 0.5) * 200; 
+        this.vy = (Math.random() - 0.5) * 200; 
+        this.life = 1.0; 
+        this.color = color;
+        this.size = Math.random() * 4 + 2;
+    }
+    update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.life -= dt * 2;
+    }
+    draw(ctx) {
+        ctx.globalAlpha = Math.max(0, this.life);
+        ctx.fillStyle = this.color; 
+        ctx.fillRect(this.x, this.y, this.size, this.size);
+        ctx.globalAlpha = 1;
+    }
+}
+
+class RoamingPlatform {
+    constructor(path, width, speed, type, startOffset = 0) {
+        this.path = path; // Array of {x, y}
+        this.targetIndex = 1;
+        this.x = path[0].x;
+        this.y = path[0].y;
+        this.w = width;
+        this.h = GRID_SIZE - 5;
+        this.speed = speed;
+        this.type = type;
+        this.rect = {x: this.x, y: this.y, w: this.w, h: this.h};
+        
+        // Calculate velocity vector
+        this.vx = 0;
+        this.vy = 0;
+        this.updateVelocity();
+
+        // Advance simulation for offset
+        if (startOffset > 0) {
+            this.update(startOffset);
+        }
+    }
+
+    updateVelocity() {
+        const target = this.path[this.targetIndex];
+        const dx = target.x - this.x;
+        const dy = target.y - this.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        if (dist > 0) {
+            this.vx = (dx / dist) * this.speed;
+            this.vy = (dy / dist) * this.speed;
+        } else {
+            this.vx = 0; this.vy = 0;
+        }
+    }
+
+    update(dt) {
+        // Simple loop to handle large dt if needed (e.g. initial offset)
+        let remainingDt = dt;
+        
+        while (remainingDt > 0) {
+            const target = this.path[this.targetIndex];
+            const dx = target.x - this.x;
+            const dy = target.y - this.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist === 0) {
+                this.targetIndex = (this.targetIndex + 1) % this.path.length;
+                this.updateVelocity();
+                continue;
+            }
+
+            const step = Math.min(remainingDt * this.speed, dist);
+            const moveTime = step / this.speed;
+            
+            this.x += this.vx * moveTime;
+            this.y += this.vy * moveTime;
+            remainingDt -= moveTime;
+
+            if (step >= dist) {
+                // Snap to target and switch
+                this.x = target.x;
+                this.y = target.y;
+                this.targetIndex = (this.targetIndex + 1) % this.path.length;
+                this.updateVelocity();
+            }
+        }
+        
+        this.rect.x = this.x;
+        this.rect.y = this.y;
+    }
+
+    draw(ctx) {
+        if (this.type === 'cloud') {
+            // Draw Cloud
+            ctx.fillStyle = "#ecf0f1";
+            ctx.beginPath(); 
+            ctx.roundRect(this.x, this.y, this.w, this.h, 15); 
+            ctx.fill();
+            
+            // Fluff
+            ctx.fillStyle = "#fff";
+            ctx.beginPath(); ctx.arc(this.x + 10, this.y + 5, 10, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + this.w/2, this.y - 5, 15, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + this.w - 10, this.y + 5, 10, 0, Math.PI*2); ctx.fill();
+            
+            // Shadow underneath
+            ctx.fillStyle = "rgba(0,0,0,0.1)";
+            ctx.beginPath(); ctx.roundRect(this.x + 5, this.y + this.h - 5, this.w - 10, 5, 5); ctx.fill();
+        } else if (this.type === 'rock') {
+            // Draw Obsidian Rock
+            ctx.fillStyle = "#2d3436"; // Dark
+            ctx.beginPath();
+            ctx.roundRect(this.x, this.y, this.w, this.h, 6);
+            ctx.fill();
+
+            // Cracks (Magma glow)
+            ctx.strokeStyle = "#e17055"; // Magma orange
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(this.x + 10, this.y + 10);
+            ctx.lineTo(this.x + this.w/2, this.y + this.h/2);
+            ctx.lineTo(this.x + this.w - 10, this.y + 10);
+            ctx.stroke();
+            
+            // Top highlight
+            ctx.fillStyle = "#636e72"; 
+            ctx.beginPath(); ctx.rect(this.x + 5, this.y + 2, this.w - 10, 4); ctx.fill();
+        }
+    }
+}
+
+class Player {
+    constructor() {
+        this.width = 30; this.height = 30;
+        this.reset();
+        this.color = '#f1c40f'; 
+        this.isDead = false; this.onLog = false; this.platformVelocity = {x:0, y:0};
+        this.facing = 'up'; 
+    }
+    reset() {
+        this.gridX = 6; this.gridY = 12; 
+        this.updatePosFromGrid();
+        this.isDead = false; this.onLog = false; this.platformVelocity = {x:0, y:0};
+        this.facing = 'up';
+    }
+    move(dir) {
+        if (this.isDead || gameState.isGameOver || gameState.isTransitioning) return;
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        SoundManager.jump();
+        this.facing = dir;
+        
+        // Disconnect from platform physics when manually moving
+        this.onLog = false;
+        this.platformVelocity = {x:0, y:0};
+
+        if (dir === 'up') this.gridY--; if (dir === 'down') this.gridY++;
+        if (dir === 'left') this.gridX--; if (dir === 'right') this.gridX++;
+        if (this.gridY > 12) this.gridY = 12; if (this.gridX < 0) this.gridX = 0; if (this.gridX > 12) this.gridX = 12;
+        this.updatePosFromGrid();
+    }
+    updatePosFromGrid() {
+        this.x = this.gridX * GRID_SIZE + (GRID_SIZE - this.width)/2;
+        this.y = this.gridY * GRID_SIZE + (GRID_SIZE - this.height)/2;
+    }
+    update(dt) {
+        if (this.isDead || gameState.isTransitioning) return;
+        
+        if (this.onLog) {
+            // Apply platform velocity (X and Y)
+            this.x += this.platformVelocity.x * dt;
+            this.y += this.platformVelocity.y * dt;
+            
+            // Boundary Check
+            if (this.x < 0 || this.x + this.width > CANVAS_WIDTH) die("Drowned");
+            if (this.y < 0 || this.y > CANVAS_HEIGHT) die("Drowned");
+
+            // Update Grid Position based on real position
+            this.gridX = Math.round((this.x - (GRID_SIZE - this.width)/2) / GRID_SIZE);
+            this.gridY = Math.round((this.y - (GRID_SIZE - this.height)/2) / GRID_SIZE);
+        }
+    }
+    draw() {
+        if (this.isDead) return; 
+        const cx = this.x + this.width / 2; const cy = this.y + this.height / 2;
+        ctx.save(); ctx.translate(cx, cy);
+        let angle = 0;
+        if (this.facing === 'right') angle = Math.PI / 2;
+        if (this.facing === 'down') angle = Math.PI;
+        if (this.facing === 'left') angle = -Math.PI / 2;
+        ctx.rotate(angle);
+        
+        ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2;
+
+        // Feet
+        ctx.fillStyle = "#e67e22"; 
+        ctx.beginPath(); ctx.ellipse(-8, 8, 4, 6, -0.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(8, 8, 4, 6, 0.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+        // Body
+        ctx.fillStyle = this.color; 
+        ctx.beginPath(); ctx.ellipse(0, 2, 12, 10, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+        // Wings
+        ctx.fillStyle = "#f39c12"; 
+        ctx.beginPath(); ctx.ellipse(-12, 2, 4, 7, -0.2, 0, Math.PI * 2); ctx.fill(); 
+        ctx.beginPath(); ctx.ellipse(12, 2, 4, 7, 0.2, 0, Math.PI * 2); ctx.fill();
+
+        // Head
+        ctx.fillStyle = this.color; 
+        ctx.beginPath(); ctx.arc(0, -6, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+        // Eyes
+        ctx.fillStyle = "white"; 
+        ctx.beginPath(); ctx.arc(-4, -9, 3.5, 0, Math.PI * 2); ctx.arc(4, -9, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "black"; 
+        ctx.beginPath(); ctx.arc(-4, -10, 1.5, 0, Math.PI * 2); ctx.arc(4, -10, 1.5, 0, Math.PI * 2); ctx.fill();
+
+        // Beak
+        ctx.fillStyle = "#d35400"; 
+        ctx.beginPath(); ctx.ellipse(0, -13, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+        
+        ctx.restore();
+    }
+}
+
+class Lane {
+    constructor(row, type, direction, speed, objects, isDiving = false) {
+        this.row = row; this.type = type; this.direction = direction; this.speed = speed;
+        this.objects = []; this.objectConfig = objects;
+        this.isDiving = isDiving;
+        this.initObjects();
+    }
+    initObjects() {
+        let currentX = -50; 
+        while(currentX < CANVAS_WIDTH + 200) {
+            let gap = this.objectConfig.gap + Math.random() * 60;
+            currentX += gap;
+            let obj = { 
+                x: currentX, 
+                y: this.row * GRID_SIZE + 5, 
+                w: this.objectConfig.width, 
+                h: GRID_SIZE - 10, 
+                color: this.objectConfig.color, 
+                style: this.objectConfig.style || 'rect',
+                // Diving Properties
+                canDive: this.isDiving && Math.random() > 0.3, // Not all in a diving lane must dive
+                diveState: 0, // 0:Surface, 1:Submerging, 2:Underwater, 3:Emerging
+                diveTimer: Math.random() * 200 + 100,
+                alpha: 1
+            };
+            
+            // Random Car Variants
+            if (this.type === 'road' && obj.style === 'car') {
+                const rand = Math.random();
+                if (rand < 0.2) obj.carType = 'convertible';
+                else if (rand < 0.4) obj.carType = 'truck';
+                else if (rand < 0.6) obj.carType = 'racer';
+                else obj.carType = 'sedan';
+                
+                // Color variation
+                const colors = ['#e74c3c', '#e67e22', '#f1c40f', '#9b59b6', '#3498db', '#ecf0f1'];
+                obj.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            this.objects.push(obj);
+        }
+        this.objects.sort((a, b) => a.x - b.x);
+    }
+    update(dt) {
+        const speedMult = 1 + (gameState.level * 0.1);
+        for (let obj of this.objects) { 
+            obj.x += this.speed * this.direction * dt * speedMult; 
+            
+            // Diving Logic
+            if (obj.canDive) {
+                obj.diveTimer--;
+                if (obj.diveTimer <= 0) {
+                    obj.diveState = (obj.diveState + 1) % 4;
+                    // Reset timers based on new state
+                    if (obj.diveState === 0) obj.diveTimer = 200 + Math.random() * 100; // Surface: Long
+                    else if (obj.diveState === 1) obj.diveTimer = 40; // Submerging: Short
+                    else if (obj.diveState === 2) obj.diveTimer = 60 + Math.random() * 40; // Underwater: Medium
+                    else if (obj.diveState === 3) obj.diveTimer = 40; // Emerging: Short
+                }
+                
+                // Visual transparency based on state
+                if (obj.diveState === 0) obj.alpha = 1;
+                else if (obj.diveState === 1) obj.alpha = 0.5; // Fading
+                else if (obj.diveState === 2) obj.alpha = 0;   // Invisible/Dangerous
+                else if (obj.diveState === 3) obj.alpha = 0.5; // Fading back
+            }
+        }
+        
+        // Wrap objects
+        if (this.direction === 1) {
+            let minX = Infinity; this.objects.forEach(o => minX = Math.min(minX, o.x));
+            this.objects.forEach(obj => {
+                if (obj.x > CANVAS_WIDTH) { let gap = this.objectConfig.gap + Math.random() * 60; obj.x = minX - gap - obj.w; minX = obj.x; }
+            });
+        } else {
+            let maxX = -Infinity; this.objects.forEach(o => maxX = Math.max(maxX, o.x + o.w));
+            this.objects.forEach(obj => {
+                if (obj.x + obj.w < 0) { let gap = this.objectConfig.gap + Math.random() * 60; obj.x = maxX + gap; maxX = obj.x + obj.w; }
+            });
+        }
+    }
+    draw() { for (let obj of this.objects) { this.drawObject(obj); } }
+    
+    drawObject(obj) {
+        if (obj.alpha <= 0) return; // Don't draw if invisible
+        
+        const x = obj.x; const y = obj.y; const w = obj.w; const h = obj.h;
+        ctx.save();
+        ctx.globalAlpha = obj.alpha;
+        
+        switch(obj.style) {
+            case 'car': this.drawDetailedCar(obj, this.direction); break;
+            case 'train': this.drawDetailedTrain(x, y, w, h, obj.color, this.direction); break;
+            case 'log': this.drawDetailedLog(x, y, w, h); break;
+            case 'beam': this.drawDetailedBeam(x, y, w, h); break;
+            case 'turtle': this.drawDetailedTurtleGroup(x, y, w, h, obj.color); break;
+            case 'barrel': this.drawDetailedBarrelGroup(x, y, w, h, obj.color); break;
+            default: ctx.fillStyle = obj.color; ctx.fillRect(x, y, w, h);
+        }
+        
+        ctx.restore();
+    }
+    
+    drawDetailedLog(x, y, w, h) {
+        // Main Log Body (Wood Texture)
+        ctx.fillStyle = "#6d4c41"; 
+        ctx.beginPath(); ctx.roundRect(x, y + 2, w, h - 4, 8); ctx.fill();
+        
+        // Darker Grain lines
+        ctx.strokeStyle = "#4e342e";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + 10, y + 8); ctx.lineTo(x + w - 10, y + 8);
+        ctx.moveTo(x + 15, y + 15); ctx.lineTo(x + w - 15, y + 15);
+        ctx.moveTo(x + 10, y + 22); ctx.lineTo(x + w - 10, y + 22);
+        ctx.stroke();
+        
+        // Log Ends (Rings)
+        ctx.fillStyle = "#8d6e63"; // Lighter cut wood
+        ctx.beginPath(); ctx.ellipse(x + 4, y + h/2, 4, h/2 - 4, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + w - 4, y + h/2, 4, h/2 - 4, 0, 0, Math.PI*2); ctx.fill();
+        
+        // Ring swirls
+        ctx.strokeStyle = "#5d4037"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(x + 4, y + h/2, 2, h/2 - 6, 0, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(x + w - 4, y + h/2, 2, h/2 - 6, 0, 0, Math.PI*2); ctx.stroke();
+    }
+    
+    drawDetailedBeam(x, y, w, h) {
+        // Steel Beam Body
+        ctx.fillStyle = "#7f8c8d"; // Grey
+        ctx.fillRect(x, y + 5, w, h - 10);
+        
+        // I-Beam Top/Bottom flanges
+        ctx.fillStyle = "#95a5a6"; // Lighter grey
+        ctx.fillRect(x, y + 2, w, 4);
+        ctx.fillRect(x, y + h - 6, w, 4);
+        
+        // Rivets
+        ctx.fillStyle = "#34495e";
+        for(let i=10; i<w; i+=20) {
+            ctx.beginPath(); ctx.arc(x + i, y + h/2, 2, 0, Math.PI*2); ctx.fill();
+        }
+        
+        // Highlight
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, y+2); ctx.lineTo(x+w, y+2); ctx.stroke();
+    }
+
+    drawDetailedBarrelGroup(x, y, w, h, color) {
+        let r = h / 2; // Radius approx
+        let count = Math.floor(w / (h - 5)); // Overlap slightly
+        for(let i=0; i<count; i++) { 
+             // Draw individual barrel from top down
+             let bx = x + (i * (h-5));
+             this.drawDetailedBarrel(bx, y, h-4, h-4, color);
+        }
+    }
+    
+    drawDetailedBarrel(x, y, w, h, color) {
+        const cx = x + w/2; const cy = y + h/2;
+        const r = w/2;
+        
+        // Barrel Body
+        ctx.fillStyle = color; // e.g. Rusty red or hazard yellow
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+        
+        // Rim
+        ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, r-2, 0, Math.PI*2); ctx.stroke();
+        
+        // Center Plug/Detail
+        ctx.fillStyle = "rgba(0,0,0,0.2)";
+        ctx.beginPath(); ctx.arc(cx + 5, cy - 5, 3, 0, Math.PI*2); ctx.fill();
+        
+        // Shine
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.beginPath(); ctx.arc(cx - 5, cy - 5, 4, 0, Math.PI*2); ctx.fill();
+    }
+
+    drawDetailedTurtleGroup(x, y, w, h, color) {
+        let r = h / 2; let count = Math.floor(w / h);
+        for(let i=0; i<count; i++) { 
+            this.drawDetailedTurtle(x + r + (i*r*2.2) - r, y, h, h, color); 
+        }
+    }
+
+    drawDetailedTurtle(x, y, w, h, color) {
+        const cx = x + w/2; const cy = y + h/2;
+        const radius = w/2 - 2;
+
+        // Limbs
+        ctx.fillStyle = "#27ae60"; // Skin color
+        ctx.beginPath();
+        // Front/Back legs
+        ctx.arc(cx - 10, cy - 8, 4, 0, Math.PI*2);
+        ctx.arc(cx + 10, cy - 8, 4, 0, Math.PI*2);
+        ctx.arc(cx - 10, cy + 8, 4, 0, Math.PI*2);
+        ctx.arc(cx + 10, cy + 8, 4, 0, Math.PI*2);
+        // Head
+        ctx.arc(cx - 12, cy, 5, 0, Math.PI*2);
+        ctx.fill();
+
+        // Shell
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
+        
+        // Shell Pattern (Hexagon-ish)
+        ctx.fillStyle = "rgba(0,0,0,0.2)";
+        ctx.beginPath(); ctx.arc(cx, cy, radius * 0.6, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.stroke();
+    }
+
+    drawDetailedCar(obj, dir) {
+        const x = obj.x; const y = obj.y; const w = obj.w; const h = obj.h;
+        const color = obj.color;
+
+        // Shadow
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.fillRect(x + 2, y + 4, w, h);
+
+        // Tires
+        ctx.fillStyle = "#222";
+        ctx.fillRect(x + 5, y - 2, 6, 4); // FL
+        ctx.fillRect(x + w - 11, y - 2, 6, 4); // RL
+        ctx.fillRect(x + 5, y + h - 2, 6, 4); // FR
+        ctx.fillRect(x + w - 11, y + h - 2, 6, 4); // RR
+
+        // Main Body
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+
+        // Cabin / Windshield depending on type
+        if (obj.carType === 'convertible') {
+            ctx.fillStyle = "#2c3e50"; // Interior
+            ctx.fillRect(x + 6, y + 3, w - 12, h - 6);
+            // Windshield
+            ctx.fillStyle = "#a2d9ff";
+            if (dir === -1) ctx.fillRect(x + 6, y + 2, 3, h - 4);
+            else ctx.fillRect(x + w - 9, y + 2, 3, h - 4);
+        } else if (obj.carType === 'truck') {
+            // Cab
+            ctx.fillStyle = "#fff"; ctx.globalAlpha = 0.3;
+            if (dir === -1) ctx.fillRect(x + 2, y + 2, 12, h - 4);
+            else ctx.fillRect(x + w - 14, y + 2, 12, h - 4);
+            ctx.globalAlpha = obj.alpha; // Reset alpha
+            // Bed
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            if (dir === -1) ctx.fillRect(x + 16, y + 4, w - 20, h - 8);
+            else ctx.fillRect(x + 4, y + 4, w - 20, h - 8);
+        } else {
+            // Sedan Roof
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.fillRect(x + 8, y + 3, w - 16, h - 6);
+            // Windshields
+            ctx.fillStyle = "#a2d9ff";
+            ctx.fillRect(x + 10, y + 4, 3, h - 8); // Rear
+            ctx.fillRect(x + w - 13, y + 4, 3, h - 8); // Front
+        }
+        
+        // Headlights / Taillights
+        if (dir === 1) { // Moving Right
+            ctx.fillStyle = "#f1c40f"; // Headlights (Yellow)
+            ctx.fillRect(x + w - 2, y + 2, 2, 3);
+            ctx.fillRect(x + w - 2, y + h - 5, 2, 3);
+            ctx.fillStyle = "#e74c3c"; // Taillights (Red)
+            ctx.fillRect(x, y + 2, 2, 3);
+            ctx.fillRect(x, y + h - 5, 2, 3);
+        } else { // Moving Left
+            ctx.fillStyle = "#f1c40f"; // Headlights (Yellow)
+            ctx.fillRect(x, y + 2, 2, 3);
+            ctx.fillRect(x, y + h - 5, 2, 3);
+            ctx.fillStyle = "#e74c3c"; // Taillights (Red)
+            ctx.fillRect(x + w - 2, y + 2, 2, 3);
+            ctx.fillRect(x + w - 2, y + h - 5, 2, 3);
+        }
+    }
+
+    drawDetailedTrain(x, y, w, h, color, dir) {
+        // Main carriage
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y + 2, w, h - 4);
+        
+        // Stripe
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.fillRect(x, y + 10, w, 4);
+        
+        // Windows
+        ctx.fillStyle = "#87ceeb"; 
+        const winCount = Math.floor(w / 25);
+        for(let i=0; i<winCount; i++) { 
+            ctx.fillRect(x + 5 + (i*25), y + 4, 15, h-12); 
+        }
+        
+        // Connectors
+        ctx.fillStyle = "#333";
+        if (dir === 1) ctx.fillRect(x-4, y+12, 4, 6);
+        else ctx.fillRect(x+w, y+12, 4, 6);
+    }
+
+    checkCollisions(player) {
+        let playerRect = {x: player.x + 8, y: player.y + 8, w: player.width - 16, h: player.height - 16};
+        if (player.gridY !== this.row) return null;
+        
+        let onFloatingObject = false;
+        
+        for (let obj of this.objects) {
+            let objRect = {x: obj.x, y: obj.y, w: obj.w, h: obj.h};
+            
+            // Adjust hitboxes
+            if (this.type === 'water') { 
+                objRect.x += 5; objRect.w -= 10; 
+            } else { 
+                objRect.x += 2; objRect.w -= 4; 
+            }
+            
+            if (rectIntersect(playerRect, objRect)) { 
+                if (this.type === 'road') return 'hit'; 
+                else if (this.type === 'water') {
+                    // Check if object is underwater
+                    if (obj.diveState === 2) {
+                        // It's invisible/underwater -> Drown
+                        return 'drown';
+                    }
+                    onFloatingObject = true; 
+                }
+            }
+        }
+        
+        if (this.type === 'water') return onFloatingObject ? 'safe' : 'drown';
+        return null;
+    }
+}
+
+// --- Setup ---
+
+let player = new Player();
+let lanes = [];
+
+function initLanes() {
+    lanes = [];
+    gameState.roamingPlatforms = []; // Clear old roaming platforms
+    
+    const lvl = gameState.level;
+    const rg = (val) => val; 
+
+    // WATER LANES (Rows 1-5)
+    // Diving logic: isDiving = true for some lanes
+    if (lvl === 1) {
+        lanes.push(new Lane(1, 'water', 1, 60, {width: 120, gap: 150, color: '#8e44ad', style: 'log'}));
+        lanes.push(new Lane(2, 'water', -1, 50, {width: 80, gap: 100, color: '#e74c3c', style: 'turtle'}, true)); // DIVING TURTLES
+        lanes.push(new Lane(3, 'water', 1, 80, {width: 180, gap: 200, color: '#8e44ad', style: 'log'}));
+        lanes.push(new Lane(4, 'water', -1, 40, {width: 80, gap: 120, color: '#e74c3c', style: 'turtle'}));
+        lanes.push(new Lane(5, 'water', 1, 70, {width: 90, gap: 110, color: '#8e44ad', style: 'log'}));
+    } else if (lvl === 3) {
+        // Level 3: Industrial / Train theme
+        lanes.push(new Lane(1, 'water', 1, 50, {width: 140, gap: 160, color: '#95a5a6', style: 'beam'}));
+        lanes.push(new Lane(2, 'water', -1, 60, {width: 100, gap: 160, color: '#e74c3c', style: 'barrel'}));
+        lanes.push(new Lane(3, 'water', 1, 80, {width: 180, gap: 200, color: '#95a5a6', style: 'beam'}));
+        lanes.push(new Lane(4, 'water', -1, 40, {width: 100, gap: 120, color: '#f1c40f', style: 'barrel'}));
+        lanes.push(new Lane(5, 'water', 1, 70, {width: 120, gap: 150, color: '#95a5a6', style: 'beam'}));
+    } else if (lvl === 4) {
+        // Level 4: CLOUD CITY - Mix of Square Paths + Standard Lanes for playability
+        
+        // Row 1 (Top): Standard Lane (Bridge)
+        lanes.push(new Lane(1, 'water', 1, 50, {width: 90, gap: 130, color: '#ecf0f1', style: 'cloud'}));
+
+        // Row 2 & 3: Roaming Square Clouds
+        // Path 1 (Left Loop)
+        const path1 = [
+            {x: 20, y: GRID_SIZE*2 + 5}, {x: 220, y: GRID_SIZE*2 + 5}, 
+            {x: 220, y: GRID_SIZE*3 + 5}, {x: 20, y: GRID_SIZE*3 + 5}
+        ];
+        // Add 3 clouds spaced out on this path
+        gameState.roamingPlatforms.push(new RoamingPlatform(path1, 80, 70, 'cloud', 0));
+        gameState.roamingPlatforms.push(new RoamingPlatform(path1, 80, 70, 'cloud', 2.0));
+        gameState.roamingPlatforms.push(new RoamingPlatform(path1, 80, 70, 'cloud', 4.0));
+
+        // Path 2 (Right Loop)
+        const path2 = [
+            {x: 280, y: GRID_SIZE*3 + 5}, {x: 480, y: GRID_SIZE*3 + 5}, 
+            {x: 480, y: GRID_SIZE*2 + 5}, {x: 280, y: GRID_SIZE*2 + 5}
+        ];
+        gameState.roamingPlatforms.push(new RoamingPlatform(path2, 80, 60, 'cloud', 0));
+        gameState.roamingPlatforms.push(new RoamingPlatform(path2, 80, 60, 'cloud', 2.5));
+
+        // Row 4: Standard Lane (Bridge)
+        lanes.push(new Lane(4, 'water', -1, 40, {width: 100, gap: 180, color: '#bdc3c7', style: 'cloud'}));
+
+        // Row 5 (Bottom): Roaming Vertical
+        const path3 = [{x: 150, y: GRID_SIZE*5 + 5}, {x: 150, y: GRID_SIZE*4 + 5}];
+        const path4 = [{x: 350, y: GRID_SIZE*5 + 5}, {x: 350, y: GRID_SIZE*4 + 5}];
+        
+        gameState.roamingPlatforms.push(new RoamingPlatform(path3, 90, 40, 'cloud', 0));
+        gameState.roamingPlatforms.push(new RoamingPlatform(path4, 90, 40, 'cloud', 1.0));
+        
+        // Also add a standard lane on Row 5 to fill gaps
+        lanes.push(new Lane(5, 'water', 1, 30, {width: 70, gap: 200, color: '#ecf0f1', style: 'cloud'}));
+
+    } else if (lvl === 5) {
+        // Level 5: LAVA LAND - Mix of Roaming Rocks + Standard
+        
+        // Row 1: Standard Lane
+        lanes.push(new Lane(1, 'water', 1, 60, {width: 90, gap: 150, color: '#2d3436', style: 'rock'}));
+
+        // Row 2 & 3 & 4: The Diamond Path (Center)
+        const diamondPath = [
+            {x: 200, y: GRID_SIZE*2 + 5}, // Top
+            {x: 350, y: GRID_SIZE*3 + 5}, // Right
+            {x: 200, y: GRID_SIZE*4 + 5}, // Bottom
+            {x: 50, y: GRID_SIZE*3 + 5}   // Left
+        ];
+        // Add multiple rocks to the diamond
+        gameState.roamingPlatforms.push(new RoamingPlatform(diamondPath, 80, 90, 'rock', 0));
+        gameState.roamingPlatforms.push(new RoamingPlatform(diamondPath, 80, 90, 'rock', 1.5));
+        gameState.roamingPlatforms.push(new RoamingPlatform(diamondPath, 80, 90, 'rock', 3.0));
+
+        // Row 3: Standard Lane passing through the diamond
+        lanes.push(new Lane(3, 'water', -1, 50, {width: 80, gap: 180, color: '#636e72', style: 'rock'}));
+
+        // Row 2 & 4: Vertical Elevators on sides
+        const leftElevator = [{x: 10, y: GRID_SIZE*2 + 5}, {x: 10, y: GRID_SIZE*4 + 5}];
+        const rightElevator = [{x: 450, y: GRID_SIZE*4 + 5}, {x: 450, y: GRID_SIZE*2 + 5}];
+        
+        gameState.roamingPlatforms.push(new RoamingPlatform(leftElevator, 70, 50, 'rock', 0));
+        gameState.roamingPlatforms.push(new RoamingPlatform(leftElevator, 70, 50, 'rock', 1.5)); // 2nd one
+        
+        gameState.roamingPlatforms.push(new RoamingPlatform(rightElevator, 70, 50, 'rock', 0));
+        gameState.roamingPlatforms.push(new RoamingPlatform(rightElevator, 70, 50, 'rock', 1.5));
+
+        // Row 5: Fast standard lane
+        lanes.push(new Lane(5, 'water', 1, 80, {width: 100, gap: 160, color: '#2d3436', style: 'rock'}));
+
+    } else {
+        // Harder levels (6+)
+        lanes.push(new Lane(1, 'water', 1, 50 + lvl*5, {width: 100, gap: 160, color: '#8e44ad', style: 'log'}));
+        lanes.push(new Lane(2, 'water', -1, 50 + lvl*5, {width: 80, gap: 100, color: '#e74c3c', style: 'turtle'}, true));
+        lanes.push(new Lane(3, 'water', 1, 80 + lvl*5, {width: 160, gap: 200, color: '#8e44ad', style: 'log'}, true)); // LOGS DIVE LATER
+        lanes.push(new Lane(4, 'water', -1, 45 + lvl*5, {width: 80, gap: 120, color: '#e74c3c', style: 'turtle'}, true));
+        lanes.push(new Lane(5, 'water', 1, 70 + lvl*5, {width: 90, gap: 110, color: '#8e44ad', style: 'log'}));
+    }
+
+    // ROAD LANES (Rows 7-11) - Unchanged
+    if (lvl < 3) {
+        lanes.push(new Lane(7, 'road', -1, 40 + lvl*10, {width: 90, gap: 200, color: '#e67e22', style: 'car'})); 
+        lanes.push(new Lane(8, 'road', 1, 100 + lvl*10, {width: 40, gap: 220, color: '#f1c40f', style: 'car'})); 
+        lanes.push(new Lane(9, 'road', -1, 60 + lvl*10, {width: 45, gap: 150, color: '#9b59b6', style: 'car'})); 
+        lanes.push(new Lane(10, 'road', 1, 30 + lvl*10, {width: 50, gap: 120, color: '#e74c3c', style: 'car'})); 
+        lanes.push(new Lane(11, 'road', -1, 120 + lvl*10, {width: 40, gap: 280, color: '#c0392b', style: 'car'})); 
+    } else {
+        lanes.push(new Lane(7, 'road', -1, 150, {width: 300, gap: 600, color: '#e17055', style: 'train'})); 
+        lanes.push(new Lane(8, 'road', 1, 120, {width: 40, gap: 220, color: '#f1c40f', style: 'car'})); 
+        lanes.push(new Lane(9, 'road', -1, 160, {width: 300, gap: 700, color: '#636e72', style: 'train'}));
+        lanes.push(new Lane(10, 'road', 1, 90, {width: 200, gap: 400, color: '#e17055', style: 'train'}));
+        lanes.push(new Lane(11, 'road', -1, 140, {width: 40, gap: 280, color: '#c0392b', style: 'car'})); 
+    }
+}
+
+function rectIntersect(r1, r2) { return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x || r2.y > r1.y + r1.h || r2.y + r2.h < r1.y); }
+
+function die(reason) {
+    if (player.isDead) return;
+    SoundManager.die();
+    player.isDead = true; gameState.lives--; updateHUD();
+    for(let i=0; i<30; i++) { 
+        gameState.particles.push(new Particle(player.x + player.width/2, player.y + player.height/2, '#f1c40f')); 
+    }
+    setTimeout(() => { if (gameState.lives > 0) { player.reset(); resetTimer(); } else { gameOver(); } }, 1000);
+}
+
+function resetTimer() {
+    gameState.time = 60 - (Math.min(gameState.level, 10) * 2);
+    if (gameState.time < 20) gameState.time = 20;
+}
+
+function goalReached(slotIndex) {
+    if (gameState.goalSlots[slotIndex]) { player.gridY = 1; player.updatePosFromGrid(); return; }
+    SoundManager.goal();
+    gameState.goalSlots[slotIndex] = true; gameState.goalsReached++; gameState.score += 200 + (Math.floor(gameState.time) * 10);
+    player.reset(); resetTimer(); updateHUD();
+    if (gameState.goalsReached >= 5) { startLevelTransition(); }
+}
+
+function startLevelTransition() { 
+    SoundManager.win();
+    gameState.isTransitioning = true; 
+    gameState.transitionX = -200; 
+}
+
+function updateLevelTransition(dt) {
+    gameState.transitionX += 400 * dt; 
+    if (gameState.transitionX > CANVAS_WIDTH + 300) { gameState.isTransitioning = false; levelUp(); }
+}
+
+function update(dt) {
+    if (gameState.isGameOver) return;
+    gameState.frameCount++;
+
+    // Particles
+    gameState.particles.forEach(p => p.update(dt));
+    gameState.particles = gameState.particles.filter(p => p.life > 0);
+
+    // Update Lanes
+    lanes.forEach(lane => lane.update(dt));
+    
+    // Update Roaming Platforms
+    gameState.roamingPlatforms.forEach(p => p.update(dt));
+
+    if (gameState.isTransitioning) { updateLevelTransition(dt); return; }
+
+    // Timer
+    gameState.time -= dt;
+    if (gameState.time <= 0) die("Timeout");
+    // Warning sound
+    if (gameState.time < 10 && Math.floor(gameState.time) < Math.floor(gameState.time + dt)) {
+        SoundManager.timeWarning();
+    }
+
+    updateHUD();
+
+    // Wall check
+    if (player.gridY === 0) {
+        if ([2, 4, 6, 8, 10].includes(player.gridX)) { let slot = (player.gridX / 2) - 1; goalReached(slot); }
+        else { die("Hit Wall"); }
+    }
+
+    player.onLog = false; player.platformVelocity = {x:0, y:0};
+    let onPlatform = false;
+
+    // Check Roaming Platforms FIRST
+    let playerRect = {x: player.x + 8, y: player.y + 8, w: player.width - 16, h: player.height - 16};
+    
+    for (let plat of gameState.roamingPlatforms) {
+        if (rectIntersect(playerRect, plat.rect)) {
+            player.onLog = true;
+            player.platformVelocity = {x: plat.vx, y: plat.vy};
+            onPlatform = true;
+            break;
+        }
+    }
+
+    // Check Lanes SECOND (if not already on platform)
+    let activeLane = lanes.find(l => l.row === player.gridY);
+    if (activeLane) {
+        let result = activeLane.checkCollisions(player);
+        if (activeLane.type === 'road') { 
+            if (result === 'hit') die("Car"); 
+        } else if (activeLane.type === 'water') {
+            if (result === 'safe') { 
+                player.onLog = true; 
+                // Only override velocity if we weren't already on a roaming platform
+                // (though technically one shouldn't be on both at once)
+                if (!onPlatform) {
+                    player.platformVelocity = {x: activeLane.speed * activeLane.direction * (1 + (gameState.level * 0.1)), y: 0};
+                    onPlatform = true;
+                }
+            } else if (result === 'drown' && !onPlatform) {
+                 die("Water"); 
+            }
+        }
+    } else {
+        // If not in a lane, but in water area (rows 1-5), and not on roaming platform -> die
+        if (player.gridY >= 1 && player.gridY <= 5 && !onPlatform) {
+            die("Water");
+        }
+    }
+    
+    player.update(dt);
+}
+
+function drawLevelTransition() {
+    ctx.save();
+    const scale = 1.5;
+    const currentX = gameState.transitionX;
+    const baseY = CANVAS_HEIGHT / 2;
+    // Simple wave effect for the transition text
+    const waveY = Math.sin(currentX * 0.01) * 80;
+    const y = baseY + waveY;
+
+    ctx.translate(currentX, y);
+    ctx.scale(scale, scale);
+
+    // Box background
+    ctx.fillStyle = "#ecf0f1";
+    ctx.fillRect(-150, -30, 300, 60);
+    ctx.strokeStyle = "#bdc3c7";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(-150, -30, 300, 60);
+
+    // Text
+    ctx.fillStyle = "#2c3e50";
+    ctx.font = "bold 20px 'Segoe UI'";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`LEVEL ${gameState.level} COMPLETE!`, 0, 0);
+
+    // Decorative line
+    ctx.strokeStyle = "#7f8c8d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-100, 20);
+    ctx.lineTo(100, 20);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+function drawBackground() {
+    const themeIndex = (gameState.level - 1) % THEMES.length;
+    const theme = THEMES[themeIndex];
+    
+    // Water
+    ctx.fillStyle = theme.water; ctx.fillRect(0, GRID_SIZE, CANVAS_WIDTH, GRID_SIZE * 5);
+    
+    // Grass/Safe Zones
+    ctx.fillStyle = theme.grass; 
+    ctx.fillRect(0, GRID_SIZE * 6, CANVAS_WIDTH, GRID_SIZE); // Middle
+    ctx.fillRect(0, GRID_SIZE * 12, CANVAS_WIDTH, GRID_SIZE); // Bottom
+    
+    // Goal Area
+    ctx.fillStyle = theme.grass; ctx.fillRect(0, 0, CANVAS_WIDTH, GRID_SIZE);
+    
+    // Road
+    ctx.fillStyle = theme.road; ctx.fillRect(0, GRID_SIZE * 7, CANVAS_WIDTH, GRID_SIZE * 5);
+    
+    // Road Lines
+    ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.setLineDash([10, 10]); ctx.lineWidth = 2;
+    for (let r=7; r<11; r++) { ctx.beginPath(); ctx.moveTo(0, (r+1) * GRID_SIZE); ctx.lineTo(CANVAS_WIDTH, (r+1) * GRID_SIZE); ctx.stroke(); }
+    ctx.setLineDash([]);
+
+    // --- DETAILED TRAIN TRACKS (Previously "Pencils") ---
+    lanes.forEach(lane => {
+        if (lane.objects.length > 0 && lane.objects[0].style === 'train') {
+            const y = lane.row * GRID_SIZE;
+            
+            // Gravel Bed
+            ctx.fillStyle = "#3e2723"; ctx.fillRect(0, y, CANVAS_WIDTH, GRID_SIZE);
+            
+            // Wooden Ties (Darker, less pencil-like)
+            for(let tx=10; tx<CANVAS_WIDTH; tx+=30) {
+                ctx.fillStyle = "#261e1b"; // Almost black/brown creosote wood
+                ctx.fillRect(tx, y + 2, 8, GRID_SIZE - 4);
+                // Bolt holes
+                ctx.fillStyle = "#111";
+                ctx.fillRect(tx + 2, y + 8, 4, 4);
+                ctx.fillRect(tx + 2, y + GRID_SIZE - 12, 4, 4);
+            }
+            
+            // Steel Rails
+            ctx.fillStyle = "#95a5a6"; // Light Steel
+            ctx.fillRect(0, y + 8, CANVAS_WIDTH, 4);
+            ctx.fillRect(0, y + GRID_SIZE - 12, CANVAS_WIDTH, 4);
+            
+            // Rail Shine
+            ctx.fillStyle = "#fff"; ctx.globalAlpha = 0.3;
+            ctx.fillRect(0, y + 9, CANVAS_WIDTH, 1);
+            ctx.fillRect(0, y + GRID_SIZE - 11, CANVAS_WIDTH, 1);
+            ctx.globalAlpha = 1;
+        }
+    });
+
+    // Draw Goal Slots
+    const goalIndices = [2, 4, 6, 8, 10];
+    goalIndices.forEach((gx, i) => {
+        let x = gx * GRID_SIZE;
+        // Water inlet
+        ctx.fillStyle = theme.waterDark; ctx.fillRect(x, 0, GRID_SIZE, GRID_SIZE);
+        
+        if (gameState.goalSlots[i]) {
+            // Chick in goal
+            const cx = x + GRID_SIZE/2; const cy = GRID_SIZE/2;
+            ctx.fillStyle = "#f1c40f"; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(cx - 4, cy - 2, 2, 0, Math.PI*2); ctx.arc(cx + 4, cy - 2, 2, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "rgba(255, 105, 180, 0.6)"; ctx.beginPath(); ctx.arc(cx - 7, cy + 3, 2, 0, Math.PI*2); ctx.arc(cx + 7, cy + 3, 2, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#e67e22"; ctx.beginPath(); ctx.ellipse(cx, cy + 4, 3, 2, 0, 0, Math.PI*2); ctx.fill();
+        }
+    });
+}
+
+function draw() {
+    ctx.fillStyle = "black"; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    drawBackground(); 
+    lanes.forEach(lane => lane.draw()); 
+    gameState.roamingPlatforms.forEach(p => p.draw(ctx));
+    if (!player.isDead) player.draw();
+    gameState.particles.forEach(p => p.draw(ctx)); 
+    if (gameState.isTransitioning) drawLevelTransition();
+}
+
+function levelUp() {
+    gameState.level++; gameState.score += 1000; gameState.goalsReached = 0; gameState.goalSlots = [false, false, false, false, false];
+    initLanes(); player.reset(); resetTimer(); updateHUD();
+}
+
+function gameOver() {
+    gameState.isGameOver = true;
+    document.getElementById('end-title').innerText = gameState.victory ? "YOU WIN!" : "GAME OVER";
+    document.getElementById('final-score').innerText = gameState.score;
+    document.getElementById('game-over-screen').style.display = 'flex';
+}
+
+function resetGame() {
+    gameState.score = 0; gameState.lives = 3; gameState.level = 1; gameState.goalsReached = 0; gameState.goalSlots = [false, false, false, false, false];
+    gameState.isGameOver = false; gameState.isTransitioning = false; gameState.particles = []; resetTimer();
+    initLanes(); player.reset(); updateHUD();
+    document.getElementById('game-over-screen').style.display = 'none';
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function updateHUD() {
+    document.getElementById('score-display').innerText = `SCORE: ${gameState.score}`;
+    document.getElementById('level-display').innerText = `LEVEL: ${gameState.level}`;
+    document.getElementById('time-display').innerText = `TIME: ${Math.floor(gameState.time)}`;
+    document.getElementById('lives-display').innerText = `LIVES: ${gameState.lives}`;
+}
+
+function gameLoop(timestamp) {
+    let dt = (timestamp - lastTime) / 1000; lastTime = timestamp; if (dt > 0.1) dt = 0.1;
+    update(dt); draw(); requestAnimationFrame(gameLoop);
+}
+
+window.addEventListener('keydown', (e) => {
+    if (gameState.isGameOver) return;
+    switch(e.key) {
+        case 'ArrowUp': case 'w': case 'W': player.move('up'); break;
+        case 'ArrowDown': case 's': case 'S': player.move('down'); break;
+        case 'ArrowLeft': case 'a': case 'A': player.move('left'); break;
+        case 'ArrowRight': case 'd': case 'D': player.move('right'); break;
+    }
+});
+
+const btnUp = document.getElementById('btn-up'); const btnDown = document.getElementById('btn-down');
+const btnLeft = document.getElementById('btn-left'); const btnRight = document.getElementById('btn-right');
+[btnUp, btnDown, btnLeft, btnRight].forEach(btn => {
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); if (btn.id === 'btn-up') player.move('up'); if (btn.id === 'btn-down') player.move('down'); if (btn.id === 'btn-left') player.move('left'); if (btn.id === 'btn-right') player.move('right'); }, {passive: false});
+    btn.addEventListener('mousedown', (e) => { if (btn.id === 'btn-up') player.move('up'); if (btn.id === 'btn-down') player.move('down'); if (btn.id === 'btn-left') player.move('left'); if (btn.id === 'btn-right') player.move('right'); });
+});
+
+function init() { canvas.width = CANVAS_WIDTH; canvas.height = CANVAS_HEIGHT; initLanes(); resetTimer(); updateHUD(); requestAnimationFrame(gameLoop); }
+init();
+</script>
+</body>
+</html>
