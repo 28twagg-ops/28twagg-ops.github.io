@@ -1,0 +1,6 @@
+LAYOUT NOTES (condensed)
+
+- Repo layout is compatible with Gold Standard wrapper work.
+- Keep wrappers as play.html (avoid iframe recursion).
+- Iterate only in staging-* folders until layout is frozen.
+- Creek Crosser untouched.
