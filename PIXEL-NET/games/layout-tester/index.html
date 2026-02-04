@@ -1,364 +1,783 @@
-<!doctype html>
+<!-- PIXEL-NET Gold Standard Wrapper (derived from Millipede) -->
+<!-- Version: V2.4-GS -->
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LAYOUT TESTER | PIXEL-NET</title>
-  <style>
-    :root{
-      --bg:#0a0e27;
-      --panel:rgba(0,0,0,.45);
-      --border:rgba(0,245,255,.35);
-      --cyan:#00f5ff;
-      --pink:#ff006e;
-      --purple:#b537f2;
-      --text:rgba(255,255,255,.9);
-      --muted:rgba(255,255,255,.65);
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>NEON CHASE</title>
 
-      --ratio: 16 / 9;
-      --maxW: 1100px;
-      --pad: 14px;
-      --frameBorder: 2px;
-    }
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet"/>
 
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background: radial-gradient(1200px 800px at 30% 10%, rgba(255,0,110,.15), transparent 60%),
-                  radial-gradient(1200px 800px at 70% 90%, rgba(0,245,255,.12), transparent 55%),
-                  linear-gradient(135deg, var(--bg), #1a0933);
-      color:var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      padding: 24px;
-    }
+<style>
+/* ========================================================
+   PIXEL-NET · Gold Standard Wrapper · V2.4-GS
+   (Same structure/behavior as Millipede wrapper)
+   ======================================================== */
 
-    .wrap{
-      width: min(1200px, 100%);
-      background: var(--panel);
-      border: 2px solid var(--border);
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 18px 70px rgba(0,0,0,.55);
-    }
+:root {
+  --text:        #e9ecff;
+  --muted:       #a7b0d6;
+  --card-top:    rgba(15, 19, 36, .72);
+  --card-bot:    rgba(10, 12, 26, .55);
+  --stroke:      rgba(255, 255, 255, .10);
+  --shadow:      0 14px 40px rgba(0, 0, 0, .35);
+  --accent-cyan: rgba(0, 255, 247, .35);
+  --glow-cyan:   rgba(0, 255, 247, .15);
+  --font-ui:     system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --font-arcade: "Orbitron", var(--font-ui);
+  --banner-h:    28px;
+  --topbar-h:    38px;
+  --gap:         14px;
 
-    .top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 12px;
-      flex-wrap:wrap;
-      margin-bottom: 14px;
-    }
+  /* Gold-standard panel palette (same as Millipede wrapper) */
+  --game-card-top:  rgba(10, 28, 16, .80);
+  --game-card-bot:  rgba(6,  16, 10, .65);
+  --game-accent:    rgba(180, 60, 30, .45);
+  --game-glow:      rgba(180, 60, 30, .18);
+  --game-stroke:    rgba(80, 200, 100, .22);
+  --game-item-bg:   rgba(20, 55, 30, .35);
+  --game-item-stroke: rgba(80, 200, 100, .12);
+}
 
-    .title{
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      font-size: 18px;
-      color: var(--cyan);
-      text-shadow: 0 0 14px rgba(0,245,255,.35);
-    }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
 
-    .hint{
-      font-size: 13px;
-      color: var(--muted);
-      opacity:.95;
-    }
+body {
+  min-height: 100dvh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: var(--banner-h) 0 10px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  background:
+    radial-gradient(1200px 700px at 20% 10%, rgba(255,0,122,.14), transparent 60%),
+    radial-gradient(900px 500px at 85% 20%, rgba(0,255,247,.12), transparent 55%),
+    linear-gradient(180deg, #050611 0%, #060716 100%);
+  color-scheme: dark;
+  touch-action: auto;
+  overscroll-behavior: auto;
+}
 
-    .grid{
-      display:grid;
-      grid-template-columns: 340px 1fr;
-      gap: 14px;
-    }
+#pn-version-banner {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--banner-h);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font: 12px/1.2 var(--font-ui);
+  background: rgba(0, 0, 0, .78);
+  color: var(--text);
+  border-bottom: 1px solid var(--stroke);
+  pointer-events: none;
+}
 
-    .controls{
-      background: rgba(0,0,0,.35);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 14px;
-      padding: 14px;
-    }
+.topbar {
+  width: min(1300px, 94vw);
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+.btn, .badge {
+  height: var(--topbar-h);
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(10,12,26,.72);
+  color: var(--text);
+  font: 700 13px/1 var(--font-arcade);
+  letter-spacing: .10em;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.btn:hover, .badge:hover { filter: brightness(1.12); }
+.badge { min-width: 54px; display: inline-grid; place-items: center; }
 
-    label{
-      display:block;
-      font-size: 12px;
-      color: var(--muted);
-      margin: 10px 0 6px;
-      letter-spacing: .02em;
-      text-transform: uppercase;
-    }
+.layout {
+  width: min(1300px, 94vw);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(360px, 1fr) minmax(220px, 280px);
+  gap: var(--gap);
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
 
-    select, input[type="range"]{
-      width: 100%;
-    }
+.panel {
+  background: linear-gradient(180deg, var(--card-top), var(--card-bot));
+  border: 1px solid var(--stroke);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+  min-height: 0;
+  overflow: auto;
+}
+.panel.leaderboard { overflow: hidden; }
 
-    select{
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: rgba(0,0,0,.45);
-      border: 1px solid rgba(0,245,255,.25);
-      color: var(--text);
-      outline:none;
-    }
+aside.panel {
+  background: linear-gradient(180deg, var(--game-card-top), var(--game-card-bot));
+  border-color: var(--game-stroke);
+  box-shadow: 0 14px 40px rgba(0,0,0,.35), 0 0 18px var(--game-glow);
+}
+aside.panel .title {
+  color: #7fdf8a;
+  text-shadow: 0 0 8px rgba(80, 200, 100, .25);
+}
+aside.panel .muted,
+aside.panel .hint { color: #8aac8f; }
+aside.panel .hint b { color: #b8e6bf; }
 
-    .row{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-    }
+.title {
+  font-family: var(--font-arcade);
+  letter-spacing: .10em;
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.muted { color: var(--muted); }
+.hint  { color: var(--muted); font-size: 12px; margin-top: 10px; }
 
-    .val{
-      font-variant-numeric: tabular-nums;
-      color: rgba(255,255,255,.8);
-      font-size: 13px;
-      white-space:nowrap;
-    }
+main.panel { display: flex; flex-direction: column; min-height: 0; }
 
-    .btns{
-      display:flex;
-      gap: 10px;
-      margin-top: 14px;
-    }
+.gamebox {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--stroke);
+  background: rgba(0,0,0,.28);
+  touch-action: none;
+  overscroll-behavior: contain;
+}
 
-    button{
-      flex:1;
-      padding: 12px 12px;
-      border-radius: 12px;
-      border: none;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      cursor:pointer;
-      color:#0a0e27;
-      background: linear-gradient(135deg, var(--cyan), var(--pink));
-      box-shadow: 0 8px 28px rgba(0,245,255,.2);
-    }
+.game-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
 
-    button.secondary{
-      background: linear-gradient(135deg, var(--purple), var(--cyan));
-      color: #fff;
-    }
+.game-stage-inner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
 
-    .stage{
-      display:flex;
-      flex-direction:column;
-      gap: 10px;
-      align-items:center;
-      justify-content:flex-start;
-    }
+/* IFRAME fills the aspect-locked shell */
+.game-stage-inner iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
 
-    .frame{
-      width: min(var(--maxW), 100%);
-      aspect-ratio: var(--ratio);
-      border-radius: 16px;
-      border: var(--frameBorder) solid rgba(0,245,255,.45);
-      background: rgba(0,0,0,.5);
-      box-shadow: 0 14px 50px rgba(0,0,0,.55);
-      padding: var(--pad);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:relative;
-      overflow:hidden;
-    }
+/* Leaderboard */
+.lb-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+  height: 100%;
+  overflow: auto;
+}
+.lb-col { list-style: none; padding: 0; margin: 0; }
+.lb-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--game-item-stroke);
+  background: var(--game-item-bg);
+  font-family: var(--font-arcade);
+  letter-spacing: .06em;
+  font-size: 12px;
+  min-width: 0;
+}
+.lb-item:first-child { border-top: 2px solid var(--game-accent); }
+.lb-item .lb-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb-rank  { color: #7fdf8a; opacity: .85; min-width: 22px; }
+.lb-score { color: #f0c87a; font-weight: 800; white-space: nowrap; }
+.lb-meta  { color: #6a8a70; font-size: 11px; margin-top: 10px; }
 
-    .frame::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        linear-gradient(rgba(0,245,255,.12) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,245,255,.12) 1px, transparent 1px);
-      background-size: 34px 34px;
-      opacity:.35;
-      pointer-events:none;
-    }
+/* Initials modal */
+.px-init-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; }
+.px-init-modal.hidden { display: none; }
+.px-init-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(4px); }
+.px-init-card {
+  position: relative; z-index: 1; width: 300px; padding: 16px 18px 14px; border-radius: 16px;
+  background: linear-gradient(180deg, rgba(15,19,36,.95), rgba(10,12,26,.95));
+  border: 1px solid var(--accent-cyan); box-shadow: 0 0 24px var(--glow-cyan); text-align: center;
+}
+.px-init-header { display:flex; justify-content:space-between; align-items:center; font-family: var(--font-arcade);
+  letter-spacing:.10em; font-weight:700; font-size:13px; margin-bottom:10px; }
+#px-init-close {
+  width: 30px; height: 30px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14);
+  background: rgba(10,12,26,.72); color: var(--text); font-size: 18px; cursor: pointer;
+  display:flex; align-items:center; justify-content:center; transition: filter .15s;
+}
+#px-init-close:hover { filter: brightness(1.15); }
+#px-init-input {
+  width: 100%; height: 42px; border-radius: 14px; border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.20); color: var(--text);
+  font: 700 18px/1 var(--font-arcade); letter-spacing: .24em; text-align: center; outline: none;
+  margin: 4px 0 6px; transition: border-color .2s;
+}
+#px-init-input:focus { border-color: var(--accent-cyan); }
+.px-init-hint { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+#px-init-save { display: none; }
 
-    .canvas{
-      width: 100%;
-      height: 100%;
-      border-radius: 12px;
-      border: 1px dashed rgba(255,255,255,.25);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      padding: 16px;
-      position:relative;
-      z-index:1;
-    }
+/* Mobile tabs */
+.mobile-tabs { display: none; }
+.m-panel { display: none; }
 
-    .big{
-      font-weight: 900;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,.92);
-    }
+@media (max-width: 1000px) {
+  .layout { display: none; }
+  .topbar { width: 96vw; margin-bottom: 6px; }
 
-    .small{
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.35;
-    }
+  .mobile-tabs { display: flex; width: 96vw; margin: 0 auto 6px; gap: 4px; }
+  .mobile-tabs button {
+    flex: 1; height: 34px; border-radius: 10px; border: 1px solid var(--stroke);
+    background: rgba(10,12,26,.55); color: var(--muted);
+    font: 700 11px/1 var(--font-arcade); letter-spacing: .08em;
+    cursor: pointer; transition: background .18s, color .18s;
+  }
+  .mobile-tabs button.active {
+    background: rgba(0,255,247,.15); border-color: var(--accent-cyan); color: var(--text);
+  }
 
-    .readout{
-      width: min(var(--maxW), 100%);
-      display:flex;
-      justify-content:space-between;
-      gap: 10px;
-      flex-wrap:wrap;
-      color: var(--muted);
-      font-size: 13px;
-      font-variant-numeric: tabular-nums;
-      opacity:.95;
-    }
+  .m-panel {
+    display: block; width: 96vw; margin: 0 auto 8px; border-radius: 16px;
+    background: linear-gradient(180deg, var(--card-top), var(--card-bot));
+    border: 1px solid var(--stroke); box-shadow: var(--shadow); padding: 14px;
+  }
+  .m-panel.hidden { display: none; }
 
-    code{color: rgba(0,245,255,.9)}
-    @media (max-width: 980px){
-      .grid{grid-template-columns:1fr}
-    }
-  </style>
+  #m-howto, #m-lb {
+    background: linear-gradient(180deg, var(--game-card-top), var(--game-card-bot));
+    border-color: var(--game-stroke);
+    box-shadow: 0 14px 40px rgba(0,0,0,.35), 0 0 18px var(--game-glow);
+  }
+  #m-howto .title, #m-lb .title { color: #7fdf8a; text-shadow: 0 0 8px rgba(80, 200, 100, .25); }
+  #m-howto .muted, #m-howto .hint, #m-lb .muted { color: #8aac8f; }
+  #m-howto .hint b { color: #b8e6bf; }
+
+  #m-game .gamebox {
+    width: 100%;
+    height: calc(100dvh - var(--banner-h) - var(--topbar-h) - 34px - 28px - 60px);
+    position: relative; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--stroke); background: rgba(0,0,0,.28);
+    touch-action: none; overscroll-behavior: contain;
+  }
+
+  .px-init-card { width: 88vw; max-width: 340px; padding: 22px 20px 24px; }
+  .px-init-header { font-size: 14px; margin-bottom: 14px; }
+  #px-init-close { width: 34px; height: 34px; border-radius: 12px; font-size: 20px; }
+  #px-init-input { height: 48px; font-size: 20px; margin: 6px 0 12px; }
+  #px-init-save {
+    display: block; width: 100%; height: 44px; border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.14); background: rgba(10,12,26,.72); color: var(--text);
+    font: 800 13px/1 var(--font-arcade); letter-spacing: .10em; cursor: pointer;
+    margin-bottom: 4px; transition: filter .15s;
+  }
+  #px-init-save:hover { filter: brightness(1.12); }
+  .px-init-hint { font-size: 13px; margin-top: 2px; }
+}
+.lb{ margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+    .lb-row{ display:flex; align-items:center; gap:10px; padding:10px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background: rgba(0,0,0,.25); }
+    .lb-r{ width:36px; font-family:'Orbitron',sans-serif; font-weight:900; color:#00f5ff; }
+    .lb-n{ flex:1; font-weight:800; letter-spacing:1px; }
+    .lb-s{ font-family:'Orbitron',sans-serif; color:rgba(255,255,255,.8); }
+    .btn.small{ padding:10px 12px; font-size:12px; }
+    .btn.small.active{ border-color:#ff006e !important; box-shadow:0 0 18px rgba(255,0,110,.18); }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div class="title">Layout Tester</div>
-      <div class="hint">Use this to pick the “GOLD wrapper” aspect ratio / sizing you like. No game UI here on purpose.</div>
+
+<div id="pn-version-banner">
+  PIXEL-NET · NEON CHASE · <strong>V2.4</strong>
+</div>
+
+<section id="px-init-modal" class="px-init-modal hidden" aria-hidden="true">
+  <div class="px-init-backdrop"></div>
+  <div class="px-init-card" role="dialog" aria-modal="true" aria-label="Enter Initials">
+    <div class="px-init-header">
+      <span>ENTER INITIALS</span>
+      <button id="px-init-close" type="button" aria-label="Close">×</button>
+    </div>
+    <input id="px-init-input" type="text" maxlength="3" placeholder="_ _ _"
+           autocomplete="off" autocapitalize="characters" spellcheck="false"/>
+    <button id="px-init-save" type="button">SAVE</button>
+    <div class="px-init-hint">Press Enter to save</div>
+  </div>
+</section>
+
+<div class="topbar">
+  <button class="btn" id="px-exit">EXIT</button>
+  <div class="badge" id="px-badge" title="Click to change initials">???</div>
+</div>
+
+<div class="mobile-tabs" id="m-tabs">
+  <button class="active" data-tab="game">GAME</button>
+  <button data-tab="howto">HOW TO PLAY</button>
+  <button data-tab="lb">LEADERBOARD</button>
+</div>
+
+<div class="layout">
+  <aside class="panel">
+    <h3 class="title">TEMPLATE TESTER</h3>
+
+    <div class="kv">
+      <div class="kv-row"><span class="k">Aspect</span><span class="v" id="ltAspectText">16:9</span></div>
+      <div class="kv-row"><span class="k">Box</span><span class="v" id="ltBoxText">—</span></div>
+      <div class="kv-row"><span class="k">Scale</span><span class="v" id="ltScaleText">1.00×</span></div>
     </div>
 
-    <div class="grid">
-      <div class="controls">
-        <label>Aspect Ratio</label>
-        <select id="ratio">
-          <option value="16/9">16:9 (wide)</option>
-          <option value="4/3">4:3 (classic)</option>
-          <option value="1/1">1:1 (square)</option>
-          <option value="3/4">3:4 (tall)</option>
-          <option value="9/16">9:16 (phone)</option>
-        </select>
+    <div class="btnrow" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:10px">
+      <button class="btn small active" data-ar="16/9">16:9</button>
+      <button class="btn small" data-ar="4/3">4:3</button>
+      <button class="btn small" data-ar="1/1">1:1</button>
+      <button class="btn small" data-ar="9/16">9:16</button>
+      <button class="btn small" data-ar="21/9">21:9</button>
+    </div>
 
-        <label>Max Width</label>
-        <div class="row">
-          <input id="maxW" type="range" min="600" max="1400" step="10" value="1100" />
-          <div class="val"><span id="maxWVal">1100</span>px</div>
-        </div>
+    <div class="kv" style="margin-top:12px">
+      <div class="kv-row" style="justify-content:space-between">
+        <span class="k">Width</span><span class="v" id="ltWVal">900px</span>
+      </div>
+      <input id="ltW" type="range" min="320" max="1400" value="900" style="width:100%">
 
-        <label>Inner Padding</label>
-        <div class="row">
-          <input id="pad" type="range" min="0" max="40" step="1" value="14" />
-          <div class="val"><span id="padVal">14</span>px</div>
-        </div>
+      <div style="height:10px"></div>
 
-        <label>Frame Border</label>
-        <div class="row">
-          <input id="border" type="range" min="0" max="6" step="1" value="2" />
-          <div class="val"><span id="borderVal">2</span>px</div>
-        </div>
+      <div class="kv-row" style="justify-content:space-between">
+        <span class="k">Height</span><span class="v" id="ltHVal">600px</span>
+      </div>
+      <input id="ltH" type="range" min="240" max="900" value="600" style="width:100%">
 
-        <div class="btns">
-          <button class="secondary" id="copy">Copy Settings</button>
-          <button id="reset">Reset</button>
-        </div>
+      <div style="height:10px"></div>
 
-        <div style="margin-top:10px; color:rgba(255,255,255,.6); font-size:12px; line-height:1.35;">
-          Copy gives you a JSON snippet you can paste into chat later so we can lock the layout.
+      <div class="kv-row" style="justify-content:space-between">
+        <span class="k">Scale</span><span class="v" id="ltSVal">1.00×</span>
+      </div>
+      <input id="ltS" type="range" min="50" max="140" value="100" style="width:100%">
+    </div>
+
+    <div class="help" style="margin-top:12px">
+      Resize the browser too. This page exists so you can nail down the wrapper format before we force it onto every game.
+    </div>
+  </aside>
+
+  <main class="panel">
+    <h3 class="title">LAYOUT TESTER</h3>
+    <div class="gamebox">
+      <div class="game-stage" id="pn-stage">
+        <div class="game-stage-inner" id="pn-stage-inner">
+          <div id="lt-stage" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;">
+  <div style="position:absolute;top:14px;left:14px;font-family:'Orbitron',sans-serif;font-weight:800;letter-spacing:2px;font-size:14px;color:#00f5ff;text-shadow:0 0 14px rgba(0,245,255,.55);">
+    GAME VIEWPORT
+  </div>
+  <div style="position:absolute;bottom:14px;left:14px;right:14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;color:rgba(255,255,255,.85);font-size:14px;line-height:1.35;">
+    This is a sandbox “game” to preview the golden wrapper layout. Use the left controls to change aspect ratio + size.
+  </div>
+</div>
         </div>
       </div>
+    </div>
+    <div class="muted" style="font-size:11px; margin-top:6px;">Leaderboard refreshes automatically.</div>
+  </main>
 
-      <div class="stage">
-        <div class="frame" id="frame">
-          <div class="canvas">
-            <div>
-              <div class="big">Preview Area</div>
-              <div class="small">
-                This box is the game viewport.<br/>
-                Change ratio/size/padding until it feels right.
-              </div>
-            </div>
-          </div>
-        </div>
+  <aside class="panel leaderboard">
+    <h3 class="title">LEADERBOARD</h3>
+    <div class="muted">Top 10</div>
+    <div class="lb-grid">
+      <ol class="lb-col" id="lb-left"></ol>
+      <ol class="lb-col" id="lb-right"></ol>
+    </div>
+    <div class="lb-meta" id="lb-status">Loading…</div>
+  </aside>
+</div>
 
-        <div class="readout" id="readout">
-          <div>aspect-ratio: <code id="rOut">16/9</code></div>
-          <div>max-width: <code id="wOut">1100px</code></div>
-          <div>padding: <code id="pOut">14px</code></div>
-          <div>border: <code id="bOut">2px</code></div>
-        </div>
-      </div>
+<div id="m-howto" class="m-panel hidden">
+  <h3 class="title">HOW TO PLAY</h3>
+  <div class="muted">
+    <p><b>Controls:</b> Arrow Keys / WASD</p>
+    <p><b>Action:</b> Space / Enter (varies by game)</p>
+    <p><b>Goal:</b> High-speed neon survival.</p>
+  </div>
+  <div class="hint">Click the badge (top-right) to change initials.</div>
+  <div class="hint"><b>Game Over:</b> score auto-saves. Press <b>Enter</b> to restart.</div>
+</div>
+
+<div id="m-game" class="m-panel hidden">
+  <div class="gamebox">
+    <div class="game-stage">
+      <div class="game-stage-inner" id="pn-stage-inner-mobile"></div>
     </div>
   </div>
+</div>
 
-  <script>
-    const ratioEl = document.getElementById('ratio');
-    const maxWEl = document.getElementById('maxW');
-    const padEl  = document.getElementById('pad');
-    const borderEl  = document.getElementById('border');
+<div id="m-lb" class="m-panel hidden">
+  <h3 class="title">LEADERBOARD</h3>
+  <div class="muted">Top 10</div>
+  <div class="lb-grid">
+    <ol class="lb-col" id="m-lb-left"></ol>
+    <ol class="lb-col" id="m-lb-right"></ol>
+  </div>
+  <div class="lb-meta" id="m-lb-status">Loading…</div>
+</div>
 
-    const maxWVal = document.getElementById('maxWVal');
-    const padVal  = document.getElementById('padVal');
-    const borderVal  = document.getElementById('borderVal');
+<script src="../../js/engine.js"></script>
+<script>
+(function(){
+  "use strict";
 
-    const rOut = document.getElementById('rOut');
-    const wOut = document.getElementById('wOut');
-    const pOut = document.getElementById('pOut');
-    const bOut = document.getElementById('bOut');
+  // ============================================================
+  // CONFIG (per-game)
+  // ============================================================
+  var GAME_CONFIG = {
+    slugs: ["neon-chase"]
+  };
 
-    function apply(){
-      const r = ratioEl.value;
-      const w = maxWEl.value;
-      const p = padEl.value;
-      const b = borderEl.value;
+  // ============================================================
+  // INITIALS
+  // ============================================================
+  function norm(v){
+    return String(v||"").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0,3) || "???";
+  }
 
-      document.documentElement.style.setProperty('--ratio', r.replace('/', ' / '));
-      document.documentElement.style.setProperty('--maxW', w + 'px');
-      document.documentElement.style.setProperty('--pad', p + 'px');
-      document.documentElement.style.setProperty('--frameBorder', b + 'px');
+  var initials = norm(
+    localStorage.getItem("px_player_initials") ||
+    sessionStorage.getItem("playerInitials") ||
+    "???"
+  );
 
-      maxWVal.textContent = w;
-      padVal.textContent = p;
-      borderVal.textContent = b;
+  function syncInitials(val){
+    val = norm(val);
+    try{ localStorage.setItem("px_player_initials", val); }catch(_){ }
+    try{ sessionStorage.setItem("playerInitials", val); }catch(_){ }
+    try{ localStorage.setItem("p",  val); }catch(_){ }
+    try{ localStorage.setItem("u",  val); }catch(_){ }
+    try{ localStorage.setItem("n",  val); }catch(_){ }
+    try{ localStorage.setItem("nm", val); }catch(_){ }
+  }
+  syncInitials(initials);
 
-      rOut.textContent = r;
-      wOut.textContent = w + 'px';
-      pOut.textContent = p + 'px';
-      bOut.textContent = b + 'px';
+  if (window.PixelNet && PixelNet.init)   PixelNet.init();
+  if (window.PixelNet && PixelNet.uiInit) PixelNet.uiInit();
+
+  var badge = document.getElementById("px-badge");
+  badge.textContent = initials;
+
+  window.addEventListener("storage", function(e){
+    if (e && e.key === "px_player_initials" && e.newValue){
+      var v = norm(e.newValue);
+      if (v && v !== initials){
+        initials = v;
+        syncInitials(v);
+        badge.textContent = v;
+      }
+    }
+  });
+
+  document.getElementById("px-exit").onclick = function(){ location.href = "../../index.html"; };
+
+  // Modal wiring
+  var modal   = document.getElementById("px-init-modal");
+  var input   = document.getElementById("px-init-input");
+  var closeBtn= document.getElementById("px-init-close");
+  var saveBtn = document.getElementById("px-init-save");
+
+  function openModal(){
+    input.value = (initials !== "???") ? initials : "";
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    input.focus();
+  }
+  function closeModal(){
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  }
+  function saveInitials(){
+    var v = norm(input.value);
+    if (v && v !== "???"){
+      initials = v;
+      syncInitials(v);
+      badge.textContent = v;
+    }
+    closeModal();
+  }
+
+  badge.addEventListener("click", openModal);
+  closeBtn.addEventListener("click", saveInitials);
+  if (saveBtn) saveBtn.addEventListener("click", saveInitials);
+  modal.querySelector(".px-init-backdrop").addEventListener("click", saveInitials);
+
+  input.addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); saveInitials(); }
+    if (e.key === "Escape"){ e.preventDefault(); closeModal(); }
+  });
+
+  // ============================================================
+  // IFRAME + ASPECT FIT
+  // ============================================================
+  var iframe = document.getElementById("pn-iframe");
+  var desktopInner = document.getElementById("pn-stage-inner");
+  var mobileInner  = document.getElementById("pn-stage-inner-mobile");
+  var desktopGamebox = document.querySelector(".layout main.panel .gamebox");
+
+  var GAME_ASPECT = 1; // updated from iframe canvas when available
+
+  function updateAspectFromIframe(){
+    try{
+      if (!iframe || !      var doc =       if (!doc) return;
+      var c = doc.querySelector("canvas");
+      if (!c) return;
+      var w = Number(c.width)  || c.getBoundingClientRect().width  || 1;
+      var h = Number(c.height) || c.getBoundingClientRect().height || 1;
+      if (w > 0 && h > 0) GAME_ASPECT = w / h;
+    }catch(_){ }
+  }
+
+  function activeBoxAndInner(){
+    if (window.innerWidth <= 1000){
+      return {
+        box: document.querySelector("#m-game .gamebox"),
+        inner: mobileInner
+      };
+    }
+    return { box: desktopGamebox, inner: desktopInner };
+  }
+
+  function fitStage(){
+    var ref = activeBoxAndInner();
+    var box = ref.box;
+    var inner = ref.inner;
+    if (!box || !inner) return;
+
+    var W = box.clientWidth;
+    var H = box.clientHeight;
+    var ratio = GAME_ASPECT || 1;
+    var w, h;
+
+    if (W / H > ratio){
+      h = H;
+      w = Math.floor(H * ratio);
+    } else {
+      w = W;
+      h = Math.floor(W / ratio);
     }
 
-    ratioEl.addEventListener('change', apply);
-    maxWEl.addEventListener('input', apply);
-    padEl.addEventListener('input', apply);
-    borderEl.addEventListener('input', apply);
+    inner.style.width  = w + "px";
+    inner.style.height = h + "px";
+  }
 
-    document.getElementById('reset').addEventListener('click', () => {
-      ratioEl.value = '16/9';
-      maxWEl.value = 1100;
-      padEl.value = 14;
-      borderEl.value = 2;
-      apply();
-    });
-
-    document.getElementById('copy').addEventListener('click', async () => {
-      const payload = {
-        ratio: ratioEl.value,
-        maxWidthPx: Number(maxWEl.value),
-        paddingPx: Number(padEl.value),
-        borderPx: Number(borderEl.value)
-      };
-      const txt = JSON.stringify(payload);
-      try{
-        await navigator.clipboard.writeText(txt);
-        alert('Copied: ' + txt);
-      }catch{
-        prompt('Copy this:', txt);
+  function placeIframeForViewport(){
+    // Ensure the iframe lives in the visible stage inner.
+    if (!iframe) return;
+    if (window.innerWidth <= 1000){
+      if (iframe.parentElement !== mobileInner){
+        mobileInner.appendChild(iframe);
       }
-    });
+    } else {
+      if (iframe.parentElement !== desktopInner){
+        desktopInner.appendChild(iframe);
+      }
+    }
+  }
 
-    apply();
-  </script>
+  if (iframe){
+    iframe.addEventListener("load", function(){
+      updateAspectFromIframe();
+      placeIframeForViewport();
+      fitStage();
+    });
+  }
+
+  placeIframeForViewport();
+  fitStage();
+  window.addEventListener("resize", function(){
+    placeIframeForViewport();
+    // Re-sample aspect after resize (some games update canvas size on resize)
+    updateAspectFromIframe();
+    fitStage();
+  });
+
+  // ============================================================
+  // MOBILE TABS
+  // ============================================================
+  var tabs = document.getElementById("m-tabs");
+  var btns = tabs ? Array.from(tabs.querySelectorAll("button")) : [];
+  var mHow = document.getElementById("m-howto");
+  var mGame= document.getElementById("m-game");
+  var mLb  = document.getElementById("m-lb");
+
+  function showTab(which){
+    if (!tabs) return;
+    btns.forEach(function(b){ b.classList.toggle("active", b.dataset.tab === which); });
+    if (mHow) mHow.classList.toggle("hidden", which !== "howto");
+    if (mGame) mGame.classList.toggle("hidden", which !== "game");
+    if (mLb)  mLb.classList.toggle("hidden", which !== "lb");
+
+    // keep iframe mounted in visible container
+    placeIframeForViewport();
+    fitStage();
+
+// --- Layout Tester controls ---
+    const ltAspectText = document.getElementById("ltAspectText");
+    const ltBoxText = document.getElementById("ltBoxText");
+    const ltScaleText = document.getElementById("ltScaleText");
+    const ltW = document.getElementById("ltW");
+    const ltH = document.getElementById("ltH");
+    const ltS = document.getElementById("ltS");
+    const ltWVal = document.getElementById("ltWVal");
+    const ltHVal = document.getElementById("ltHVal");
+    const ltSVal = document.getElementById("ltSVal");
+
+    function updateReadouts(){
+      const w = Number(ltW.value);
+      const h = Number(ltH.value);
+      const s = Number(ltS.value)/100;
+      ltWVal.textContent = w + "px";
+      ltHVal.textContent = h + "px";
+      ltSVal.textContent = s.toFixed(2) + "×";
+      ltBoxText.textContent = `${w}×${h}`;
+      ltScaleText.textContent = s.toFixed(2) + "×";
+    }
+
+    function setAspect(ar){
+      const [a,b]=ar.split("/").map(Number);
+      GAME_ASPECT = (a && b) ? (a/b) : (16/9);
+      ltAspectText.textContent = (a && b) ? `${a}:${b}` : ar;
+      fitStage();
+    }
+
+    // Make the stage box obey manual w/h
+    function applyStageBox(){
+      const w = Number(ltW.value);
+      const h = Number(ltH.value);
+      stage.style.width = w + "px";
+      stage.style.height = h + "px";
+      inner.style.transform = `scale(${(Number(ltS.value)/100).toFixed(3)})`;
+      inner.style.transformOrigin = "center";
+      updateReadouts();
+    }
+
+    document.querySelectorAll("button[data-ar]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        document.querySelectorAll("button[data-ar]").forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        setAspect(btn.getAttribute("data-ar"));
+      });
+    });
+    ltW.addEventListener("input", ()=>{ applyStageBox(); fitStage(); });
+    ltH.addEventListener("input", ()=>{ applyStageBox(); fitStage(); });
+    ltS.addEventListener("input", ()=>{ applyStageBox(); });
+
+    // init
+    applyStageBox();
+    setAspect("16/9");
+
+
+  }
+
+  if (tabs){
+    tabs.addEventListener("click", function(e){
+      var t = e.target;
+      if (t && t.dataset && t.dataset.tab) showTab(t.dataset.tab);
+    });
+  }
+
+  // Default: show GAME on mobile
+  showTab("game");
+
+  // ============================================================
+  // LEADERBOARD
+  // ============================================================
+  async function renderLeaderboard(){
+    var status  = document.getElementById("lb-status");
+    var mStatus = document.getElementById("m-lb-status");
+    var L = document.getElementById("lb-left");
+    var R = document.getElementById("lb-right");
+    var mL = document.getElementById("m-lb-left");
+    var mR = document.getElementById("m-lb-right");
+
+    if (L) L.innerHTML = "";
+    if (R) R.innerHTML = "";
+    if (mL) mL.innerHTML = "";
+    if (mR) mR.innerHTML = "";
+
+    if (!(window.PixelNet && PixelNet.getLeaderboard)){
+      var msg0 = "Leaderboard unavailable.";
+      if (status) status.textContent = msg0;
+      if (mStatus) mStatus.textContent = msg0;
+      return;
+    }
+
+    try{
+      var rows = [];
+      for (var i=0;i<GAME_CONFIG.slugs.length;i++){
+        try{ rows = await PixelNet.getLeaderboard(GAME_CONFIG.slugs[i]); }catch(_){ rows = []; }
+        if (Array.isArray(rows) && rows.length) break;
+      }
+
+      var top = (rows || []).slice(0,10);
+      if (!top.length){
+        if (status) status.textContent = "No scores yet.";
+        if (mStatus) mStatus.textContent = "No scores yet.";
+        return;
+      }
+
+      top.forEach(function(row, idx){
+        var ini = norm(row.initials || row.name || "???");
+        var sc = Number(row.score != null ? row.score : (row.points != null ? row.points : (row.value != null ? row.value : 0))) || 0;
+
+        var li = document.createElement("li");
+        li.className = "lb-item";
+        li.innerHTML =
+          '<span class="lb-rank">' + (idx+1) + '.</span>' +
+          '<span class="lb-name">' + ini + '</span>' +
+          '<span class="lb-score">' + sc + '</span>';
+
+        (idx < 5 ? L : R).appendChild(li);
+
+        var mli = li.cloneNode(true);
+        (idx < 5 ? mL : mR).appendChild(mli);
+      });
+
+      if (status) status.textContent = "Auto-refreshing…";
+      if (mStatus) mStatus.textContent = "Auto-refreshing…";
+
+    }catch(e){
+      console.error("[Gold Wrapper] leaderboard fetch failed:", e);
+      var msg = "Failed to load (backend sleeping?).";
+      if (status) status.textContent = msg;
+      if (mStatus) mStatus.textContent = msg;
+    }
+  }
+
+  renderLeaderboard();
+  setInterval(renderLeaderboard, 6000);
+})();
+</script>
+
 </body>
 </html>
