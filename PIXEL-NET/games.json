@@ -4,74 +4,87 @@
     "type": "iframe",
     "path": "games/millipede-react/index.html",
     "thumb": "assets/millipede_thumb.png",
-    "description": "Defend the garden from the swarm."
+    "description": "Defend the garden from the swarm.",
+    "url": "games/millipede-react/index.html"
   },
   {
     "name": "NEON CHASE",
     "type": "iframe",
     "path": "games/neon-chase/index.html",
     "thumb": "assets/neon-chase_thumb.png",
-    "description": "High-speed neon survival."
+    "description": "High-speed neon survival.",
+    "url": "games/neon-chase/index.html"
   },
   {
     "name": "ROBO ARENA",
     "type": "iframe",
     "path": "games/robo-arena/index.html",
     "thumb": "assets/robo-arena_thumb.jpg",
-    "description": "Enter the arena. Win the fight."
+    "description": "Enter the arena. Win the fight.",
+    "url": "games/robo-arena/index.html"
   },
   {
     "name": "VECTOR DUEL",
     "type": "iframe",
     "path": "games/vector-duel/index.html",
     "thumb": "assets/vector-duel_thumb.png",
-    "description": "Retro vectors. Modern reflex."
+    "description": "Retro vectors. Modern reflex.",
+    "url": "games/vector-duel/index.html"
   },
   {
     "name": "CYBER PYTHON",
     "type": "iframe",
     "path": "games/cyber-python/index.html",
     "thumb": "assets/cyber-python_thumb.png",
-    "description": "Classic snake, cyber style."
+    "description": "Classic snake, cyber style.",
+    "url": "games/cyber-python/index.html"
   },
   {
     "name": "NEON MAZE CHASE",
     "type": "iframe",
     "path": "games/neon-maze-chase/index.html",
     "thumb": "assets/neon-maze-chase_thumb.png",
-    "description": "Neon maze survival. Collect bits. Hack drones."
+    "description": "Neon maze survival. Collect bits. Hack drones.",
+    "url": "games/neon-maze-chase/index.html"
   },
   {
     "name": "CAKED UP CATS",
     "type": "iframe",
     "path": "games/caked-up-cats/index.html",
     "thumb": "assets/caked-up-cats_thumb.png",
-    "description": "Garden maze arcade. Eat cake, catch mice, avoid hazards."
+    "description": "Garden maze arcade. Eat cake, catch mice, avoid hazards.",
+    "url": "games/caked-up-cats/index.html"
   },
   {
     "name": "ASTROTYPE",
     "type": "iframe",
     "path": "games/astrotype/index.html",
     "thumb": "assets/astrotype_thumb.png",
-    "description": "Type alien codes to defend the lunar base."
+    "description": "Type alien codes to defend the lunar base.",
+    "url": "games/astrotype/index.html"
   },
   {
     "id": "creek-crosser",
     "title": "Creek Crosser",
     "desc": "Hop to the 5 nests. Avoid cars and the creek.",
-    "thumb": "assets/creek-crosser-thumb.png",
+    "thumb": "assets/creek-crosser_thumb.png",
     "path": "games/creek-crosser/index.html",
     "leaderboardKey": "creek-crosser",
     "controls": [
       "Arrow Keys / WASD",
       "Touch D-pad (mobile)"
-    ]
+    ],
+    "url": "games/creek-crosser/index.html",
+    "name": "Creek Crosser",
+    "type": "iframe",
+    "description": "Cross the creek, dodge the chaos, and survive the rush."
   },
   {
-    "name": "Layout Tester",
-    "path": "games/layout-tester/index.html",
+    "name": "LAYOUT TESTER",
     "type": "iframe",
-    "thumb": "thumbnails/layout-tester_thumb.png",
-    "description": "Sandbox cabinet to preview wrapper aspect ratios."
+    "path": "games/layout-tester/index.html",
+    "url": "games/layout-tester/index.html",
+    "thumb": "assets/layout-tester_thumb.png",
+    "description": "Adjust aspect ratio & sizing to preview the GOLD wrapper layout."
   }
 ]

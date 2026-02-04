@@ -2,185 +2,363 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PIXEL-NET | Layout Tester</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LAYOUT TESTER | PIXEL-NET</title>
   <style>
     :root{
-      --neon-pink:#ff006e; --neon-cyan:#00f5ff; --deep-blue:#0a0e27; --dark-purple:#1a0933;
-      --grid-color: rgba(0,245,255,.12);
+      --bg:#0a0e27;
+      --panel:rgba(0,0,0,.45);
+      --border:rgba(0,245,255,.35);
+      --cyan:#00f5ff;
+      --pink:#ff006e;
+      --purple:#b537f2;
+      --text:rgba(255,255,255,.9);
+      --muted:rgba(255,255,255,.65);
+
+      --ratio: 16 / 9;
+      --maxW: 1100px;
+      --pad: 14px;
+      --frameBorder: 2px;
     }
-    *{box-sizing:border-box;margin:0;padding:0}
+
+    *{box-sizing:border-box}
     body{
-      font-family:Rajdhani,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:linear-gradient(135deg,var(--deep-blue),var(--dark-purple));
-      color:#fff; min-height:100vh; overflow:hidden;
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: radial-gradient(1200px 800px at 30% 10%, rgba(255,0,110,.15), transparent 60%),
+                  radial-gradient(1200px 800px at 70% 90%, rgba(0,245,255,.12), transparent 55%),
+                  linear-gradient(135deg, var(--bg), #1a0933);
+      color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      padding: 24px;
     }
-    body::before{
-      content:""; position:fixed; inset:0;
-      background-image:
-        linear-gradient(var(--grid-color) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-      background-size:50px 50px;
-      animation:gridScroll 20s linear infinite;
-      pointer-events:none; z-index:0;
+
+    .wrap{
+      width: min(1200px, 100%);
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 18px 70px rgba(0,0,0,.55);
     }
-    @keyframes gridScroll{
-      0%{transform:perspective(500px) rotateX(60deg) translateY(0)}
-      100%{transform:perspective(500px) rotateX(60deg) translateY(50px)}
+
+    .top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap:wrap;
+      margin-bottom: 14px;
     }
-    .wrap{position:relative; z-index:1; height:100vh; display:flex; flex-direction:column; padding:18px; gap:14px}
-    header{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:14px 16px; border-radius:14px;
-      border:2px solid rgba(0,245,255,.35); background:rgba(0,0,0,.35);
-      box-shadow:0 10px 35px rgba(0,245,255,.15);
+
+    .title{
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: 18px;
+      color: var(--cyan);
+      text-shadow: 0 0 14px rgba(0,245,255,.35);
     }
-    h1{
-      font-family:Orbitron,system-ui; font-size:18px; letter-spacing:2px; text-transform:uppercase;
-      background:linear-gradient(90deg,#fff,var(--neon-cyan));
-      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+
+    .hint{
+      font-size: 13px;
+      color: var(--muted);
+      opacity:.95;
     }
-    .controls{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end}
-    label{font-size:12px; opacity:.8}
-    select, input[type="number"]{
-      background:rgba(0,0,0,.45); color:#fff;
-      border:1px solid rgba(0,245,255,.35);
-      border-radius:10px; padding:10px 12px;
-      font-family:Rajdhani,sans-serif; font-size:14px;
+
+    .grid{
+      display:grid;
+      grid-template-columns: 340px 1fr;
+      gap: 14px;
+    }
+
+    .controls{
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    label{
+      display:block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 10px 0 6px;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    select, input[type="range"]{
+      width: 100%;
+    }
+
+    select{
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(0,0,0,.45);
+      border: 1px solid rgba(0,245,255,.25);
+      color: var(--text);
       outline:none;
     }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+
+    .val{
+      font-variant-numeric: tabular-nums;
+      color: rgba(255,255,255,.8);
+      font-size: 13px;
+      white-space:nowrap;
+    }
+
+    .btns{
+      display:flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
     button{
+      flex:1;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
       cursor:pointer;
-      border:none; border-radius:12px;
-      padding:10px 14px;
-      font-family:Orbitron,sans-serif; letter-spacing:1px; text-transform:uppercase;
-      background:linear-gradient(135deg,var(--neon-cyan),var(--neon-pink));
-      color:var(--deep-blue); font-weight:800;
-      box-shadow:0 8px 24px rgba(0,245,255,.25);
+      color:#0a0e27;
+      background: linear-gradient(135deg, var(--cyan), var(--pink));
+      box-shadow: 0 8px 28px rgba(0,245,255,.2);
     }
-    button:active{transform:translateY(1px)}
+
+    button.secondary{
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      color: #fff;
+    }
+
     .stage{
-      flex:1; min-height:0;
-      display:flex; align-items:center; justify-content:center;
-      border-radius:18px;
-      border:2px solid rgba(255,0,110,.35);
-      background:rgba(0,0,0,.35);
-      box-shadow:0 14px 45px rgba(255,0,110,.12);
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      align-items:center;
+      justify-content:flex-start;
+    }
+
+    .frame{
+      width: min(var(--maxW), 100%);
+      aspect-ratio: var(--ratio);
+      border-radius: 16px;
+      border: var(--frameBorder) solid rgba(0,245,255,.45);
+      background: rgba(0,0,0,.5);
+      box-shadow: 0 14px 50px rgba(0,0,0,.55);
+      padding: var(--pad);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
       overflow:hidden;
+    }
+
+    .frame::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(rgba(0,245,255,.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,255,.12) 1px, transparent 1px);
+      background-size: 34px 34px;
+      opacity:.35;
+      pointer-events:none;
+    }
+
+    .canvas{
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      border: 1px dashed rgba(255,255,255,.25);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding: 16px;
       position:relative;
+      z-index:1;
     }
-    .box{
-      width:min(78vw, 980px);
-      aspect-ratio: 16 / 9;
-      border-radius:16px;
-      border:3px solid rgba(0,245,255,.75);
-      box-shadow:0 0 0 1px rgba(255,255,255,.1), 0 12px 45px rgba(0,245,255,.18);
-      background:rgba(10,14,39,.6);
-      display:flex; align-items:center; justify-content:center;
-      position:relative;
+
+    .big{
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.92);
     }
-    .box::after{
-      content:"GAME VIEWPORT PREVIEW";
-      position:absolute; top:12px; left:14px;
-      font-family:Orbitron,sans-serif; font-size:11px; letter-spacing:2px;
-      color:rgba(255,255,255,.75);
+
+    .small{
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
     }
-    .dims{
-      position:absolute; bottom:10px; right:12px;
-      font-family:Orbitron,sans-serif; font-size:11px; letter-spacing:1px;
-      color:rgba(0,245,255,.9);
-      text-shadow:0 0 18px rgba(0,245,255,.35);
+
+    .readout{
+      width: min(var(--maxW), 100%);
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+      color: var(--muted);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      opacity:.95;
     }
-    .hint{
-      text-align:center; opacity:.75; font-size:14px; line-height:1.4;
-      padding:0 18px;
-    }
-    @media (max-width:700px){
-      header{flex-direction:column; align-items:flex-start}
-      .controls{justify-content:flex-start}
-      .box{width:94vw}
+
+    code{color: rgba(0,245,255,.9)}
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <h1>PIXEL-NET • Layout Tester</h1>
+    <div class="top">
+      <div class="title">Layout Tester</div>
+      <div class="hint">Use this to pick the “GOLD wrapper” aspect ratio / sizing you like. No game UI here on purpose.</div>
+    </div>
+
+    <div class="grid">
       <div class="controls">
-        <label for="preset">Preset</label>
-        <select id="preset">
-          <option value="16/9">16:9</option>
-          <option value="4/3">4:3</option>
-          <option value="1/1">1:1</option>
-          <option value="21/9">21:9</option>
-          <option value="9/16">9:16</option>
-          <option value="custom">Custom…</option>
+        <label>Aspect Ratio</label>
+        <select id="ratio">
+          <option value="16/9">16:9 (wide)</option>
+          <option value="4/3">4:3 (classic)</option>
+          <option value="1/1">1:1 (square)</option>
+          <option value="3/4">3:4 (tall)</option>
+          <option value="9/16">9:16 (phone)</option>
         </select>
 
-        <label for="w">W</label>
-        <input id="w" type="number" min="200" max="1600" step="10" value="960" />
-        <label for="h">H</label>
-        <input id="h" type="number" min="200" max="1600" step="10" value="540" />
-
-        <button id="apply">Apply</button>
-      </div>
-    </header>
-
-    <div class="stage">
-      <div class="box" id="box">
-        <div class="hint">
-          Use presets (or custom W/H) to preview how the <b>center game viewport</b> will look inside the wrapper.
-          <br/>This is a sandbox-only cabinet.
+        <label>Max Width</label>
+        <div class="row">
+          <input id="maxW" type="range" min="600" max="1400" step="10" value="1100" />
+          <div class="val"><span id="maxWVal">1100</span>px</div>
         </div>
-        <div class="dims" id="dims"></div>
+
+        <label>Inner Padding</label>
+        <div class="row">
+          <input id="pad" type="range" min="0" max="40" step="1" value="14" />
+          <div class="val"><span id="padVal">14</span>px</div>
+        </div>
+
+        <label>Frame Border</label>
+        <div class="row">
+          <input id="border" type="range" min="0" max="6" step="1" value="2" />
+          <div class="val"><span id="borderVal">2</span>px</div>
+        </div>
+
+        <div class="btns">
+          <button class="secondary" id="copy">Copy Settings</button>
+          <button id="reset">Reset</button>
+        </div>
+
+        <div style="margin-top:10px; color:rgba(255,255,255,.6); font-size:12px; line-height:1.35;">
+          Copy gives you a JSON snippet you can paste into chat later so we can lock the layout.
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="frame" id="frame">
+          <div class="canvas">
+            <div>
+              <div class="big">Preview Area</div>
+              <div class="small">
+                This box is the game viewport.<br/>
+                Change ratio/size/padding until it feels right.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="readout" id="readout">
+          <div>aspect-ratio: <code id="rOut">16/9</code></div>
+          <div>max-width: <code id="wOut">1100px</code></div>
+          <div>padding: <code id="pOut">14px</code></div>
+          <div>border: <code id="bOut">2px</code></div>
+        </div>
       </div>
     </div>
   </div>
 
-<script>
-  const box = document.getElementById('box');
-  const dims = document.getElementById('dims');
-  const preset = document.getElementById('preset');
-  const w = document.getElementById('w');
-  const h = document.getElementById('h');
-  const apply = document.getElementById('apply');
+  <script>
+    const ratioEl = document.getElementById('ratio');
+    const maxWEl = document.getElementById('maxW');
+    const padEl  = document.getElementById('pad');
+    const borderEl  = document.getElementById('border');
 
-  const presets = {
-    "16/9":[960,540],
-    "4/3":[800,600],
-    "1/1":[700,700],
-    "21/9":[1050,450],
-    "9/16":[540,960]
-  };
+    const maxWVal = document.getElementById('maxWVal');
+    const padVal  = document.getElementById('padVal');
+    const borderVal  = document.getElementById('borderVal');
 
-  function setBox(pxW, pxH){
-    const clampedW = Math.max(200, Math.min(1600, pxW|0));
-    const clampedH = Math.max(200, Math.min(1600, pxH|0));
-    box.style.width = clampedW + "px";
-    box.style.height = clampedH + "px";
-    box.style.aspectRatio = "auto";
-    w.value = clampedW;
-    h.value = clampedH;
-    dims.textContent = clampedW + "×" + clampedH;
-  }
+    const rOut = document.getElementById('rOut');
+    const wOut = document.getElementById('wOut');
+    const pOut = document.getElementById('pOut');
+    const bOut = document.getElementById('bOut');
 
-  preset.addEventListener('change', () => {
-    const v = preset.value;
-    if(presets[v]){
-      setBox(presets[v][0], presets[v][1]);
+    function apply(){
+      const r = ratioEl.value;
+      const w = maxWEl.value;
+      const p = padEl.value;
+      const b = borderEl.value;
+
+      document.documentElement.style.setProperty('--ratio', r.replace('/', ' / '));
+      document.documentElement.style.setProperty('--maxW', w + 'px');
+      document.documentElement.style.setProperty('--pad', p + 'px');
+      document.documentElement.style.setProperty('--frameBorder', b + 'px');
+
+      maxWVal.textContent = w;
+      padVal.textContent = p;
+      borderVal.textContent = b;
+
+      rOut.textContent = r;
+      wOut.textContent = w + 'px';
+      pOut.textContent = p + 'px';
+      bOut.textContent = b + 'px';
     }
-  });
 
-  apply.addEventListener('click', () => {
-    setBox(parseInt(w.value,10), parseInt(h.value,10));
-    preset.value = "custom";
-  });
+    ratioEl.addEventListener('change', apply);
+    maxWEl.addEventListener('input', apply);
+    padEl.addEventListener('input', apply);
+    borderEl.addEventListener('input', apply);
 
-  // init
-  setBox(960,540);
-</script>
+    document.getElementById('reset').addEventListener('click', () => {
+      ratioEl.value = '16/9';
+      maxWEl.value = 1100;
+      padEl.value = 14;
+      borderEl.value = 2;
+      apply();
+    });
+
+    document.getElementById('copy').addEventListener('click', async () => {
+      const payload = {
+        ratio: ratioEl.value,
+        maxWidthPx: Number(maxWEl.value),
+        paddingPx: Number(padEl.value),
+        borderPx: Number(borderEl.value)
+      };
+      const txt = JSON.stringify(payload);
+      try{
+        await navigator.clipboard.writeText(txt);
+        alert('Copied: ' + txt);
+      }catch{
+        prompt('Copy this:', txt);
+      }
+    });
+
+    apply();
+  </script>
 </body>
 </html>
