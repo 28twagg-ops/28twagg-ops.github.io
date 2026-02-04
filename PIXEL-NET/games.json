@@ -1,64 +1,100 @@
 [
   {
     "name": "MILLIPEDE CHAOS",
-    "desc": "Defend the garden from the swarm.",
-    "thumb": "assets/millipede_thumb.png",
+    "type": "iframe",
     "path": "games/millipede-react/index.html",
-    "leaderboardKey": "millipede-react"
+    "thumb": "assets/millipede_thumb.png",
+    "description": "Defend the garden from the swarm."
   },
   {
     "name": "NEON CHASE",
-    "desc": "High-speed neon survival.",
-    "thumb": "assets/neon-chase_thumb.png",
+    "type": "iframe",
     "path": "games/neon-chase/index.html",
-    "leaderboardKey": "neon-chase"
+    "thumb": "assets/neon-chase_thumb.png",
+    "description": "High-speed neon survival."
   },
   {
     "name": "ROBO ARENA",
-    "desc": "Enter the arena. Win the fight.",
-    "thumb": "assets/robo-arena_thumb.jpg",
+    "type": "iframe",
     "path": "games/robo-arena/index.html",
-    "leaderboardKey": "robo-arena"
+    "thumb": "assets/robo-arena_thumb.jpg",
+    "description": "Enter the arena. Win the fight."
   },
   {
     "name": "VECTOR DUEL",
-    "desc": "Retro vectors. Modern reflex.",
-    "thumb": "assets/vector-duel_thumb.png",
+    "type": "iframe",
     "path": "games/vector-duel/index.html",
-    "leaderboardKey": "vector-duel"
+    "thumb": "assets/vector-duel_thumb.png",
+    "description": "Retro vectors. Modern reflex."
   },
   {
     "name": "CYBER PYTHON",
-    "desc": "Classic snake, cyber style.",
-    "thumb": "assets/cyber-python_thumb.png",
+    "type": "iframe",
     "path": "games/cyber-python/index.html",
-    "leaderboardKey": "cyber-python"
+    "thumb": "assets/cyber-python_thumb.png",
+    "description": "Classic snake, cyber style."
   },
   {
     "name": "NEON MAZE CHASE",
-    "desc": "Neon maze survival. Collect bits. Hack drones.",
-    "thumb": "assets/neon-maze-chase_thumb.png",
+    "type": "iframe",
     "path": "games/neon-maze-chase/index.html",
-    "leaderboardKey": "neon-maze-chase"
+    "thumb": "assets/neon-maze-chase_thumb.png",
+    "description": "Neon maze survival. Collect bits. Hack drones."
   },
   {
     "name": "CAKED UP CATS",
-    "desc": "Garden maze arcade. Eat cake, catch mice, avoid hazards.",
-    "thumb": "assets/caked-up-cats_thumb.png",
+    "type": "iframe",
     "path": "games/caked-up-cats/index.html",
-    "leaderboardKey": "caked-up-cats"
+    "thumb": "assets/caked-up-cats_thumb.png",
+    "description": "Garden maze arcade. Eat cake, catch mice, avoid hazards."
   },
   {
     "name": "ASTROTYPE",
-    "desc": "Type alien codes to defend the lunar base.",
-    "thumb": "assets/astrotype_thumb.png",
+    "type": "iframe",
     "path": "games/astrotype/index.html",
-    "leaderboardKey": "astrotype"
+    "thumb": "assets/astrotype_thumb.png",
+    "description": "Type alien codes to defend the lunar base."
   },
   {
     "name": "CREEK CROSSER",
-    "desc": "Hop to the 5 nests. Avoid cars and the creek.",
+    "type": "iframe",
+    "path": "games/creek-crosser/index.html",
     "thumb": "assets/creek-crosser_thumb.png",
+    "description": "Cross the creek and survive the lanes."
+  },
+  {
+    "name": "LOGIC BOMB",
+    "type": "iframe",
+    "path": "games/logic-bomb/index.html",
+    "thumb": "assets/logic-bomb_thumb.png",
+    "description": "Defuse the logic bombs before time runs out."
+  },
+  {
+    "name": "NEON ARENA ASSAULT",
+    "type": "iframe",
+    "path": "games/neon-arena-assault/index.html",
+    "thumb": "assets/neon-arena-assault_thumb.png",
+    "description": "Fast-paced arena combat."
+  },
+  {
+    "name": "NEON TRAIL RIDERS",
+    "type": "iframe",
+    "path": "games/neon-trail-riders/index.html",
+    "thumb": "assets/neon-trail-riders_thumb.png",
+    "description": "Trail-riding neon action."
+  },
+  {
+    "name": "LAYOUT TESTER",
+    "type": "iframe",
+    "path": "games/layout-tester/index.html",
+    "thumb": "assets/layout-tester_thumb.svg",
+    "description": "Sandbox to test wrapper aspect ratios."
+  },
+  {
+    "id": "creek-crosser",
+    "title": "Creek Crosser",
+    "desc": "Hop to the 5 nests. Avoid cars and the creek.",
+    "thumb": "assets/creek-crosser-thumb.png",
     "path": "games/creek-crosser/index.html",
     "leaderboardKey": "creek-crosser",
     "controls": [
