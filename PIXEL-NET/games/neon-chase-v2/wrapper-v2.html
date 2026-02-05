@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Chase (version 2.0) — PIXEL-NET</title>
+<style>
+:root{
+  --bg0:#050010;
+  --bg1:#09001a;
+  --bg2:#120022;
+  --text:#f3f6ff;
+  --muted:rgba(243,246,255,.78);
+  --border:rgba(255,255,255,.14);
+  --accent:#00F0FF;
+  --accent2:#00FF41;
+  --card:rgba(0,0,0,.28);
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+  --aspect:456 / 480;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;color:var(--text);font-family:var(--font);
+  background:
+    radial-gradient(1200px 700px at 18% 10%, color-mix(in srgb, var(--accent) 25%, transparent), transparent 70%),
+    radial-gradient(900px 520px at 88% 18%, color-mix(in srgb, var(--accent2) 22%, transparent), transparent 70%),
+    linear-gradient(135deg,var(--bg0),var(--bg1) 55%,var(--bg2));
+  overflow:hidden;
+}
+a{color:inherit;text-decoration:none}
+.topbar{
+  height:58px;
+  position:sticky;top:0;z-index:30;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  padding:10px 14px;
+  background:rgba(0,0,0,.55);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.exit{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.35);
+  padding:8px 12px;border-radius:14px;
+  font-weight:800;letter-spacing:.08em;
+}
+.exit:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--border));}
+.badge{
+  justify-self:center;
+  padding:8px 12px;border-radius:999px;
+  border:1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  background:linear-gradient(90deg,color-mix(in srgb, var(--accent) 18%, rgba(0,0,0,.35)), rgba(0,0,0,.35));
+  font-weight:900;letter-spacing:.08em;
+  text-transform:uppercase;font-size:12px;
+}
+.player{
+  justify-self:end;
+  display:flex;align-items:center;gap:10px;
+  padding:7px 10px;border-radius:999px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.35);
+}
+.player .tag{opacity:.8;font-size:12px;letter-spacing:.12em}
+.player #initials{font-weight:900;font-size:14px;letter-spacing:.18em;color:var(--accent)}
+
+.app{
+  height:calc(100vh - 58px);
+  display:flex;
+  padding:12px;
+}
+.grid{
+  width:100%;
+  max-width:1400px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:320px minmax(300px,1fr) 320px;
+  gap:12px;
+  align-items:stretch;
+  height:100%;
+}
+.panel{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+.panel h3{
+  margin:0;padding:12px 14px;
+  font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+  background:rgba(0,0,0,.25);
+}
+.panel .content{padding:12px 14px;overflow:auto}
+.howto p{margin:0 0 10px 0;color:var(--muted);line-height:1.35}
+.howto ul{margin:10px 0 0 18px;padding:0}
+.howto li{margin:8px 0}
+
+.center{
+  background:rgba(0,0,0,.28);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+.centerHead{
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  background:rgba(0,0,0,.25);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.centerHead .name{font-weight:900;letter-spacing:.06em}
+.centerHead .hint{font-size:12px;color:var(--muted)}
+.frameWrap{
+  flex:1;
+  min-height:0;
+  background:rgba(0,0,0,.35);
+  display:flex;
+}
+.frameSizer{
+  margin:auto;
+  width:min(100%, 1100px);
+  aspect-ratio:var(--aspect);
+  height:auto;
+  max-height:100%;
+}
+iframe{width:100%;height:100%;border:0;display:block;background:#000}
+
+.pills{display:flex;flex-direction:column;gap:8px}
+.pill{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.25);
+}
+.pill .rank{opacity:.65;font-weight:800;min-width:34px}
+.pill .who{font-weight:900;letter-spacing:.08em;color:var(--accent)}
+.pill .score{font-weight:900}
+.mini{font-size:12px;color:var(--muted);line-height:1.35}
+
+.tabs{
+  display:none;
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  height:62px;
+  padding:10px 12px;
+  background:rgba(0,0,0,.6);
+  backdrop-filter:blur(12px);
+  border-top:1px solid var(--border);
+}
+.tabRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;height:100%}
+.tabBtn{
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.28);
+  color:var(--text);
+  border-radius:16px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.tabBtn.active{
+  border-color:color-mix(in srgb, var(--accent) 70%, white);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+@media (max-width: 980px){
+  .app{padding:10px;padding-bottom:82px}
+  .grid{grid-template-columns:1fr;height:100%}
+  .panel,.center{display:none}
+  .panel.active,.center.active{display:flex}
+  .tabs{display:block}
+}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="exit" href="../../index.html">EXIT</a>
+    <div class="badge">PIXEL-NET ARCADE</div>
+    <div class="player" title="Stored as PIXELNET_INITIALS">
+      <div class="tag">PLAYER</div>
+      <div id="initials">???</div>
+    </div>
+  </div>
+
+  <div class="app">
+    <div class="grid">
+      <div class="panel howto" id="pHow">
+        <h3>How to play</h3>
+        <div class="content">
+          <p>Neon Chase (version 2.0)</p>
+          <ul><li>Arrows / WASD: move orb.</li><li>Collect bits; avoid drones.</li><li>Power-ups let you eat drones.</li></ul>
+          <div class="mini" style="margin-top:10px">No scrolling: use the tabs on mobile.</div>
+        </div>
+      </div>
+
+      <div class="center active" id="pGame">
+        <div class="centerHead">
+          <div class="name">Neon Chase (version 2.0)</div>
+          <div class="hint">Tap tabs on mobile</div>
+        </div>
+        <div class="frameWrap">
+          <div class="frameSizer">
+            <iframe src="./game.html" title="Neon Chase (version 2.0)" allow="fullscreen"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="pLB">
+        <h3>Leaderboard</h3>
+        <div class="content">
+          <div class="mini">Local copy leaderboard (separate from original).</div>
+          <div class="pills" id="lb"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tabRow">
+      <button class="tabBtn" data-target="pHow">How To</button>
+      <button class="tabBtn active" data-target="pGame">Game</button>
+      <button class="tabBtn" data-target="pLB">Leaderboard</button>
+    </div>
+  </div>
+
+<script>
+const INITIALS_KEY="PIXELNET_INITIALS";
+document.getElementById("initials").textContent = localStorage.getItem(INITIALS_KEY) || "???";
+
+const LB_KEY = "PIXELNET_LB_neon-chase-v2_v2_0";
+function loadLB(){
+  try{ return JSON.parse(localStorage.getItem(LB_KEY)||"[]"); }catch(e){ return []; }
+}
+function renderLB(){
+  const data=loadLB().sort((a,b)=>b.score-a.score).slice(0,10);
+  const el=document.getElementById("lb");
+  if(!data.length){ el.innerHTML='<div class="mini">No scores yet.</div>'; return; }
+  el.innerHTML=data.map((r,i)=>`
+    <div class="pill">
+      <div class="rank">#${i+1}</div>
+      <div class="who">${(r.name||'???').toUpperCase().slice(0,3)}</div>
+      <div class="score">${Number(r.score)||0}</div>
+    </div>`).join("");
+}
+renderLB();
+
+// Mobile tabs
+const btns=[...document.querySelectorAll(".tabBtn")];
+function setActive(id){
+  for(const b of btns) b.classList.toggle("active", b.dataset.target===id);
+  for(const p of ["pHow","pGame","pLB"]) {
+    const node=document.getElementById(p);
+    if(!node) continue;
+    node.classList.toggle("active", p===id);
+  }
+}
+for(const b of btns) b.addEventListener("click", ()=>setActive(b.dataset.target));
+</script>
+</body>
+</html>
