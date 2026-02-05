@@ -44,6 +44,7 @@ body{
   letter-spacing:.12em;
   cursor:pointer;
 }
+.badge{cursor:pointer;user-select:none}
 .btn:hover,.badge:hover{filter:brightness(1.12)}
 .titlebadge{
   flex:1;display:flex;justify-content:center;
@@ -92,7 +93,7 @@ body{
   background:rgba(0,0,0,.35);
   box-shadow:0 0 22px rgba(180,60,30,.10);
 }
-.gamebox iframe{width:100%;height:100%;border:0;display:block;background:transparent}
+.gamebox iframe{width:100%;height:100%;border:0;display:block}
 .lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .lb-col{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .lb-item{
@@ -131,6 +132,20 @@ body{
 .gameTitle{position:relative;justify-content:flex-end;}
 .gameTitle .name{position:absolute;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis;}
 
+
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);z-index:9999}
+.modal[aria-hidden="false"]{display:flex}
+.modalCard{width:min(420px,92vw);border:1px solid var(--stroke);border-radius:18px;padding:18px;background:rgba(10,12,18,.78);box-shadow:var(--shadow)}
+.modalTitle{font:900 13px/1.1 var(--font2);letter-spacing:.12em;margin-bottom:14px;text-align:center;color:#7fdf8a}
+#initInput{width:100%;padding:14px 12px;border-radius:12px;border:1px solid var(--stroke);background:rgba(0,0,0,.35);color:var(--text);font-family:var(--font);font-size:18px;letter-spacing:6px;text-align:center}
+.modalBtns{display:flex;gap:10px;margin-top:14px}
+.btn{flex:1;padding:12px 10px;border-radius:12px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--text);font-family:var(--font);cursor:pointer}
+.btn.primary{background:rgba(127,223,138,.18);border-color:rgba(127,223,138,.55)}
+
+/* PX_OVERRIDES */
+.panel{font-size:13px;line-height:1.65}
+.panel h3{font-size:14px}
+.muted{font-size:12px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -138,7 +153,7 @@ body{
 <div class="topbar">
   <button class="btn" id="pn-exit">EXIT</button>
   <div class="titlebadge"><div class="titlepill">Millipede Chaos (version 3.0)</div></div>
-  <button class="badge" id="pn-badge">???</button>
+  <button class="badge" id="playerBtn" role="button" tabindex="0">PLAYER <span id="initials">???</span></button>
 </div>
 
 <div class="tabs">
@@ -161,7 +176,7 @@ body{
 
   <main class="panel gamepanel active" id="pn-game">
     <div class="gamebox">
-      <iframe id="pn-iframe" src="./game.html" title="Millipede Chaos v3"></iframe>
+      <iframe id="pn-iframe" src="./game.html" title="Millipede Chaos v3" id=\"gameFrame\"></iframe>
     </div>
   </main>
 
@@ -189,8 +204,48 @@ body{
   </div>
 </div>
 
-<script src="../../js/engine.js"></script>
+<script src="../../js/engine.js">
+function saveLB(arr){ try{ localStorage.setItem(LB_KEY, JSON.stringify(arr||[])); }catch(_){ } }
+function addLB(score){
+  score=Math.max(0,Math.floor(Number(score)||0));
+  const initials=getInitials();
+  if(!initials || initials==="???") return;
+  const arr=loadLB(); arr.push({initials,score,ts:Date.now()}); saveLB(arr); renderLB();
+}
+window.PixelNet = window.PixelNet || {};
+window.PixelNet.getInitials = ()=> getInitials();
+window.PixelNet.setInitials = (v)=>{ setInitials(v); renderInitials(); };
+window.PixelNet.submitScore = (s)=> addLB(s);
+window.addEventListener("message",(e)=>{ try{ const d=e.data||{}; if(d && (d.type==="PIXELNET_SCORE"||d.type==="PIXELNET_SUBMIT_SCORE") && d.score!=null){ addLB(d.score);} }catch(_){ }});
+
+// initials modal wiring
+const modal=document.getElementById("initModal");
+const input=document.getElementById("initInput");
+function openInitModal(){
+  modal.setAttribute("aria-hidden","false");
+  setTimeout(()=>{ input.value=(getInitials()||""); input.focus(); input.select(); },50);
+}
+function closeInitModal(){ modal.setAttribute("aria-hidden","true"); }
+document.getElementById("playerBtn").addEventListener("click", openInitModal);
+document.getElementById("playerBtn").addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openInitModal(); }});
+document.getElementById("initCancel").addEventListener("click", closeInitModal);
+document.getElementById("initSave").addEventListener("click", ()=>{ const v=norm(input.value); if(v){ setInitials(v); renderInitials(); } closeInitModal(); });
+input.addEventListener("input", ()=>{ input.value=norm(input.value); });
+input.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); document.getElementById("initSave").click(); } if(e.key==="Escape"){ e.preventDefault(); document.getElementById("initCancel").click(); }});
+if(!getInitials()||getInitials()==="???") openInitModal();
+
+</script>
 <script>
+const LB_KEY = "PIXELNET_LB_millipede-chaos-v3_v3_0";
+
+function focusGameFrame(){
+  const f=document.getElementById("gameFrame");
+  try{ f?.contentWindow?.focus?.(); }catch(_){}
+}
+document.addEventListener("pointerdown", focusGameFrame, {passive:true});
+window.addEventListener("keydown", focusGameFrame, {passive:true});
+
+
 (function(){
   "use strict";
   var SLUG="millipede-chaos-v3";
@@ -214,7 +269,7 @@ body{
   if(window.PixelNet && PixelNet.init) PixelNet.init();
   if(window.PixelNet && PixelNet.uiInit) PixelNet.uiInit();
 
-  var badge=document.getElementById("pn-badge");
+  var badge=document.getElementById("initials");
   var exitBtn=document.getElementById("pn-exit");
   var modal=document.getElementById("pn-modal");
   var backdrop=document.getElementById("pn-backdrop");
@@ -303,5 +358,17 @@ body{
   setInterval(loadLB, 12000);
 })();
 </script>
+
+<div class="modal" id="initModal" aria-hidden="true">
+  <div class="modalCard">
+    <div class="modalTitle">ENTER INITIALS</div>
+    <input id="initInput" maxlength="3" placeholder="---" autocomplete="off" />
+    <div class="modalBtns">
+      <button class="btn" id="initCancel">EXIT</button>
+      <button class="btn primary" id="initSave">SAVE</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
