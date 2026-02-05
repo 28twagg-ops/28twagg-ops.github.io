@@ -549,17 +549,32 @@ class Drone extends Entity {
  * GAME LOGIC
  */
 
+
+function resizeScale(){
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const s = Math.min(vw / canvas.width, vh / canvas.height);
+  canvas.style.position="absolute";
+  canvas.style.left="50%";
+  canvas.style.top="50%";
+  canvas.style.transform=`translate(-50%,-50%) scale(${s})`;
+  canvas.style.transformOrigin="top left";
+}
+
 function init() {
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
     canvas.width = COLS * TILE_SIZE;
     canvas.height = ROWS * TILE_SIZE;
-    
+    resizeScale();
+
     Leaderboard.load();
     highScore = Leaderboard.getTopScore();
     
     // UI Event Listeners
-    window.addEventListener('keydown', handleKey);
+    window.addEventListener('resize', ()=>{ try{ resizeScale(); }catch(e){} });
+
+window.addEventListener('keydown', handleKey);
     window.addEventListener('touchstart', handleTouchStart, {passive: false});
     window.addEventListener('touchend', handleTouchEnd, {passive: false});
 
@@ -589,21 +604,22 @@ function showInputScreen() {
     ov.innerHTML = `
         <h1 style="color:#00ff00; font-size:20px;">NEW RECORD!</h1>
         <p>BITS COLLECTED: ${score}</p>
-        <div class="input-group">
-            <input type="text" id="initials-input" maxlength="3" placeholder="---" autocomplete="off" autofocus>
-            <button onclick="submitScore()">UPLOAD</button>
-        </div>
-    `;
-    
-    setTimeout(() => {
-        const inp = document.getElementById('initials-input');
-        if(inp) inp.focus();
-    }, 100);
+        `;
+    // auto-submit (no initials prompt)
+    if(!window.__autoSubmitOnce){
+      window.__autoSubmitOnce=true;
+      setTimeout(()=>{ try{ submitScore(); }catch(e){} }, 50);
+    }
 }
 
-function submitScore() {
-    const input = document.getElementById('initials-input');
-    let name = input.value.trim() || "UNK";
+
+function getInitials(){
+  const v=(localStorage.getItem("PIXELNET_INITIALS")||localStorage.getItem("playerInitials")||"???").toString().trim().toUpperCase();
+  return (v||"???").slice(0,3);
+}
+
+function submitScore(){
+    const name = getInitials();
     Leaderboard.add(name, score);
     highScore = Leaderboard.getTopScore();
     showStartScreen();

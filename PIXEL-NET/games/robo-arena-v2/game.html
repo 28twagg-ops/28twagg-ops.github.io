@@ -20,7 +20,9 @@ Purpose: AI implementation for themes
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Robo-Arena: Retro Arcade Shooter (version 2.0)</title>
     <style>
-        body {
+        html, body { height:100%; margin:0; overflow:hidden; }
+
+body {
             margin: 0;
             overflow: hidden;
             background-color: #050505;
@@ -238,7 +240,14 @@ Purpose: AI implementation for themes
             #mobile-controls { display: flex; }
             .leaderboard { width: 90%; font-size: 0.9rem; }
         }
-    </style>
+    
+/* touch-only controls */
+.mobile-controls{display:none;}
+@media (hover:none) and (pointer:coarse){
+  .mobile-controls{display:flex;}
+}
+
+</style>
 </head>
 <body>
 
@@ -279,7 +288,7 @@ Purpose: AI implementation for themes
         
         <div id="high-score-form">
             <p style="color: #ff0; font-weight: bold; margin: 0;">NEW HIGH SCORE!</p>
-            <input type="text" id="initials-input" maxlength="3" placeholder="___" autocomplete="off">
+            
             <button class="btn" id="submitScoreBtn">ENTER INITIALS</button>
         </div>
 
