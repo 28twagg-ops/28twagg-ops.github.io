@@ -252,13 +252,14 @@ const levelIndicator = document.getElementById('level-indicator');
 
 // PIXEL-NET submission (safe/no-throw)
 let _pxSubmitted = false;
+let _pxPmSent = false;
 async function _pxSubmitOnce(finalScore){
   if(_pxSubmitted) return;
   _pxSubmitted = true;
-  const score = Math.max(0, Math.floor(Number(finalScore)||0));
   try{
-    if(window.parent && window.parent !== window){
-      window.parent.postMessage({ type:"GAME_OVER_SCORE", score }, "*");
+    const P = (window.parent && window.parent.PixelNet) ? window.parent.PixelNet : (window.PixelNet || null);
+    if(P && P.submitScore){
+      await P.submitScore('logic-bomb', Math.max(0, Math.floor(Number(finalScore)||0)));
     }
   }catch(_){}
   try{
@@ -425,6 +426,7 @@ startBtn.addEventListener('click', startGame);
 // Core Game Logic
 function initGame() {
   _pxSubmitted = false;
+  _pxPmSent = false;
   score = 0;
   lives = 3;
   currentLevel = 0;
@@ -791,16 +793,25 @@ function checkWin() {
 function gameOver() {
   gameRunning = false;
   _pxSubmitOnce(score);
+  if(!_pxPmSent){
+    _pxPmSent = true;
+    try{ window.parent && window.parent.postMessage && window.parent.postMessage({type:"GAME_OVER_SCORE", score: score}, "*"); }catch(_){ }
+  }
 
   messageBox.className = "ui-gameover";
   messageTitle.innerText = "SYSTEM FAILURE";
   messageSubtitle.innerHTML = `You were caught by security.<br>Final Score: <span style="color:white;font-weight:bold">${score}</span>`;
   startBtn.innerText = "REBOOT SYSTEM";
+  startBtn.disabled = false;
+  startBtn.style.pointerEvents = '';
   messageBox.style.display = 'block';
 }
 
 function startGame() {
+  if (gameRunning) return; // prevent multiple RAF loops (speed-up bug)
   messageBox.style.display = 'none';
+  startBtn.disabled = true;
+  startBtn.style.pointerEvents = 'none';
   initGame();
   gameRunning = true;
   loop();
