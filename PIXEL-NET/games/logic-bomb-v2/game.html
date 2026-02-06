@@ -152,7 +152,9 @@
       .hud-top{font-size:14px;}
       .hud-bottom{font-size:11px;}
     }
-  </style>
+  
+    .hidden{display:none !important;}
+</style>
 
 <!-- PIXEL-NET EMBED MODE (wrapper uses this) -->
 <script>
@@ -252,7 +254,6 @@ const levelIndicator = document.getElementById('level-indicator');
 
 // PIXEL-NET submission (safe/no-throw)
 let _pxSubmitted = false;
-let _pxPmSent = false;
 async function _pxSubmitOnce(finalScore){
   if(_pxSubmitted) return;
   _pxSubmitted = true;
@@ -401,7 +402,7 @@ window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].indexOf(e.code) > -1) e.preventDefault();
 
-  if (!gameRunning && e.code === "Enter" && messageBox.style.display !== 'none') startGame();
+  if (!gameRunning && e.code === "Enter" && !messageBox.classList.contains('hidden')) startGame();
 
   if (gameRunning) {
     if (e.code === 'ArrowUp') player.nextDir = DIR.UP;
@@ -426,7 +427,6 @@ startBtn.addEventListener('click', startGame);
 // Core Game Logic
 function initGame() {
   _pxSubmitted = false;
-  _pxPmSent = false;
   score = 0;
   lives = 3;
   currentLevel = 0;
@@ -791,27 +791,26 @@ function checkWin() {
 }
 
 function gameOver() {
+  // PIXEL-NET wrapper submit (single)
+  try{ if(window.parent) window.parent.postMessage({type:"GAME_OVER_SCORE", score: Math.max(0, Math.floor(Number(score)||0))}, "*"); }catch(_){}
+
   gameRunning = false;
   _pxSubmitOnce(score);
-  if(!_pxPmSent){
-    _pxPmSent = true;
-    try{ window.parent && window.parent.postMessage && window.parent.postMessage({type:"GAME_OVER_SCORE", score: score}, "*"); }catch(_){ }
-  }
 
   messageBox.className = "ui-gameover";
   messageTitle.innerText = "SYSTEM FAILURE";
   messageSubtitle.innerHTML = `You were caught by security.<br>Final Score: <span style="color:white;font-weight:bold">${score}</span>`;
   startBtn.innerText = "REBOOT SYSTEM";
-  startBtn.disabled = false;
-  startBtn.style.pointerEvents = '';
+  messageBox.classList.remove('hidden');
   messageBox.style.display = 'block';
+  messageBox.style.pointerEvents = 'auto';
 }
 
 function startGame() {
-  if (gameRunning) return; // prevent multiple RAF loops (speed-up bug)
+  if (gameRunning) return;
+  messageBox.classList.add('hidden');
   messageBox.style.display = 'none';
-  startBtn.disabled = true;
-  startBtn.style.pointerEvents = 'none';
+  messageBox.style.pointerEvents = 'none';
   initGame();
   gameRunning = true;
   loop();
@@ -960,7 +959,10 @@ function loop() {
   }
 }
 
+// show start screen
+messageBox.classList.remove('hidden');
 messageBox.style.display = 'block';
+messageBox.style.pointerEvents = 'auto';
 </script>
 </body>
 </html>

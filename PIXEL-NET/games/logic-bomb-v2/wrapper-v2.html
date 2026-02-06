@@ -99,6 +99,19 @@ iframe{width:100%;height:100%;border:0;display:block;background:transparent}
 @media (max-width:1100px){.grid{grid-template-columns:1fr}.frameWrap{height:min(calc(100svh - 240px), 880px);min-height:520px}}
 @media (max-width:520px){.wrap{padding:10px}.frameWrap{min-height:480px}.btn{padding:8px 10px}}
 
+
+.tabs{display:none; gap:10px; padding:10px; position:sticky; bottom:0; z-index:50; background:linear-gradient(180deg, transparent, rgba(0,0,0,.65)); backdrop-filter: blur(6px);}
+.tabBtn{flex:1; padding:12px 10px; border-radius:14px; border:1px solid rgba(255,255,255,.10); background:rgba(10,12,18,.75); color:#eaffff; font-weight:800; letter-spacing:.08em; text-transform:uppercase}
+.tabBtn.active{border-color:var(--accent); box-shadow:0 0 0 2px rgba(0,234,255,.18), 0 0 24px rgba(0,234,255,.20); color:#00ffad}
+@media (max-width:980px){
+  .tabs{display:flex;}
+  .grid{grid-template-columns:1fr;}
+  .how,.lb{display:none;}
+  .grid[data-view="howto"] .how{display:block;}
+  .grid[data-view="lb"] .lb{display:block;}
+  .grid[data-view="game"] .how,.grid[data-view="game"] .lb{display:none;}
+}
+
 /* PN_CENTER_PATCH */
 .topbar .badge{position:absolute;left:50%;transform:translateX(-50%);}
 .gameTitle{position:relative;justify-content:flex-end;}
@@ -120,22 +133,6 @@ iframe{width:100%;height:100%;border:0;display:block;background:transparent}
 .panel h3{font-size:14px}
 .mini{font-size:12px;opacity:.9}
 .pills .pill{font-size:12px}
-
-.tabbar{position:fixed;left:0;right:0;bottom:0;display:none;gap:8px;justify-content:center;padding:10px;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.55));backdrop-filter:blur(10px);z-index:9998}
-.tabbtn{border:1px solid var(--border);background:rgba(0,0,0,.35);color:var(--text);padding:10px 12px;border-radius:999px;font-weight:800;letter-spacing:.08em}
-.tabbtn.active{background:linear-gradient(180deg,rgba(0,255,136,.22),rgba(0,0,0,.15));border-color:rgba(0,255,136,.55);box-shadow:0 0 0 1px rgba(0,255,136,.25) inset}
-
-body.compact .grid{grid-template-columns:1fr}
-body.compact .panel[data-view]{display:none}
-body.compact .center{order:0}
-body.compact .center[data-active="false"]{display:none}
-body.compact .panel[data-active="true"]{display:block}
-body.compact .tabbar{display:flex}
-body.compact .wrap{padding-bottom:78px}
-
-@media (max-width:980px){
-  body:not(.compact) .grid{grid-template-columns:1fr}
-}
 </style>
 </head>
 <body>
@@ -150,29 +147,24 @@ body.compact .wrap{padding-bottom:78px}
     </div>
   </div>
 
-  <div class="tabbar" id="tabbar" aria-hidden="true">
-    <button class="tabbtn" data-view="howto">HOW-TO</button>
-    <button class="tabbtn active" data-view="game">GAME</button>
-    <button class="tabbtn" data-view="leaderboard">LEADERBOARD</button>
-  </div>
-
   <div class="wrap">
     <div class="grid">
-      <div class="panel howto" data-view="howto">
+      <div class="panel howto">
         <h3>How To Play</h3>
         <div class="content">
-          <p><b>Plant the payload.</b> Crash the system. One mistake and it’s over.</p>
-          <ul>
-            <li><b>Move:</b> Arrow Keys / WASD</li>
-            <li><b>Plant bomb:</b> Space (max 1 active)</li>
-            <li><b>Goal:</b> collect all <span style="color:var(--accent2);font-weight:700">DATA</span> nodes to advance</li>
-            <li><b>Danger:</b> enemies + your own blast (you are <b>not</b> immune)</li>
-            <li><b>Tip:</b> use walls to funnel enemies, time bombs carefully</li>
+          <p>Defuse the system by hacking fast. One mistake and it detonates.
+
+• Move: Arrow Keys / WASD
+• Plant bomb: SPACE (when prompt says READY)
+• Objective: collect DATA nodes, avoid sentries, survive the timer
+• Tip: bait enemies into dead-ends before planting
+
+Scores auto-save on Game Over.</li>
           </ul>
         </div>
       </div>
 
-      <div class="center" data-view="game">
+      <div class="center">
         <div class="gameTitle">
           <div class="name">Logic Bomb (version 2.0)</div>
           <div class="hint">Tap tabs on mobile</div>
@@ -182,21 +174,13 @@ body.compact .wrap{padding-bottom:78px}
         </div>
       </div>
 
-      <div class="panel" data-view="leaderboard">
+      <div class="panel">
         <h3>Leaderboard</h3>
         <div class="content">
-          <div class="mini">Top 10 (local copy)</div>
-          <div id="lb" class="pills" style="margin-top:10px"></div>
+          <div style="color:var(--muted);line-height:1.35">Coming soon.</div>
         </div>
       </div>
     </div>
-  </div>
-  </div>
-
-  <div class="tabbar" id="tabbar" aria-hidden="true">
-    <button class="tabbtn" data-view="howto">HOW-TO</button>
-    <button class="tabbtn active" data-view="game">GAME</button>
-    <button class="tabbtn" data-view="leaderboard">LEADERBOARD</button>
   </div>
 
 <script>
@@ -299,50 +283,11 @@ document.getElementById("initSave").addEventListener("click", ()=>{ const v=norm
 input.addEventListener("input", ()=>{ input.value=norm(input.value); });
 input.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); document.getElementById("initSave").click(); } if(e.key==="Escape"){ e.preventDefault(); document.getElementById("initCancel").click(); }});
 
-
-// wire player badge to initials modal
-const playerBtn = document.getElementById("playerBtn");
-if(playerBtn){
-  playerBtn.addEventListener("click", openInitModal);
-  playerBtn.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openInitModal(); }});
-}
-
-// compact tabbed layout (small screens / narrow embeds)
-const tabbar = document.getElementById("tabbar");
-const tabBtns = tabbar ? Array.from(tabbar.querySelectorAll(".tabbtn")) : [];
-const views = ["howto","game","leaderboard"];
-
-function setActiveView(v){
-  if(!views.includes(v)) v="game";
-  document.querySelectorAll("[data-view]").forEach(el=>{
-    const is = el.getAttribute("data-view")===v;
-    el.setAttribute("data-active", is ? "true" : "false");
-  });
-  tabBtns.forEach(b=>b.classList.toggle("active", b.getAttribute("data-view")===v));
-}
-
-function syncCompact(){
-  const compact = window.matchMedia("(max-width: 980px)").matches;
-  document.body.classList.toggle("compact", compact);
-  if(tabbar) tabbar.setAttribute("aria-hidden", compact ? "false" : "true");
-  if(compact){
-    const current = tabbar?.querySelector(".tabbtn.active")?.getAttribute("data-view") || "game";
-    setActiveView(current);
-  }else{
-    // show all panels in desktop
-    document.querySelectorAll("[data-view]").forEach(el=>el.removeAttribute("data-active"));
-  }
-}
-
-tabBtns.forEach(btn=>btn.addEventListener("click", ()=> setActiveView(btn.getAttribute("data-view")||"game")));
-window.addEventListener("resize", syncCompact);
-syncCompact();
-
 // only open if missing
 if(!getInitials()) openInitModal();
 
 window.addEventListener("storage",(e)=>{ if(e.key===INITIALS_KEY||e.key===ALT_INITIALS_KEY){ renderInitials(); } if(e.key===LB_KEY){ renderLB(); }});
-window.addEventListener("message",(e)=>{ try{ const d=e.data||{}; if(d && (d.type==="PIXELNET_SCORE"||d.type==="PIXELNET_SUBMIT_SCORE"||d.type==="GAME_OVER_SCORE"||d.type==="GAME_OVER") && d.score!=null){ addLB(d.score); } }catch(_){ }});
+window.addEventListener("message",(e)=>{ try{ const d=e.data||{}; if(d && (d.type==="PIXELNET_SCORE"||d.type==="PIXELNET_SUBMIT_SCORE") && d.score!=null){ addLB(d.score); } }catch(_){ }});
 
 </script>
 
