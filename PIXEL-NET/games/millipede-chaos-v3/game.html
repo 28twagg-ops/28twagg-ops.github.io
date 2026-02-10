@@ -152,8 +152,11 @@ canvas{
       "???"
     );
   }
-  var initials=getInitials();
-  document.getElementById("hudInit").textContent=initials;
+  // Wrapper owns initials UI. If the game still has a PLAYER/initials HUD slot, update it.
+  try{
+    var _hi0=document.getElementById("hudInit");
+    if(_hi0) _hi0.textContent=getInitials();
+  }catch(_){/* ignore */}
 
   // --- Constants (from provided Millipede.txt) ---
   var GRID_SIZE=20, ROWS=32, COLS=20, PLAYER_ZONE_START=ROWS-8;
@@ -191,9 +194,12 @@ var ctx=canvas.getContext("2d");
   var hudScore=document.getElementById("hudScore");
   var hudWave=document.getElementById("hudWave");
   function setHUD(){
-    hudScore.textContent=String(score).padStart(6,'0');
-    hudWave.textContent=String(level+1);
-    document.getElementById("hudInit").textContent=getInitials();
+    // Wrapper owns initials UI. This game may or may not include a PLAYER/initials field.
+    // Avoid hard crashes if the PLAYER element was removed for PIXEL-NET compliance.
+    if(hudScore) hudScore.textContent=String(score).padStart(6,'0');
+    if(hudWave) hudWave.textContent=String(level+1);
+    var hi=document.getElementById("hudInit");
+    if(hi) hi.textContent=getInitials();
   }
 
   // --- Game State ---

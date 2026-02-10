@@ -355,6 +355,12 @@ Purpose: AI implementation for themes
 
     resize();
 
+    // Focus assist: if the wrapper/modal/tabs steal focus, any click/tap inside the iframe
+    // should immediately restore typing without requiring extra user steps.
+    document.addEventListener('pointerdown', () => {
+        try { window.focus(); } catch(_) {}
+    }, { passive: true });
+
     class WordEnemy {
         constructor() {
             this.text = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];

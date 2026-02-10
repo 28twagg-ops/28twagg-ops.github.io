@@ -466,16 +466,30 @@ async function resolveEntry(){
   return null;
 }
 (async ()=>{
-  const entry = await resolveEntry();
-  const msg = entry ? null : "Could not find game entry file (game.html / play.html / index.html).";
-  if (entry) {
-    document.getElementById("gameDesktop").src = entry;
-    document.getElementById("gameMobile").src  = entry;
-  } else {
-    document.getElementById("boardDesktop").innerHTML = `<div class="small">${msg}</div>`;
-    document.getElementById("boardMobile").innerHTML  = `<div class="small">${msg}</div>`;
+  // Prefer explicit entry to avoid fetch/opaque-origin issues inside sandboxed iframes.
+  const entry = "./game.html";
+
+  const gd = document.getElementById("gameDesktop");
+  const gm = document.getElementById("gameMobile");
+
+  gd.src = entry;
+  gm.src = entry;
+
+  function focusIframe(el){
+    try { el.focus(); } catch(e){}
+    try { el.contentWindow && el.contentWindow.focus && el.contentWindow.focus(); } catch(e){}
   }
-})();
+
+  // Focus when the iframe loads and when user clicks the frame area (prevents "no input" after tab/modal).
+  gd.addEventListener("load", ()=>focusIframe(gd));
+  gm.addEventListener("load", ()=>focusIframe(gm));
+
+  const desktopFrame = document.querySelector(".center .frame");
+  if (desktopFrame) desktopFrame.addEventListener("pointerdown", ()=>focusIframe(gd));
+
+  const mobileFrame = document.querySelector("#view-game");
+  if (mobileFrame) mobileFrame.addEventListener("pointerdown", ()=>focusIframe(gm));
+})();;
 
 /* Leaderboard */
 function renderBoard(targetId, rows){

@@ -1,261 +1,375 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Robo-Arena (version 2.0) — PIXEL-NET</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Robo-Arena (v2) — PIXEL-NET</title>
+
 <style>
 :root{
-  --bg0:#04060a;
-  --bg1:#050b14;
-  --bg2:#04060a;
-  --text:#f3f6ff;
-  --muted:rgba(243,246,255,.78);
-  --border:rgba(255,255,255,.14);
-  --accent:#ff2b2b;   /* villain red */
-  --accent2:#00cfff;  /* hero blue */
-  --accent3:#a8ff00;  /* lime pop */
-  --card:rgba(0,0,0,.30);
-  --shadow:0 10px 30px rgba(0,0,0,.35);
-  --font:"Orbitron", system-ui,-apple-system,"Segoe UI",Roboto,Arial;
-  --aspect:3 / 4;
+  --bgA:#05060a;
+  --bgB:#070a12;
+
+  --text:#eaf2ff;
+  --muted:rgba(234,242,255,.72);
+
+  --stroke:rgba(255,255,255,.10);
+  --stroke2:rgba(255,255,255,.14);
+
+  --accent:#00cfff;   /* cyan */
+  --accent2:#ff2bd6;  /* magenta */
+  --accent3:#a8ff00;  /* lime */
+
+  --radius:22px;
+  --radius2:18px;
+
+  --shadow:0 18px 60px rgba(0,0,0,.55);
+  --shadowSoft:0 10px 30px rgba(0,0,0,.35);
+
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
 }
+
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0;color:var(--text);font-family:var(--font);
-  background:
-    radial-gradient(1200px 700px at 18% 10%, color-mix(in srgb, var(--accent) 25%, transparent), transparent 70%),
-    radial-gradient(900px 520px at 88% 18%, color-mix(in srgb, var(--accent2) 22%, transparent), transparent 70%),
-    linear-gradient(135deg,var(--bg0),var(--bg1) 55%,var(--bg2));
+  margin:0;
+  color:var(--text);
+  font-family:var(--font);
   overflow:hidden;
-}
-a{color:inherit;text-decoration:none}
-.topbar{position:relative;
-  height:58px;
-  position:sticky;top:0;z-index:30;
-  display:grid;
-  grid-template-columns:auto 1fr auto;
-  align-items:center;
-  padding:10px 14px;
-  background:rgba(0,0,0,.55);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--border);
-}
-.exit{
-  display:inline-flex;align-items:center;gap:8px;
-  border:1px solid var(--border);
-  background:rgba(0,0,0,.35);
-  padding:8px 12px;border-radius:14px;
-  font-weight:800;letter-spacing:.08em;
-}
-.exit:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--border));}
-.badge{
-  justify-self:center;
-  padding:8px 12px;border-radius:999px;
-  border:1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
-  background:linear-gradient(90deg,color-mix(in srgb, var(--accent) 18%, rgba(0,0,0,.35)), rgba(0,0,0,.35));
-  font-weight:900;letter-spacing:.08em;
-  text-transform:uppercase;font-size:12px;
-}
-.player{
-  justify-self:end;
-  display:flex;align-items:center;gap:10px;
-  padding:7px 10px;border-radius:999px;
-  border:1px solid var(--border);
-  background:rgba(0,0,0,.35);
-}
-.player .tag{opacity:.8;font-size:12px;letter-spacing:.12em}
-.player #initials{font-weight:900;font-size:14px;letter-spacing:.18em;color:var(--accent)}
 
-.app{
-  height:calc(100vh - 58px);
+  background:
+    radial-gradient(1100px 650px at 18% 12%, rgba(255,43,43,.22), transparent 62%),
+    radial-gradient(980px 560px at 88% 16%, rgba(0,207,255,.18), transparent 62%),
+    linear-gradient(135deg,var(--bgA), var(--bgB));
+}
+
+/* top bar (Creek Crosser format: EXIT | TITLE | PLAYER) */
+.topbar{
+  height:62px;
+  display:grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items:center;
+  padding:0 14px;
+  border-bottom:1px solid var(--stroke);
+  background:rgba(0,0,0,.22);
+  backdrop-filter: blur(10px);
+}
+
+.pillBtn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid var(--stroke2);
+  background:rgba(0,0,0,.22);
+  color:var(--text);
+  font-weight:900;
+  letter-spacing:.06em;
+  cursor:pointer;
+  user-select:none;
+  text-decoration:none;
+}
+.pillBtn:hover{filter:brightness(1.06)}
+.pillBtn .x{font-weight:900;opacity:.9}
+
+.titlePill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 18px;
+  border-radius:999px;
+  border:1px solid color-mix(in srgb, var(--accent3) 55%, var(--stroke2));
+  background:rgba(0,0,0,.22);
+  box-shadow:0 0 0 2px rgba(168,255,0,.12) inset;
+  font-weight:900;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+.rightPills{
+  justify-self:end;
   display:flex;
-  padding:12px;
+  gap:10px;
+}
+.playerPill{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid var(--stroke2);
+  background:rgba(0,0,0,.22);
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+  user-select:none;
+}
+.playerPill strong{color:var(--accent);letter-spacing:.18em}
+.playerPill:hover{filter:brightness(1.06)}
+
+/* layout */
+.wrap{
+  height:calc(100% - 62px);
+  padding:14px;
 }
 .grid{
-  width:100%;
-  max-width:1400px;
-  margin:0 auto;
-  display:grid;
-  grid-template-columns:320px minmax(300px,1fr) 320px;
-  gap:12px;
-  align-items:stretch;
   height:100%;
+  display:grid;
+  grid-template-columns: 320px 1fr 320px;
+  gap:14px;
 }
+
 .panel{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:18px;
-  box-shadow:var(--shadow);
+  height:100%;
+  border-radius:var(--radius);
+  border:1px solid var(--stroke);
+  background:rgba(0,0,0,.18);
+  box-shadow:var(--shadowSoft);
   overflow:hidden;
   display:flex;
   flex-direction:column;
-  min-height:0;
 }
-.panel h3{
-  margin:0;padding:12px 14px;
-  font-size:13px;letter-spacing:.1em;text-transform:uppercase;
-  border-bottom:1px solid var(--border);
-  background:rgba(0,0,0,.25);
+.panelHeader{
+  padding:14px 16px;
+  font-weight:1000;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  border-bottom:1px solid var(--stroke);
+  background:rgba(0,0,0,.22);
 }
-.panel .content{padding:12px 14px;overflow:auto}
-.howto p{margin:0 0 10px 0;color:var(--muted);line-height:1.35}
-.howto ul{margin:10px 0 0 18px;padding:0}
-.howto li{margin:8px 0}
+.panelBody{
+  padding:14px 16px;
+  overflow:hidden;
+}
 
-.center{
-  background:rgba(0,0,0,.28);
-  border:1px solid var(--border);
-  border-radius:18px;
-  box-shadow:var(--shadow);
-  overflow:hidden;
+/* allow scroll only in leaderboard if needed */
+#pLB .panelBody{overflow:auto;}
+
+.bullets{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px}
+.bullet{
   display:flex;
-  flex-direction:column;
-  min-height:0;
+  gap:12px;
+  align-items:flex-start;
+  padding:12px 12px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.18);
 }
-.centerHead{
-  padding:12px 14px;
-  border-bottom:1px solid var(--border);
-  background:rgba(0,0,0,.25);
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
+.dot{
+  width:10px;height:10px;border-radius:999px;
+  margin-top:6px;
+  background:var(--accent3);
+  box-shadow:0 0 0 2px rgba(168,255,0,.14);
 }
-.centerHead .name{font-weight:900;letter-spacing:.06em}
-.centerHead .hint{font-size:12px;color:var(--muted)}
-.frameWrap{width:100%;height:min(calc(100svh - 220px), 900px);min-height:520px;background:rgba(0,0,0,.35)}
+.bulletText{line-height:1.25;color:rgba(234,242,255,.85);font-weight:700}
+.bulletText b{color:var(--text);font-weight:1000}
+
+/* cabinet (uniform scale NO stretch) */
+.cabinetOuter{
+  height:100%;
+  padding:14px;
+}
+.cabinetInner{
+  height:100%;
+  border-radius:20px;
+  border:1px solid rgba(168,255,0,.25);
+  background:rgba(0,0,0,.18);
+  box-shadow:0 0 0 2px rgba(168,255,0,.08) inset;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
 .frameSizer{
-  margin:auto;
-  width:min(100%, 1100px);
-  aspect-ratio:var(--aspect);
-  height:auto;
-  max-height:100%;
+  width:var(--fitW, 640px);
+  height:var(--fitH, 480px);
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:#000;
+  overflow:hidden;
+  box-shadow:0 18px 60px rgba(0,0,0,.6);
 }
-iframe{width:100%;height:100%;border:0;display:block;background:#000}
+iframe{
+  width:100%;
+  height:100%;
+  border:0;
+  display:block;
+  background:#000;
+}
 
-.pills{display:flex;flex-direction:column;gap:8px}
-.pill{
-  display:flex;align-items:center;justify-content:space-between;
+/* leaderboard */
+.note{color:rgba(234,242,255,.68);font-weight:700;margin:0 0 10px 0}
+#lb{display:flex;flex-direction:column;gap:10px}
+.lbEmpty{padding:12px 12px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.18);color:rgba(234,242,255,.8);font-weight:800}
+.lbRow{
+  display:grid;
+  grid-template-columns: 60px 1fr auto;
+  align-items:center;
+  padding:12px 12px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.18);
   gap:10px;
-  padding:10px 12px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:rgba(0,0,0,.25);
+  font-weight:900;
 }
-.pill .rank{opacity:.65;font-weight:800;min-width:34px}
-.pill .who{font-weight:900;letter-spacing:.08em;color:var(--accent)}
-.pill .score{font-weight:900}
-.mini{font-size:12px;color:var(--muted);line-height:1.35}
+.lbRank{color:rgba(234,242,255,.7)}
+.lbWho{letter-spacing:.16em;text-transform:uppercase}
+.lbScore{color:var(--accent);letter-spacing:.08em}
 
+/* mobile tabs */
 .tabs{
   display:none;
-  position:fixed;left:0;right:0;bottom:0;z-index:40;
-  height:62px;
-  padding:10px 12px;
-  background:rgba(0,0,0,.6);
-  backdrop-filter:blur(12px);
-  border-top:1px solid var(--border);
+  position:absolute;
+  left:0;right:0;bottom:0;
+  padding:12px 14px;
+  background:linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,0));
 }
-.tabRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;height:100%}
+.tabRow{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap:10px;
+}
 .tabBtn{
-  border:1px solid var(--border);
-  background:rgba(0,0,0,.28);
-  color:var(--text);
-  border-radius:16px;
-  font-weight:900;
+  padding:12px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.20);
+  color:rgba(234,242,255,.85);
+  font-weight:1000;
   letter-spacing:.08em;
   text-transform:uppercase;
   cursor:pointer;
 }
 .tabBtn.active{
-  border-color:color-mix(in srgb, var(--accent) 70%, white);
-  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
-}
-
-@media (max-width: 980px){
-  .app{padding:10px;padding-bottom:82px}
-  .grid{grid-template-columns:1fr;height:100%}
-  .panel,.center{display:none}
-  .panel.active,.center.active{display:flex}
-  .tabs{display:block}
+  border-color:color-mix(in srgb, var(--accent) 60%, rgba(255,255,255,.18));
+  box-shadow:0 0 0 2px rgba(0,207,255,.12) inset;
+  color:var(--text);
 }
 
 /* initials modal */
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:50}
-.modalCard{width:min(360px,92vw);background:rgba(10,10,16,.92);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:16px 16px 14px}
-.modalTitle{font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ui);text-align:center;margin-bottom:10px}
-#initInput{width:120px;margin:0 auto 12px auto;display:block;text-align:center;text-transform:uppercase;font-weight:900;letter-spacing:.18em;font-size:26px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.55);color:var(--ui);outline:none}
-.modalBtns{display:flex;gap:10px;justify-content:center}
-.btn.primary{background:linear-gradient(90deg,var(--accent),rgba(255,255,255,.15));border-color:rgba(255,255,255,.25)}
-.modal.show{display:flex}
+#initModal{
+  position:fixed;inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.65);
+  z-index:50;
+}
+#initCard{
+  width:min(420px, 92vw);
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.40);
+  box-shadow:0 18px 70px rgba(0,0,0,.7);
+  padding:16px;
+}
+#initTitle{
+  font-weight:1000;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+#initInput{
+  width:100%;
+  padding:12px 12px;
+  border-radius:16px;
+  border:1px solid var(--stroke2);
+  background:rgba(0,0,0,.22);
+  color:var(--text);
+  font-weight:900;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  outline:none;
+  font-size:18px;
+}
+#initActions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+}
+.modalBtn{
+  flex:1;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid var(--stroke2);
+  background:rgba(0,0,0,.22);
+  color:var(--text);
+  font-weight:900;
+  letter-spacing:.10em;
+  cursor:pointer;
+  text-transform:uppercase;
+}
+.modalBtn:hover{filter:brightness(1.08)}
+.modalBtn.primary{
+  border-color:color-mix(in srgb, var(--accent) 60%, var(--stroke2));
+  box-shadow:0 0 0 2px rgba(0,207,255,.12) inset;
+}
 
-
-/* PN_CENTER_PATCH */
-.topbar .badge{position:absolute;left:50%;transform:translateX(-50%);}
-.gameTitle{position:relative;justify-content:flex-end;}
-.gameTitle .name{position:absolute;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis;}
-
-
-/* PX_OVERRIDES */
-.panel .content{font-size:13px;line-height:1.65}
-.panel h3{font-size:14px}
-.panel li{margin:10px 0}
-.mini{font-size:12px;opacity:.9}
-.pills .pill{font-size:12px}
-/* LB rows (shared) */
-.lb{display:flex;flex-direction:column;gap:10px}
-.lbRow{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;
-  padding:10px 12px;border:1px solid var(--border);border-radius:14px;
-  background:color-mix(in srgb, var(--card) 85%, transparent);
-  box-shadow:0 10px 24px rgba(0,0,0,.25) inset}
-.lbRow .rank{color:var(--accent);font-weight:900}
-.lbRow .who{letter-spacing:.08em;font-weight:800}
-.lbRow .sc{color:var(--accent2);font-weight:900}
-.muted{color:var(--muted)}
+/* responsive */
+@media (max-width: 980px){
+  .grid{grid-template-columns: 1fr}
+  .tabs{display:block}
+  .panel{display:none}
+  .panel.active{display:flex}
+  .wrap{padding:12px 14px 76px 14px}
+  .panelBody{padding:12px 14px;overflow:hidden;}
+}
 </style>
 </head>
+
 <body>
   <div class="topbar">
-    <a class="exit" href="../../index.html">EXIT</a>
-    <div class="badge">PIXEL-NET ARCADE</div>
-    <div class="player" title="Stored as PIXELNET_INITIALS">
-      <div class="tag">PLAYER</div>
-      <div id="initials">???</div>
+    <div>
+      <a class="pillBtn" href="../../index.html"><span class="x">✕</span> EXIT</a>
+    </div>
+
+    <div class="titlePill">ROBO ARENA</div>
+
+    <div class="rightPills">
+      <div class="playerPill" id="playerPill">PLAYER <strong id="initials">???</strong></div>
     </div>
   </div>
 
-  <div class="app">
+  <div class="wrap">
     <div class="grid">
-      <div class="panel howto" id="pHow">
-        <h3>How to play</h3>
-        <div class="content">
-          <p>Robo-Arena (version 2.0)</p>
-          <ul><li>WASD: move.</li><li>Arrow keys: shoot direction.</li><li>Protect humans; survive waves.</li></ul>
-          <div class="mini" style="margin-top:10px">No scrolling: use the tabs on mobile.</div>
+      <!-- HOW TO -->
+      <section class="panel active" id="pHow">
+        <div class="panelHeader">HOW TO PLAY</div>
+        <div class="panelBody">
+          <ul class="bullets">
+            <li class="bullet"><span class="dot"></span><div class="bulletText">Move with <b>WASD</b>.</div></li>
+            <li class="bullet"><span class="dot"></span><div class="bulletText">Shoot with <b>Arrow Keys</b> (twin-stick).</div></li>
+            <li class="bullet"><span class="dot"></span><div class="bulletText">Protect humans and survive escalating waves.</div></li>
+            <li class="bullet"><span class="dot"></span><div class="bulletText">Mobile: on-screen sticks appear automatically.</div></li>
+          </ul>
         </div>
-      </div>
+      </section>
 
-      <div class="center active" id="pGame">
-        <div class="centerHead">
-          <div class="name">Robo-Arena (version 2.0)</div>
-          <div class="hint">Tap tabs on mobile</div>
-        </div>
-        <div class="frameWrap">
-          <div class="frameSizer">
-            <iframe src="./game.html" title="Robo-Arena (version 2.0)" allow="fullscreen" id=\"gameFrame\"></iframe>
+      <!-- GAME -->
+      <section class="panel active" id="pGame">
+        <div class="cabinetOuter">
+          <div class="cabinetInner" id="cabinetInner">
+            <div class="frameSizer" id="frameSizer">
+              <iframe id="gameFrame" src="./game.html" title="Robo-Arena (v2)"></iframe>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="panel" id="pLB">
-        <h3>Leaderboard</h3>
-        <div class="content">
-          <div class="mini">Local copy leaderboard (separate from original).</div>
-          <div class="pills" id="lb"></div>
+      <!-- LEADERBOARD -->
+      <section class="panel" id="pLB">
+        <div class="panelHeader">LEADERBOARD</div>
+        <div class="panelBody">
+          <div class="note">Local copy leaderboard (separate from original).</div>
+          <div id="lb"></div>
         </div>
-      </div>
+      </section>
     </div>
   </div>
 
+  <!-- mobile tabs -->
   <div class="tabs">
     <div class="tabRow">
       <button class="tabBtn" data-target="pHow">How To</button>
@@ -264,9 +378,30 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
     </div>
   </div>
 
+  <!-- initials modal -->
+  <div id="initModal">
+    <div id="initCard">
+      <div id="initTitle">PLAYER INITIALS</div>
+      <input id="initInput" maxlength="3" placeholder="---" autocomplete="off" />
+      <div id="initActions">
+        <button class="modalBtn" id="initCancel">EXIT</button>
+        <button class="modalBtn primary" id="initSave">SAVE</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 (() => {
-  // --------- Initials (canonical) ----------
+  /* ---------- Mobile tabs ---------- */
+  const tabBtns = Array.from(document.querySelectorAll('.tabBtn'));
+  const panels = ['pHow','pGame','pLB'].map(id=>document.getElementById(id)).filter(Boolean);
+  const setActive = (id) => {
+    panels.forEach(p=>p.classList.toggle('active', p.id===id));
+    tabBtns.forEach(b=>b.classList.toggle('active', b.dataset.target===id));
+  };
+  tabBtns.forEach(b=>b.addEventListener('click', ()=>setActive(b.dataset.target)));
+
+  /* ---------- Initials (canonical) ---------- */
   const PRIMARY = 'playerInitials';
   const MIRROR  = 'PIXELNET_INITIALS';
   const norm = (v) => (v||'').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
@@ -279,39 +414,41 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
   };
 
   const initialsEl = document.getElementById('initials');
-  const renderInitials = () => { if(initialsEl) initialsEl.textContent = getInitials() || '???'; };
+  const renderInitials = () => { initialsEl.textContent = getInitials() || '???'; };
   renderInitials();
   window.addEventListener('storage', (e)=>{ if(e.key===PRIMARY || e.key===MIRROR) renderInitials(); });
 
-  // Optional initials modal (if present)
+  /* initials modal open: click PLAYER pill */
+  const playerPill = document.getElementById('playerPill');
   const modal = document.getElementById('initModal');
   const input = document.getElementById('initInput');
   const btnSave = document.getElementById('initSave');
   const btnCancel = document.getElementById('initCancel');
-  const playerBtn = document.getElementById('playerBtn') || initialsEl;
 
   const openModal = () => {
-    if(!modal || !input) return;
     input.value = getInitials() || '';
     modal.style.display = 'flex';
     setTimeout(()=>input.focus(), 50);
   };
-  const closeModal = () => { if(modal) modal.style.display = 'none'; };
+  const closeModal = () => { modal.style.display = 'none'; };
 
-  playerBtn?.addEventListener('click', (e)=>{ e.preventDefault(); openModal(); });
-  btnCancel?.addEventListener('click', (e)=>{ e.preventDefault(); closeModal(); });
-  btnSave?.addEventListener('click', (e)=>{
-    e.preventDefault();
-    setInitials(input?.value || '');
+  playerPill.addEventListener('click', openModal);
+  btnCancel.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+
+  btnSave.addEventListener('click', ()=>{
+    setInitials(input.value);
     renderInitials();
     closeModal();
   });
-  modal?.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+  input.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); btnSave.click(); }
+    if(e.key==='Escape'){ e.preventDefault(); closeModal(); }
+  });
 
-  // --------- Leaderboard (localStorage Top-10 per copy) ----------
+  /* ---------- Leaderboard (localStorage top-10) ---------- */
   const lbEl = document.getElementById('lb');
 
-  // slug from folder name (…/games/<slug>/wrapper-v2.html)
   const slug = (() => {
     try{
       const parts = location.pathname.split('/').filter(Boolean);
@@ -321,100 +458,81 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
     return 'unknown';
   })();
 
-  const NEW_KEY = `LB_${slug}`;
-  const LEGACY_KEYS = [
-    `PIXELNET_LB_${slug}_v2_0`,
-    `PIXELNET_LB_${slug}_v2_0`.replace(/-/g,'_'),
-    `PIXELNET_LB_${slug}`,
-  ];
-
-  const load = (k) => { try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch(_){ return []; } };
-  const save = (k, arr) => { try{ localStorage.setItem(k, JSON.stringify(arr)); }catch(_){ } };
-
-  // migrate legacy -> new (only if new empty)
-  try{
-    if(load(NEW_KEY).length===0){
-      for(const k of LEGACY_KEYS){
-        const v = load(k);
-        if(Array.isArray(v) && v.length){
-          save(NEW_KEY, v);
-          break;
-        }
-      }
-    }
-  }catch(_){}
+  const KEY = `LB_${slug}`;
+  const load = () => { try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(_){ return []; } };
+  const save = (arr) => { try{ localStorage.setItem(KEY, JSON.stringify(arr)); }catch(_){ } };
 
   const renderLB = () => {
-    if(!lbEl) return;
-    const rows = load(NEW_KEY).slice(0,10);
+    const rows = load().slice(0,10);
     if(!rows.length){
-      lbEl.innerHTML = '<div class="muted">No scores yet.</div>';
+      lbEl.innerHTML = `<div class="lbEmpty">No scores yet.</div>`;
       return;
     }
     lbEl.innerHTML = rows.map((r,i)=>{
-      const initials = (r && (r.initials || r.name)) ? String(r.initials || r.name).toUpperCase().slice(0,3) : '???';
-      const score = (r && r.score!=null) ? Math.floor(Number(r.score)||0) : 0;
-      return `<div class="lbRow"><span class="rank">${i+1}</span><span class="who">${initials}</span><span class="sc">${score}</span></div>`;
+      const who = String(r.initials||r.name||'???').toUpperCase().slice(0,3);
+      const sc  = Math.floor(Number(r.score||0));
+      return `<div class="lbRow"><div class="lbRank">#${i+1}</div><div class="lbWho">${who}</div><div class="lbScore">${sc}</div></div>`;
     }).join('');
   };
-  window.PX_refreshLeaderboard = renderLB;
   renderLB();
 
-  // --------- Score intake (single-submit guard) ----------
+  /* score intake + dedupe */
   let lastSig = '';
   let lastAt = 0;
   const addScore = (rawScore) => {
     const score = Math.max(0, Math.floor(Number(rawScore)||0));
     const initials = getInitials() || '???';
-
     const now = Date.now();
     const sig = `${initials}:${score}`;
-    if(sig===lastSig && (now-lastAt) < 1200) return; // de-dupe burst
+    if(sig===lastSig && (now-lastAt) < 1200) return;
     lastSig = sig; lastAt = now;
 
-    const rows = load(NEW_KEY);
+    const rows = load();
     rows.push({ initials, score, t: now });
     rows.sort((a,b)=> (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
-    save(NEW_KEY, rows.slice(0,10));
+    save(rows.slice(0,10));
     renderLB();
   };
 
   window.addEventListener('message', (e)=>{
     const d = e.data || {};
-    const type = d.type;
-    if(!type) return;
-
-    // set initials from home if sent
-    if(type==='PIXELNET_SET_INITIALS' && d.initials){
-      setInitials(d.initials); renderInitials(); return;
-    }
-
-    // accept score signals
-    if(type==='GAME_OVER_SCORE' || type==='GAME_OVER' || type==='PIXELNET_SCORE' || type==='PIXELNET_SUBMIT_SCORE'){
-      const s = (d.score!=null)? d.score : (d.finalScore!=null? d.finalScore : d.value);
-      if(s!=null) addScore(s);
+    if(d.type === 'GAME_OVER_SCORE' && d.score != null){
+      addScore(d.score);
     }
   });
 
-  // focus iframe when interacting
-  const f = document.getElementById('gameFrame');
-  const focusFrame = ()=>{ try{ f?.contentWindow?.focus?.(); }catch(_){ } };
-  document.addEventListener('pointerdown', focusFrame, {passive:true});
-  window.addEventListener('keydown', focusFrame, {passive:true});
+  /* ---------- Uniform aspect-fit sizing (NO stretch) ---------- */
+  const cabinetInner = document.getElementById('cabinetInner');
+  const frameSizer = document.getElementById('frameSizer');
 
+  const ASPECT = 4/3;
+
+  function fit(){
+    const r = cabinetInner.getBoundingClientRect();
+    const pad = 0;
+    const availW = Math.max(0, r.width - pad*2);
+    const availH = Math.max(0, r.height - pad*2);
+
+    let w = availW;
+    let h = w / ASPECT;
+
+    if(h > availH){
+      h = availH;
+      w = h * ASPECT;
+    }
+
+    w = Math.max(240, w);
+    h = Math.max(180, h);
+
+    frameSizer.style.setProperty('--fitW', `${Math.floor(w)}px`);
+    frameSizer.style.setProperty('--fitH', `${Math.floor(h)}px`);
+  }
+
+  const ro = new ResizeObserver(fit);
+  ro.observe(cabinetInner);
+  window.addEventListener('resize', fit);
+  fit();
 })();
 </script>
-
-<div class="modal" id="initModal" aria-hidden="true">
-  <div class="modalCard">
-    <div class="modalTitle">ENTER INITIALS</div>
-    <input id="initInput" maxlength="3" placeholder="---" autocomplete="off" />
-    <div class="modalBtns">
-      <button class="btn" id="initCancel">EXIT</button>
-      <button class="btn primary" id="initSave">SAVE</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>

@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Caked Up Cats: Garden Maze</title>
-    <!-- PIXEL-NET Engine (leaderboard submit) -->
-    <script src="../../js/engine.js"></script>
     <style>
         :root {
             --bg-color: #6bc96b; 
@@ -1744,11 +1742,14 @@ html.pn-embed canvas{display:block; width:100% !important; height:100% !importan
     var w = box.clientWidth || 0;
     var h = box.clientHeight || 0;
     if(w<=0 || h<=0) return;
+    // Never stretch: lock to a square using the smaller dimension (letterbox inside iframe)
+    var s = Math.max(1, Math.min(w, h));
+    box.style.width = s + "px";
+    box.style.height = s + "px";
     var dpr = window.devicePixelRatio || 1;
-    var nw = Math.max(1, Math.floor(w*dpr));
-    var nh = Math.max(1, Math.floor(h*dpr));
-    if(c.width!==nw) c.width = nw;
-    if(c.height!==nh) c.height = nh;
+    var n = Math.max(1, Math.floor(s*dpr));
+    if(c.width!==n) c.width = n;
+    if(c.height!==n) c.height = n;
     // CSS size already forced by pn-embed-style
   }
   function hook(){

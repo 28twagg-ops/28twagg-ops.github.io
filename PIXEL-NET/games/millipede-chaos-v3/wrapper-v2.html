@@ -1,210 +1,427 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Millipede Chaos (version 3.0)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Millipede Chaos (version 3.0) — PIXEL-NET</title>
 <style>
 :root{
   --bg0:#090000;
   --bg1:#140000;
-  --bg2:#090000;
+  --bg2:#060000;
+
   --text:#fff6f6;
   --muted:rgba(255,246,246,.78);
+
   --border:rgba(255,255,255,.14);
-  --accent:#ff1f1f;   /* red */
-  --accent2:#ffd24a;  /* mushroom yellow */
-  --accent3:#00eaff;  /* ship cyan */
-  --card:rgba(0,0,0,.34);
-  --shadow:0 12px 34px rgba(0,0,0,.42);
-  --font:"Press Start 2P","Courier New",Courier,monospace;
+  --accent:#ff1f1f;
+  --accent2:#7fdf8a;
+  --accent3:#ffd24a;
+
+  --card:rgba(0,0,0,.30);
+  --shadow:0 12px 34px rgba(0,0,0,.40);
+
+  --font: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  --arcade: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  --aspect: 0.625; /* 400 / 640 */
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{height:100%}
 body{
-  min-height:100dvh;
-  font-family:var(--font);
-  color:var(--text);
+  margin:0;
+  font-family: var(--font);
+  color: var(--text);
   background:
-    radial-gradient(1100px 700px at 20% 10%, rgba(180,60,30,.16), transparent 60%),
-    radial-gradient(900px 600px at 85% 25%, rgba(0,255,247,.10), transparent 55%),
-    linear-gradient(180deg, var(--bg1), var(--bg2));
-  color-scheme:dark;
-  overflow:hidden; /* no page scroll */
+    radial-gradient(1200px 700px at 15% 10%, rgba(255,31,31,.18), transparent 56%),
+    radial-gradient(1100px 760px at 85% 18%, rgba(0,234,255,.10), transparent 58%),
+    radial-gradient(1200px 780px at 55% 108%, rgba(255,210,74,.10), transparent 60%),
+    linear-gradient(180deg, var(--bg0), var(--bg2));
+  overflow:hidden;
 }
-.topbar{position:relative;
-  width:min(1300px,94vw);
-  margin:10px auto 10px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
+
+/* Top bar (match known-good wrappers) */
+.topbar{
+  height:58px;
+  position:sticky; top:0; z-index:20;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  padding:10px 14px;
+  border-bottom:1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  background:rgba(0,0,0,.38);
+  backdrop-filter: blur(12px);
 }
-.btn,.badge{
-  height:38px;padding:0 12px;border-radius:12px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.35);
-  color:var(--text);
-  font:800 12px/1 var(--font2);
-  letter-spacing:.12em;
+.exit{
+  display:inline-flex;align-items:center;gap:10px;
+  text-decoration:none;color:var(--text);
+  border:1px solid var(--border);
+  padding:8px 12px;border-radius:14px;
+  background:rgba(0,0,0,.18);
+  font-weight:900;
+  letter-spacing:.10em;
+}
+.exit:hover{
+  border-color: color-mix(in srgb, var(--accent) 70%, rgba(255,255,255,.14));
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.gameBadge{
+  justify-self:center;
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:8px 16px;
+  border-radius:999px;
+  border:1px solid color-mix(in srgb, var(--accent) 52%, rgba(255,255,255,.12));
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    color-mix(in srgb, var(--accent3) 10%, transparent),
+    rgba(0,0,0,.10));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent),
+    0 18px 55px rgba(0,0,0,.30);
+  font-family: var(--arcade);
+  font-weight:950;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  user-select:none;
+}
+
+.playerBtn{
+  justify-self:end;
+  display:flex;align-items:center;gap:10px;
+  border:1px solid color-mix(in srgb, var(--accent) 42%, rgba(255,255,255,.12));
+  padding:8px 12px;
+  border-radius:999px;
+  background: color-mix(in srgb, var(--accent) 10%, rgba(0,0,0,.22));
   cursor:pointer;
+  user-select:none;
 }
-.btn:hover,.badge:hover{filter:brightness(1.12)}
-.titlebadge{
-  flex:1;display:flex;justify-content:center;
+.playerBtn:hover{
+  border-color: color-mix(in srgb, var(--accent) 80%, rgba(255,255,255,.12));
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
 }
-.titlepill{
-  height:38px;display:inline-flex;align-items:center;justify-content:center;
-  padding:0 14px;border-radius:12px;
-  border:1px solid var(--stroke);
-  background:linear-gradient(180deg,var(--panelTop),var(--panelBot));
-  box-shadow:0 0 18px rgba(180,60,30,.15);
-  font:900 12px/1 var(--font2);
+.playerBtn .muted{
+  color:rgba(255,246,246,.70);
+  font-size:12px;
   letter-spacing:.14em;
   text-transform:uppercase;
+  font-family: var(--arcade);
 }
-.layout{
-  width:min(1300px,94vw);
-  margin:0 auto 12px;
+.playerBtn strong{ color: var(--accent3); letter-spacing:.14em; font-family:var(--arcade); }
+
+/* Desktop layout */
+.shell{
+  max-width:1720px;
+  margin:0 auto;
+  padding:14px;
+  height: calc(100vh - 58px);
   display:grid;
-  grid-template-columns:minmax(220px,280px) minmax(360px,1fr) minmax(220px,280px);
-  gap:var(--gap);
-  height:calc(100dvh - 10px - 38px - 10px - 12px); /* viewport minus margins/topbar */
-  min-height:0;
+  grid-template-columns: 320px minmax(0,1fr) 320px;
+  gap:14px;
+  align-items:stretch;
 }
 .panel{
-  border:1px solid var(--stroke);
-  background:linear-gradient(180deg,var(--panelTop),var(--panelBot));
-  border-radius:var(--r);
-  box-shadow:var(--shadow);
-  padding:14px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.26));
+  overflow:hidden;
+  height:100%;
   min-height:0;
-  overflow:auto;
+  box-shadow: 0 18px 70px rgba(0,0,0,.35);
+  display:flex;
+  flex-direction:column;
 }
 .panel h3{
-  margin:0 0 10px;
-  font:900 13px/1.1 var(--font2);
-  letter-spacing:.12em;
-  color:#7fdf8a;
+  margin:0;
+  padding:12px 14px;
+  font-size:12px;
+  letter-spacing:.20em;
+  text-transform:uppercase;
+  color:rgba(255,246,246,.78);
+  border-bottom:1px solid rgba(255,255,255,.10);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 14%, transparent), rgba(0,0,0,.00));
 }
-.muted{color:var(--muted);font-size:12px;line-height:1.45}
-.gamepanel{padding:10px;overflow:hidden;display:flex;flex-direction:column}
-.gamebox{
-  flex:1;min-height:0;
-  border-radius:14px;
-  border:0;
+.panel .content{
+  padding:14px;
+  flex:1;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.panel.leaderboard .content{ overflow-y:auto; }
+.small{ font-size:14px; color:rgba(255,246,246,.82); line-height:1.55 }
+.howtoText{ font-family: var(--font); letter-spacing:.01em; }
+
+.center{ height:100%; min-height:0; display:flex; justify-content:center; }
+.frame{
+  width:100%;
+  max-width:1200px;
+  height:100%;
+  min-height:0;
+  border-radius:22px;
   overflow:hidden;
   background:#000;
-  box-shadow:0 0 30px color-mix(in srgb, var(--accent) 20%, transparent);
+  border:1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent),
+    0 30px 90px rgba(0,0,0,.52);
+  display:flex;
 }
-.gamebox iframe{width:100%;height:100%;border:0;display:block;background:#000}
-.lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.lb-col{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.lb-item{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:10px 10px;border-radius:14px;
-  border:1px solid rgba(80,200,100,.12);
-  background:rgba(20,55,30,.35);
+.frameWrap{
+  flex:1; min-height:0;
+  display:flex;
+  align-items:stretch;
+  justify-content:stretch;
+  padding:12px;
 }
-.lb-rank{font:900 12px/1 var(--font2);color:#7fdf8a;min-width:22px}
-.lb-name{font:900 12px/1 var(--font2);letter-spacing:.10em}
-.lb-score{font:900 12px/1 var(--font2);color:#f0c87a}
-.lb-meta{margin-top:10px;color:#6a8a70;font:800 11px/1.2 var(--font2);letter-spacing:.08em}
-.tabs{display:none}
-@media (max-width: 1000px){
-  body{overflow:hidden}
-  .layout{grid-template-columns:1fr;height:calc(100dvh - 10px - 38px - 10px - 56px)}
-  .tabs{
-    width:min(1300px,94vw);
-    margin:0 auto 12px;
-    display:flex;gap:10px;
-  }
-  .tabbtn{
-    flex:1;height:46px;border-radius:14px;
-    border:1px solid rgba(255,255,255,.14);
-    background:rgba(0,0,0,.35);
-    color:var(--text);
-    font:900 11px/1 var(--font2);letter-spacing:.12em;text-transform:uppercase;
-  }
-  .tabbtn.active{border-color:var(--stroke);box-shadow:0 0 16px rgba(180,60,30,.12);filter:brightness(1.10)}
-  .panel{display:none}
-  .panel.active{display:block}
+.frameSizer{
+  margin:auto;
+  height:100%;
+  width:auto;
+  max-width:100%;
+  max-height:100%;
+  aspect-ratio: calc(var(--aspect));
+}
+iframe{ width:100%; height:100%; border:0; display:block; background:#000; border-radius:12px; }
+
+/* Leaderboard rows — copied from known-good wrappers */
+.mini{ font-size:12px; letter-spacing:.10em; color:var(--muted); text-transform:uppercase }
+.lb{ display:flex; flex-direction:column; gap:10px }
+.lbRow{
+  display:grid;
+  grid-template-columns:40px 1fr auto;
+  gap:12px;
+  align-items:center;
+  padding:12px 14px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.22);
+  border-radius:14px;
+}
+.rank{ font-family:var(--arcade); font-weight:900; color: var(--accent2); font-size:15px }
+.who{ font-family:var(--arcade); font-weight:900; letter-spacing:.20em; font-size:15px }
+.sc{ font-family:var(--arcade); font-weight:900; color: var(--accent3); font-size:15px }
+
+/* Mobile tabs */
+.mobileWrap{ display:none; height: calc(100vh - 58px); padding:14px; }
+.mobileStack{ height:100%; display:flex; flex-direction:column; gap:12px; }
+.displayZone{ flex:1; min-height:0; display:flex; justify-content:center; }
+.displayCard{ width:100%; max-width:1200px; border-radius:22px; overflow:hidden; height:100%; }
+.hidden{ display:none; }
+.mobileFrame{ border:1px solid color-mix(in srgb, var(--accent) 28%, transparent); background:#000; }
+
+.btnbar{
+  width:100%;
+  max-width:1200px;
+  margin:0 auto;
+  padding:10px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:22px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 10%, transparent), rgba(0,0,0,.18));
+  backdrop-filter: blur(10px);
+  display:flex;
+  gap:10px;
+}
+.tabBtn{
+  flex:1;
+  height:58px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  color: rgba(255,246,246,.92);
+  font-weight: 900;
+  cursor:pointer;
+  letter-spacing:.02em;
+  font-family: var(--arcade);
+}
+.tabBtn.active{
+  border-color: color-mix(in srgb, var(--accent) 78%, rgba(255,255,255,.12));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent3) 12%, transparent));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+@media (max-width: 1100px){
+  .shell{ display:none; }
+  .mobileWrap{ display:block; }
 }
 
-/* PN_CENTER_PATCH */
-.topbar .badge{position:absolute;left:50%;transform:translateX(-50%);}
-.gameTitle{position:relative;justify-content:flex-end;}
-.gameTitle .name{position:absolute;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis;}
-
-/* LB rows (shared) */
-.lb{display:flex;flex-direction:column;gap:10px}
-.lbRow{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;
-  padding:10px 12px;border:1px solid var(--border);border-radius:14px;
-  background:color-mix(in srgb, var(--card) 85%, transparent);
-  box-shadow:0 10px 24px rgba(0,0,0,.25) inset}
-.lbRow .rank{color:var(--accent);font-weight:900}
-.lbRow .who{letter-spacing:.08em;font-weight:800}
-.lbRow .sc{color:var(--accent2);font-weight:900}
-.muted{color:var(--muted)}
+/* Initials modal */
+.modalBack{
+  position:fixed; inset:0;
+  background: rgba(0,0,0,.60);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:60;
+}
+.modalCard{
+  width: min(560px, calc(100vw - 48px));
+  border-radius: 24px;
+  border: 2px solid color-mix(in srgb, var(--accent) 78%, rgba(255,255,255,.10));
+  background:
+    radial-gradient(900px 420px at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 58%),
+    radial-gradient(900px 520px at 25% 85%, color-mix(in srgb, var(--accent3) 12%, transparent), transparent 62%),
+    linear-gradient(180deg, rgba(0,0,0,.70), rgba(0,0,0,.78));
+  box-shadow: 0 40px 160px rgba(0,0,0,.70);
+  overflow:hidden;
+  position:relative;
+}
+.modalClose{
+  position:absolute;
+  top: 14px; right: 14px;
+  width: 40px; height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.20);
+  color: var(--text);
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.modalClose:hover{
+  border-color: color-mix(in srgb, var(--accent) 70%, rgba(255,255,255,.14));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.modalInner{ padding: 22px 22px 18px; display:grid; gap: 14px; }
+.modalTitle{
+  font-family: var(--arcade);
+  font-size: 34px;
+  font-weight: 950;
+  letter-spacing: .20em;
+  text-transform: uppercase;
+  text-align:center;
+  background: linear-gradient(90deg, var(--accent), var(--accent3), rgba(255,246,246,.92));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color: transparent;
+}
+.modalInput{
+  height: 64px;
+  border-radius: 16px;
+  border: 2px solid color-mix(in srgb, var(--accent) 78%, rgba(255,255,255,.10));
+  background: rgba(0,0,0,.22);
+  color: rgba(255,246,246,.96);
+  font-family: var(--arcade);
+  font-size: 26px;
+  font-weight: 950;
+  letter-spacing: .28em;
+  text-align:center;
+  text-transform: uppercase;
+  outline:none;
+}
+.modalSave{
+  height: 64px;
+  border-radius: 16px;
+  border: 0;
+  cursor:pointer;
+  font-family: var(--arcade);
+  font-size: 20px;
+  font-weight: 950;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(12,12,12,.94);
+  background: linear-gradient(90deg, var(--accent), var(--accent3));
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+}
+.modalHint{ text-align:center; color: rgba(255,246,246,.72); font-size: 12px; font-style: italic; opacity: .92; }
 </style>
 </head>
+
 <body>
-
 <div class="topbar">
-  <button class="btn" id="pn-exit">EXIT</button>
-  <div class="titlebadge"><div class="titlepill">Millipede Chaos (version 3.0)</div></div>
-  <button class="badge" id="pn-badge">???</button>
+  <div class="top-left">
+    <a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a>
+  </div>
+  <div class="gameBadge">MILLIPede CHAOS (v3)</div>
+  <div class="playerBtn" id="playerBtn" role="button" tabindex="0" aria-label="Change initials">
+    <div class="muted">PLAYER</div>
+    <strong id="initials">???</strong>
+  </div>
 </div>
 
-<div class="tabs">
-  <button class="tabbtn active" data-tab="how">HOW TO</button>
-  <button class="tabbtn" data-tab="game">GAME</button>
-  <button class="tabbtn" data-tab="lb">LEADERBOARD</button>
-</div>
-
-<div class="layout">
-  <aside class="panel active" id="pn-how">
+<div class="shell">
+  <section class="panel">
     <h3>HOW TO PLAY</h3>
-    <div class="muted">
-      <div><b>Move:</b> Arrow Keys / WASD (mobile: drag)</div>
-      <div><b>Fire:</b> Space (mobile: tap/hold)</div>
-      <div style="margin-top:10px"><b>Goal:</b> Clear millipede segments, survive spiders/bees, and climb waves.</div>
-      <div style="margin-top:10px">Initials come from PIXEL-NET (no in-game prompt). Badge is clickable to change.</div>
-      <div style="margin-top:10px"><b>Game Over:</b> score auto-saves.</div>
+    <div class="content">
+      <div class="small howtoText">
+        <div><b>Move:</b> Arrow Keys / WASD (mobile: drag)</div>
+        <div style="margin-top:8px"><b>Fire:</b> Space (mobile: tap/hold)</div>
+        <div style="margin-top:12px"><b>Goal:</b> Clear millipede segments, survive spiders/bees, and climb waves.</div>
+        <div style="margin-top:12px">Initials are managed by PIXEL-NET (wrapper). The game never prompts.</div>
+        <div style="margin-top:12px"><b>Game Over:</b> score auto-saves locally.</div>
+      </div>
     </div>
-  </aside>
+  </section>
 
-  <main class="panel gamepanel active" id="pn-game">
-    <div class="gamebox">
-      <iframe id="pn-iframe" src="./game.html" title="Millipede Chaos v3"></iframe>
+  <section class="panel">
+    <div class="content center">
+      <div class="frame">
+        <div class="frameWrap">
+          <div class="frameSizer">
+            <iframe id="gameFrame" src="./game.html" title="Millipede Chaos v3"></iframe>
+          </div>
+        </div>
+      </div>
     </div>
-  </main>
+  </section>
 
-  <aside class="panel" id="pn-lb">
+  <section class="panel leaderboard">
     <h3>LEADERBOARD</h3>
-    <div class="muted">Top 10</div>
-    <div class="lb-grid">
-      <ol class="lb-col" id="lb-left"></ol>
-      <ol class="lb-col" id="lb-right"></ol>
+    <div class="content">
+      <div class="mini">Top 10</div>
+      <div class="lb" id="lb" style="margin-top:12px"></div>
+      <div class="mini" id="lbMeta" style="margin-top:12px;opacity:.8"></div>
     </div>
-    <div class="lb-meta" id="lb-status">Loading…</div>
-  </aside>
+  </section>
 </div>
 
-<!-- Initials modal (Creek-style minimal) -->
-<div id="pn-modal" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999">
-  <div id="pn-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,.65)"></div>
-  <div style="position:relative;width:min(420px,92vw);border-radius:18px;border:1px solid rgba(80,200,100,.22);background:linear-gradient(180deg,var(--panelTop),var(--panelBot));box-shadow:var(--shadow);padding:16px">
-    <div style="font:900 12px/1 var(--font2);letter-spacing:.14em;color:#7fdf8a;margin-bottom:10px">ENTER INITIALS</div>
-    <input id="pn-input" maxlength="3" placeholder="ABC" style="width:100%;height:44px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.35);color:var(--text);font:900 16px/1 var(--font2);letter-spacing:.18em;text-transform:uppercase;text-align:center;outline:none"/>
-    <div style="display:flex;gap:10px;margin-top:12px">
-      <button id="pn-save" class="btn" style="flex:1">SAVE</button>
-      <button id="pn-cancel" class="btn" style="flex:1">CANCEL</button>
+<div class="mobileWrap">
+  <div class="mobileStack">
+    <div class="displayZone">
+      <div class="displayCard mobileFrame" id="pGame">
+        <iframe id="gameFrameM" src="./game.html" title="Millipede Chaos v3 (mobile)"></iframe>
+      </div>
+      <div class="displayCard panel hidden" id="pHow" style="max-width:1200px">
+        <h3>HOW TO PLAY</h3>
+        <div class="content">
+          <div class="small howtoText">
+            <div><b>Move:</b> Arrow Keys / WASD (mobile: drag)</div>
+            <div style="margin-top:8px"><b>Fire:</b> Space (mobile: tap/hold)</div>
+            <div style="margin-top:12px"><b>Goal:</b> Clear millipede segments, survive spiders/bees, and climb waves.</div>
+            <div style="margin-top:12px">Initials are managed by PIXEL-NET (wrapper). The game never prompts.</div>
+            <div style="margin-top:12px"><b>Game Over:</b> score auto-saves locally.</div>
+          </div>
+        </div>
+      </div>
+      <div class="displayCard panel hidden" id="pLB" style="max-width:1200px">
+        <h3>LEADERBOARD</h3>
+        <div class="content">
+          <div class="mini">Top 10</div>
+          <div class="lb" id="lbM" style="margin-top:12px"></div>
+          <div class="mini" id="lbMetaM" style="margin-top:12px;opacity:.8"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btnbar" role="tablist" aria-label="Mobile navigation">
+      <button class="tabBtn" data-target="pHow" type="button">How-To</button>
+      <button class="tabBtn active" data-target="pGame" type="button">Game</button>
+      <button class="tabBtn" data-target="pLB" type="button">Leaderboard</button>
     </div>
   </div>
 </div>
 
-<script src="../../js/engine.js"></script>
+<div class="modalBack" id="initModal" aria-hidden="true">
+  <div class="modalCard" role="dialog" aria-modal="true" aria-label="Enter initials">
+    <button class="modalClose" id="initClose" type="button" aria-label="Close">×</button>
+    <div class="modalInner">
+      <div class="modalTitle">ENTER INITIALS</div>
+      <input class="modalInput" id="initInput" maxlength="3" placeholder="ABC" autocomplete="off">
+      <button class="modalSave" id="initSave" type="button">SAVE</button>
+      <div class="modalHint">Press Enter to save</div>
+    </div>
+  </div>
+</div>
+
 <script>
 (() => {
-  // --------- Initials (canonical) ----------
   const PRIMARY = 'playerInitials';
   const MIRROR  = 'PIXELNET_INITIALS';
   const norm = (v) => (v||'').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
@@ -217,129 +434,135 @@ body{
   };
 
   const initialsEl = document.getElementById('initials');
-  const renderInitials = () => { if(initialsEl) initialsEl.textContent = getInitials() || '???'; };
+  const renderInitials = () => { initialsEl.textContent = getInitials() || '???'; };
   renderInitials();
-  window.addEventListener('storage', (e)=>{ if(e.key===PRIMARY || e.key===MIRROR) renderInitials(); });
 
-  // Optional initials modal (if present)
+  window.addEventListener('storage', (e)=>{
+    if(e.key===PRIMARY || e.key===MIRROR) renderInitials();
+  });
+
   const modal = document.getElementById('initModal');
   const input = document.getElementById('initInput');
   const btnSave = document.getElementById('initSave');
-  const btnCancel = document.getElementById('initCancel');
-  const playerBtn = document.getElementById('playerBtn') || initialsEl;
+  const btnClose = document.getElementById('initClose');
+  const playerBtn = document.getElementById('playerBtn');
 
   const openModal = () => {
-    if(!modal || !input) return;
     input.value = getInitials() || '';
     modal.style.display = 'flex';
-    setTimeout(()=>input.focus(), 50);
+    modal.setAttribute('aria-hidden','false');
+    setTimeout(()=>input.focus(), 30);
   };
-  const closeModal = () => { if(modal) modal.style.display = 'none'; };
+  const closeModal = () => {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden','true');
+  };
 
-  playerBtn?.addEventListener('click', (e)=>{ e.preventDefault(); openModal(); });
-  btnCancel?.addEventListener('click', (e)=>{ e.preventDefault(); closeModal(); });
-  btnSave?.addEventListener('click', (e)=>{
+  playerBtn.addEventListener('click', (e)=>{ e.preventDefault(); openModal(); });
+  playerBtn.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openModal(); } });
+  btnClose.addEventListener('click', (e)=>{ e.preventDefault(); closeModal(); });
+  modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+
+  input.addEventListener('input', ()=>{ input.value = norm(input.value); });
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); btnSave.click(); }
+    if(e.key === 'Escape'){ e.preventDefault(); closeModal(); }
+  });
+  btnSave.addEventListener('click', (e)=>{
     e.preventDefault();
-    setInitials(input?.value || '');
+    setInitials(input.value);
     renderInitials();
     closeModal();
   });
-  modal?.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
 
-  // --------- Leaderboard (localStorage Top-10 per copy) ----------
-  const lbEl = document.getElementById('lb');
-
-  // slug from folder name (…/games/<slug>/wrapper-v2.html)
   const slug = (() => {
     try{
       const parts = location.pathname.split('/').filter(Boolean);
       const gi = parts.lastIndexOf('games');
       if(gi>=0 && parts[gi+1]) return parts[gi+1];
-    }catch(_){}
+    }catch(_){ }
     return 'unknown';
   })();
+  const LOCAL_KEY = `LB_${slug}`;
+  const loadLocal = () => { try{ return JSON.parse(localStorage.getItem(LOCAL_KEY)||'[]'); }catch(_){ return []; } };
+  const saveLocal = (arr) => { try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(arr)); }catch(_){ } };
 
-  const NEW_KEY = `LB_${slug}`;
-  const LEGACY_KEYS = [
-    `PIXELNET_LB_${slug}_v2_0`,
-    `PIXELNET_LB_${slug}_v2_0`.replace(/-/g,'_'),
-    `PIXELNET_LB_${slug}`,
-  ];
+  const lbEl = document.getElementById('lb');
+  const lbElM = document.getElementById('lbM');
+  const lbMeta = document.getElementById('lbMeta');
+  const lbMetaM = document.getElementById('lbMetaM');
 
-  const load = (k) => { try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch(_){ return []; } };
-  const save = (k, arr) => { try{ localStorage.setItem(k, JSON.stringify(arr)); }catch(_){ } };
-
-  // migrate legacy -> new (only if new empty)
-  try{
-    if(load(NEW_KEY).length===0){
-      for(const k of LEGACY_KEYS){
-        const v = load(k);
-        if(Array.isArray(v) && v.length){
-          save(NEW_KEY, v);
-          break;
-        }
-      }
-    }
-  }catch(_){}
-
-  const renderLB = () => {
-    if(!lbEl) return;
-    const rows = load(NEW_KEY).slice(0,10);
-    if(!rows.length){
-      lbEl.innerHTML = '<div class="muted">No scores yet.</div>';
-      return;
-    }
-    lbEl.innerHTML = rows.map((r,i)=>{
-      const initials = (r && (r.initials || r.name)) ? String(r.initials || r.name).toUpperCase().slice(0,3) : '???';
-      const score = (r && r.score!=null) ? Math.floor(Number(r.score)||0) : 0;
-      return `<div class="lbRow"><span class="rank">${i+1}</span><span class="who">${initials}</span><span class="sc">${score}</span></div>`;
+  const renderLBInto = (el, rows) => {
+    if(!el) return;
+    rows = Array.isArray(rows) ? rows.slice(0,10) : [];
+    if(!rows.length){ el.innerHTML = '<div class="mini">No scores yet.</div>'; return; }
+    el.innerHTML = rows.map((r,i)=>{
+      const who = (r && (r.initials || r.name)) ? String(r.initials || r.name).toUpperCase().slice(0,3) : '???';
+      const sc = (r && r.score!=null) ? Math.floor(Number(r.score)||0) : 0;
+      return `<div class="lbRow"><span class="rank">${i+1}</span><span class="who">${who}</span><span class="sc">${sc}</span></div>`;
     }).join('');
   };
-  window.PX_refreshLeaderboard = renderLB;
-  renderLB();
-
-  // --------- Score intake (single-submit guard) ----------
-  let lastSig = '';
-  let lastAt = 0;
-  const addScore = (rawScore) => {
-    const score = Math.max(0, Math.floor(Number(rawScore)||0));
-    const initials = getInitials() || '???';
-
-    const now = Date.now();
-    const sig = `${initials}:${score}`;
-    if(sig===lastSig && (now-lastAt) < 1200) return; // de-dupe burst
-    lastSig = sig; lastAt = now;
-
-    const rows = load(NEW_KEY);
-    rows.push({ initials, score, t: now });
-    rows.sort((a,b)=> (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
-    save(NEW_KEY, rows.slice(0,10));
-    renderLB();
+  const renderLB = (rows) => {
+    renderLBInto(lbEl, rows);
+    renderLBInto(lbElM, rows);
+    const msg = `Saved locally • Key: ${LOCAL_KEY}`;
+    if(lbMeta) lbMeta.textContent = msg;
+    if(lbMetaM) lbMetaM.textContent = msg;
   };
 
+  renderLB(loadLocal());
+
+  let lastSig = '';
+  let lastAt = 0;
+  const addScoreLocal = (initials, rawScore) => {
+    const score = Math.max(0, Math.floor(Number(rawScore)||0));
+    const now = Date.now();
+    const sig = `${initials}:${score}`;
+    if(sig===lastSig && (now-lastAt) < 1200) return false;
+    lastSig = sig; lastAt = now;
+
+    const rows = loadLocal();
+    rows.push({ initials, score, t: now });
+    rows.sort((a,b)=> (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
+    const top = rows.slice(0,10);
+    saveLocal(top);
+    renderLB(top);
+    return true;
+  };
+
+  const acceptsScoreMsg = (d) => d && (d.type==='GAME_OVER_SCORE' || d.type==='PIXELNET_SCORE');
   window.addEventListener('message', (e)=>{
     const d = e.data || {};
-    const type = d.type;
-    if(!type) return;
-
-    // set initials from home if sent
-    if(type==='PIXELNET_SET_INITIALS' && d.initials){
-      setInitials(d.initials); renderInitials(); return;
-    }
-
-    // accept score signals
-    if(type==='GAME_OVER_SCORE' || type==='GAME_OVER' || type==='PIXELNET_SCORE' || type==='PIXELNET_SUBMIT_SCORE'){
-      const s = (d.score!=null)? d.score : (d.finalScore!=null? d.finalScore : d.value);
-      if(s!=null) addScore(s);
+    if(acceptsScoreMsg(d)){
+      const initials = getInitials() || '???';
+      const score = (d.score!=null) ? d.score : 0;
+      addScoreLocal(initials, score);
     }
   });
 
-  // focus iframe when interacting
-  const f = document.getElementById('gameFrame');
-  const focusFrame = ()=>{ try{ f?.contentWindow?.focus?.(); }catch(_){ } };
-  document.addEventListener('pointerdown', focusFrame, {passive:true});
-  window.addEventListener('keydown', focusFrame, {passive:true});
-
+  // Mobile tabs: one panel visible, no scroll
+  const tabBtns = Array.from(document.querySelectorAll('.tabBtn'));
+  const panels = {
+    pHow: document.getElementById('pHow'),
+    pGame: document.getElementById('pGame'),
+    pLB:  document.getElementById('pLB'),
+  };
+  const setActive = (id) => {
+    for(const [pid, el] of Object.entries(panels)){
+      if(!el) continue;
+      el.classList.toggle('hidden', pid!==id);
+    }
+    for(const b of tabBtns){
+      b.classList.toggle('active', b.getAttribute('data-target')===id);
+    }
+    if(id==='pGame'){
+      // restore focus into iframe so controls work
+      const fr = document.getElementById('gameFrameM');
+      try{ fr && fr.contentWindow && fr.contentWindow.focus && fr.contentWindow.focus(); }catch(_){ }
+    }
+  };
+  tabBtns.forEach(b=> b.addEventListener('click', ()=> setActive(b.getAttribute('data-target'))));
+  setActive('pGame');
 })();
 </script>
 </body>
