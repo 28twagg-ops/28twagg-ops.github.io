@@ -59,7 +59,7 @@ a{color:inherit;text-decoration:none}
   border:1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
   background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 18%, rgba(0,0,0,.35)), rgba(0,0,0,.35));
   font-weight:800;letter-spacing:.08em;
-  text-transform:uppercase;font-size:12px;
+  text-transform:uppercase;font-size:14px;
 }
 .player{
   display:flex;align-items:center;gap:10px;
@@ -71,9 +71,33 @@ a{color:inherit;text-decoration:none}
 }
 .player:hover{border-color:color-mix(in srgb, var(--accent) 70%, var(--border)); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);}
 .player .tag{opacity:.8;font-size:12px;letter-spacing:.12em}
-.player #initials{font-weight:900;font-size:14px;letter-spacing:.18em;color:var(--accent)}
+
+/* Initials badge: VT323 baseline sits low; enforce true visual centering. */
+.player #initials{
+  font-weight:900;
+  font-size:14px;
+  letter-spacing:.18em;
+  color:var(--accent);
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  /* Normalize box metrics so baseline doesn't "sink" inside pill */
+  line-height:1;
+  height:1em;
+  padding:0;
+
+  /* Tiny optical nudge for VT323 font metrics */
+  transform:translateY(-1px);
+}
+
 .wrap{max-width:1400px;margin:0 auto;padding:12px}
-.grid{display:grid;grid-template-columns:320px minmax(300px,1fr) 320px;gap:12px;align-items:start}
+.grid{display:grid;grid-template-columns:320px minmax(300px,1fr) 320px;gap:12px;align-items:stretch;grid-template-rows:1fr;height:100%}
+/* AstroType v2 — desktop expanded layout stability (no spacing changes) */
+.wrap{height:calc(100svh - var(--topbarH));}
+.panel{display:flex;flex-direction:column;min-height:0;}
+.center{display:flex;flex-direction:column;min-height:0;}
 .panel{
   background:var(--card);
   border:1px solid var(--border);
@@ -101,18 +125,17 @@ a{color:inherit;text-decoration:none}
   box-shadow:var(--shadow);
   overflow:hidden;
 }
-.gameTitle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.25)}
+.gameTitle{display:none;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.25)}
 .gameTitle .name{font-weight:900;letter-spacing:.06em}
 .gameTitle .hint{font-size:12px;color:var(--muted)}
-.frameWrap{width:100%;flex:1;min-height:520px;background:rgba(0,0,0,.35)}
+.frameWrap{width:100%;flex:1;min-height:0;background:rgba(0,0,0,.35)}
 iframe{width:100%;height:100%;border:0;display:block;background:transparent}
 @media (max-width:1100px){.grid{grid-template-columns:1fr}.frameWrap{height:min(calc(100svh - 240px), 880px);min-height:520px}}
 @media (max-width:520px){.wrap{padding:10px}.frameWrap{min-height:480px}.btn{padding:8px 10px}}
 
 /* PN_CENTER_PATCH */
 .topbar .badge{position:absolute;left:50%;transform:translateX(-50%);}
-.gameTitle{position:relative;justify-content:flex-end;}
-.gameTitle .name{position:absolute;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis;}
+/* gameTitle hidden for AstroType */
 
 
 #pGame h3{text-align:center}
@@ -224,7 +247,7 @@ iframe{width:100%;height:100%;border:0;display:block;background:transparent}
   <div class="topbar">
     <div class="leftTop">
       <a class="btn" href="../../index.html" id="exitLink">EXIT</a>
-      <div class="badge">PIXEL-NET ARCADE</div>
+      <div class="badge">ASTROTYPE</div>
     </div>
     <button class="player" id="playerBtn" title="Set initials" type="button">
       <div class="tag">PLAYER</div>
@@ -246,10 +269,6 @@ iframe{width:100%;height:100%;border:0;display:block;background:transparent}
       </div>
 
       <div class="center">
-        <div class="gameTitle">
-          <div class="name">AstroType (version 2.0)</div>
-          <div class="hint">Tap tabs on mobile</div>
-        </div>
         <div class="frameWrap">
           <iframe id="gameFrame" src="./game.html" allow="autoplay; fullscreen *" title="AstroType (version 2.0)"></iframe>
         </div>
@@ -280,10 +299,6 @@ iframe{width:100%;height:100%;border:0;display:block;background:transparent}
         </div>
 
         <div class="center" id="mGame">
-          <div class="gameTitle">
-            <div class="name">AstroType (version 2.0)</div>
-            <div class="hint">Tap to focus typing</div>
-          </div>
           <div class="frameWrap">
           <iframe id="gameFrameM" src="./game.html" allow="autoplay; fullscreen *" title="AstroType (version 2.0)"></iframe>
           </div>
@@ -504,6 +519,16 @@ iframe{width:100%;height:100%;border:0;display:block;background:transparent}
     focusFrameAny();
   }, {passive:true});
   window.addEventListener('visibilitychange', ()=>{ if(!document.hidden) setTimeout(focusFrameAny, 0); });
+
+  // --------- Exit: always break out to arcade grid ----------
+  // Some cabinets load wrappers inside an iframe; a plain <a href> only navigates the iframe.
+  // Force top-level navigation back to PIXEL-NET/index.html.
+  const exitLink = document.getElementById('exitLink');
+  exitLink?.addEventListener('click', (e)=>{
+    e.preventDefault();
+    try{ window.top.location.href = exitLink.getAttribute('href') || '../../index.html'; }
+    catch(_){ window.location.href = exitLink.getAttribute('href') || '../../index.html'; }
+  });
 
 })();
 </script>

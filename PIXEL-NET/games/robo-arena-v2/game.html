@@ -76,13 +76,13 @@
 </div>
 
 <script>
-/*
-Robo-Arena v2 — Retro Robotron-like progression (clean electrodes)
-Key change vs last build:
-- Electrodes no longer form perfect circles / symmetric rings.
-- Patterns are biased toward classic Robotron "scattered/lane" hazards.
-- Still keeps: dynamic area scaling, threat-budget waves, caps, spawners/brains/tanks.
-*/
+/**
+ * Robo-Arena v2 — Retro Robotron-like progression
+ * Reverted to version before Spawn Invincibility and scaling adjustments.
+ * Retains core fixes:
+ * 1. Tanks/Hulks do not block level progression.
+ * 2. Brain conversion crash prevention.
+ */
 
 const AudioSys = (() => {
   let ctx=null, master=null;
@@ -281,10 +281,26 @@ function safeRadius(){
   return clamp(0.18*Math.min(state.width,state.height), 120, 260);
 }
 
+// Keep respawns survivable: never allow new spawns too close to screen center.
+// (Center is where the player initially appears and where you respawn.)
+function centerSafeRadius(){
+  return clamp(0.26*Math.min(state.width,state.height), 150, 320);
+}
+function pushAwayFromCenter(ent){
+  if(!ent) return;
+  const cx=state.width/2, cy=state.height/2;
+  const minD=centerSafeRadius();
+  const d=dist(ent.x,ent.y,cx,cy)||1;
+  if(d < minD){
+    const a=Math.atan2(ent.y-cy, ent.x-cx);
+    ent.x = clamp(cx + Math.cos(a)*minD, ent.radius, state.width - ent.radius);
+    ent.y = clamp(cy + Math.sin(a)*minD, ent.radius, state.height - ent.radius);
+  }
+}
+
 function computeScaleAndCaps(){
   const area = Math.max(1, state.width*state.height);
   state.scale = area / REF_AREA;
-
   const sT = Math.pow(state.scale, SCALE_EXP_TARGET);
   const sC = Math.pow(state.scale, SCALE_EXP_CAP);
 
@@ -299,7 +315,6 @@ function computeScaleAndCaps(){
     tanks: Math.max(1, Math.round(BASE_CAPS.tanks * sC)),
     electrodes: Math.max(4, Math.round(BASE_CAPS.electrodes * sC))
   };
-
   return sT;
 }
 
@@ -330,6 +345,7 @@ class Bullet extends Entity{
     ctx.restore();
   }
 }
+
 class BounceBullet extends Entity{
   constructor(x,y,dx,dy){
     super(x,y,5,COLORS.BOUNCE);
@@ -344,12 +360,10 @@ class BounceBullet extends Entity{
     this.x+=this.vx*dt;
     this.y+=this.vy*dt;
     this.life-=dt;
-
     if(this.x<this.radius){ this.x=this.radius; this.vx=Math.abs(this.vx); this.bounces--; }
     if(this.x>state.width-this.radius){ this.x=state.width-this.radius; this.vx=-Math.abs(this.vx); this.bounces--; }
     if(this.y<this.radius){ this.y=this.radius; this.vy=Math.abs(this.vy); this.bounces--; }
     if(this.y>state.height-this.radius){ this.y=state.height-this.radius; this.vy=-Math.abs(this.vy); this.bounces--; }
-
     if(this.life<=0 || this.bounces<0) this.dead=true;
   }
   draw(){
@@ -364,6 +378,7 @@ class BounceBullet extends Entity{
     ctx.restore();
   }
 }
+
 function canSpawnEnemyBullet(){ return state.enemyBullets.filter(b=>!b.dead).length < state.caps.enemyBullets; }
 function canSpawnPlayerBullet(){ return state.bullets.filter(b=>!b.dead).length < state.caps.playerBullets; }
 function shootPlayerBullet(p){
@@ -396,19 +411,15 @@ class Player extends Entity{
   update(dt){
     let mx=input.move.x, my=input.move.y;
     let ax=input.aim.x, ay=input.aim.y;
-
     const ml=Math.hypot(mx,my);
     if(ml>1){mx/=ml; my/=ml;}
     const al=Math.hypot(ax,ay);
     if(al>1){ax/=al; ay/=al;}
-
     this.vx=mx*this.speed;
     this.vy=my*this.speed;
     if(mx||my) this.anim += dt*15;
-
     if(ax||ay) this.facing=Math.atan2(ay,ax);
     else if(mx||my) this.facing=Math.atan2(my,mx);
-
     this.fireCd-=dt;
     if((ax||ay) && this.fireCd<=0){
       shootPlayerBullet(this);
@@ -422,7 +433,6 @@ class Player extends Entity{
     ctx.rotate(this.facing);
     ctx.shadowBlur=15;
     ctx.shadowColor=this.color;
-
     const leg=Math.sin(this.anim)*6;
     ctx.strokeStyle=this.color;
     ctx.lineWidth=2;
@@ -430,7 +440,6 @@ class Player extends Entity{
     ctx.moveTo(-4,0); ctx.lineTo(-8-leg,0);
     ctx.moveTo(-4,0); ctx.lineTo(-8+leg,0);
     ctx.stroke();
-
     ctx.fillStyle=this.color;
     ctx.fillRect(-6,-6,12,12);
     ctx.fillStyle='#fff';
@@ -471,19 +480,15 @@ class Human extends Entity{
     ctx.shadowColor=this.color;
     ctx.strokeStyle=this.color;
     ctx.lineWidth=2;
-
     ctx.beginPath();
     ctx.arc(0,-8,5,0,Math.PI*2);
     ctx.moveTo(0,-3); ctx.lineTo(0,8);
-
     const leg=Math.sin(this.walk)*5;
     ctx.lineTo(-6+leg,16);
     ctx.moveTo(0,8); ctx.lineTo(6-leg,16);
-
     ctx.moveTo(0,0); ctx.lineTo(-6-leg/2,6);
     ctx.moveTo(0,0); ctx.lineTo(6+leg/2,6);
     ctx.stroke();
-
     ctx.shadowBlur=0;
     ctx.restore();
   }
@@ -599,7 +604,6 @@ class Enforcer extends Entity{
       const d=dist(this.x,this.y,p.x,p.y)||1;
       this.vx=((p.x-this.x)/d)*this.speed + Math.sin(this.t*3.0)*55;
       this.vy=((p.y-this.y)/d)*this.speed + Math.cos(this.t*2.2)*55;
-
       this.fireTimer -= dt;
       if(this.fireTimer<=0 && d<560 && canSpawnEnemyBullet()){
         const ang=Math.atan2(p.y-this.y,p.x-this.x);
@@ -628,8 +632,6 @@ class Enforcer extends Entity{
   }
 }
 
-/* ELECTRODES (Retro) — no perfect rings.
-   Placement is biased toward "scattered + lanes", with slight randomness every wave. */
 class Electrode extends Entity{
   constructor(x,y){
     super(x,y,12,COLORS.ELECTRODE);
@@ -643,17 +645,12 @@ class Electrode extends Entity{
     const glow = 12 + (Math.sin(this.phase)*3+3);
     ctx.shadowBlur=glow;
     ctx.shadowColor=this.color;
-
     ctx.strokeStyle=this.color;
     ctx.lineWidth=2;
-
-    // Spark-cross (more Robotron-like than wheels)
     ctx.beginPath();
     ctx.moveTo(-10,0); ctx.lineTo(10,0);
     ctx.moveTo(0,-10); ctx.lineTo(0,10);
     ctx.stroke();
-
-    // Small jitter sparks
     ctx.globalAlpha=0.7;
     for(let i=0;i<4;i++){
       const a=this.phase + i*(Math.PI/2);
@@ -663,11 +660,8 @@ class Electrode extends Entity{
       ctx.stroke();
     }
     ctx.globalAlpha=1;
-
-    // Core dot
     ctx.fillStyle='#fff';
     ctx.beginPath(); ctx.arc(0,0,2.5,0,Math.PI*2); ctx.fill();
-
     ctx.shadowBlur=0;
     ctx.restore();
   }
@@ -771,16 +765,25 @@ class Brain extends Entity{
     if(this.latch && !this.latch.dead){
       this.latchTimer -= dt;
       if(this.latchTimer<=0){
-        if(countType(Prog) < state.caps.progs && totalEnemiesAlive() < state.caps.enemies){
-          state.entities.push(new Prog(this.latch.x, this.latch.y));
-        }
-        this.latch.dead=true;
-        this.latch=null;
-        AudioSys.zap();
+        // Fail-soft conversion logic
+        const lx = this.latch.x, ly = this.latch.y;
+        this.latch.dead = true;
+        this.latch = null;
+        try{
+          if(countType(Prog) < state.caps.progs && totalEnemiesAlive() < state.caps.enemies){
+            state.entities.push(new Prog(lx, ly));
+          }
+          AudioSys.zap();
+        }catch(err){ console.error('Brain conversion spawn failed', err); }
+        return; // Early return to avoid accessing null latch in same frame
       }
-      const a = this.t*1.4;
-      this.latch.x = clamp(this.x + Math.cos(a)*18, this.latch.radius, state.width-this.latch.radius);
-      this.latch.y = clamp(this.y + Math.sin(a)*18, this.latch.radius, state.height-this.latch.radius);
+      // Carrying human
+      if (this.latch) {
+        const a = this.t*1.4;
+        const radius = this.latch.radius || 10;
+        this.latch.x = clamp(this.x + Math.cos(a)*18, radius, state.width-radius);
+        this.latch.y = clamp(this.y + Math.sin(a)*18, radius, state.height-radius);
+      }
       if(p){
         const d=dist(this.x,this.y,p.x,p.y)||1;
         this.vx=((p.x-this.x)/d)*this.speed*0.35 + Math.sin(this.t*1.7)*65;
@@ -822,34 +825,22 @@ class Brain extends Entity{
     ctx.shadowColor=this.color;
     ctx.strokeStyle=this.color;
     ctx.lineWidth=2;
-
-    ctx.beginPath();
-    ctx.arc(0,0,12,0,Math.PI*2);
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,12,0,Math.PI*2); ctx.stroke();
     for(let i=0;i<5;i++){
       const a=this.t*2 + i*(Math.PI*2/5);
-      ctx.beginPath();
-      ctx.moveTo(0,0);
-      ctx.lineTo(Math.cos(a)*18, Math.sin(a)*18);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*18, Math.sin(a)*18); ctx.stroke();
     }
-
     if(this.latch && !this.latch.dead){
       ctx.strokeStyle='#fff';
       ctx.globalAlpha=0.85;
-      ctx.beginPath();
-      ctx.moveTo(0,0);
-      ctx.lineTo(this.latch.x-this.x, this.latch.y-this.y);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(this.latch.x-this.x, this.latch.y-this.y); ctx.stroke();
       ctx.globalAlpha=1;
-
       const t = clamp(this.latchTimer / BRAIN_CONVERT_TIME, 0, 1);
       ctx.fillStyle='rgba(0,0,0,.55)';
       ctx.fillRect(-16, -28, 32, 6);
       ctx.fillStyle=COLORS.PROG;
       ctx.fillRect(-16, -28, 32*(1-t), 6);
     }
-
     ctx.shadowBlur=0;
     ctx.restore();
   }
@@ -870,7 +861,6 @@ class Tank extends Entity{
       const d=dist(this.x,this.y,p.x,p.y)||1;
       this.vx=((p.x-this.x)/d)*this.speed*0.6 + Math.sin(this.t*1.2)*30;
       this.vy=((p.y-this.y)/d)*this.speed*0.6 + Math.cos(this.t*1.1)*30;
-
       this.fireTimer -= dt;
       if(this.fireTimer<=0 && canSpawnEnemyBullet()){
         const ang=Math.atan2(p.y-this.y,p.x-this.x);
@@ -889,12 +879,8 @@ class Tank extends Entity{
     ctx.strokeStyle=this.color;
     ctx.lineWidth=2;
     ctx.strokeRect(-14,-10,28,20);
-    ctx.beginPath();
-    ctx.moveTo(-14,0); ctx.lineTo(-22,0);
-    ctx.moveTo(14,0); ctx.lineTo(22,0);
-    ctx.stroke();
-    ctx.fillStyle='#fff';
-    ctx.fillRect(-4,-3,8,6);
+    ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(-22,0); ctx.moveTo(14,0); ctx.lineTo(22,0); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.fillRect(-4,-3,8,6);
     ctx.shadowBlur=0;
     ctx.restore();
   }
@@ -924,24 +910,31 @@ function pickSpawnPos({avoidPlayer=true, edgeBias=true}={}){
   return {x:50,y:50};
 }
 
-// Retro electrode placement: scattered and lane-ish, never perfect symmetry.
+function pickTankSpawnPos(){
+  const p=getPlayer();
+  const sr=safeRadius();
+  for(let tries=0; tries<80; tries++){
+    const corner=Math.floor(Math.random()*4);
+    let x = (corner===0||corner===1) ? rand(30,110) : rand(state.width-110,state.width-30);
+    let y = (corner===0||corner===2) ? rand(30,110) : rand(state.height-110,state.height-30);
+    if(p && dist(x,y,p.x,p.y) < sr) continue;
+    return {x,y};
+  }
+  return pickSpawnPos({avoidPlayer:true, edgeBias:true});
+}
+
 function placeElectrodes(want){
   const p=getPlayer();
   const sr=safeRadius();
   const placed=[];
-
   function ok(x,y){
     if(p && dist(x,y,p.x,p.y) < sr+40) return false;
     for(const q of placed) if(dist(x,y,q.x,q.y) < 44) return false;
     return true;
   }
-
-  // Bias toward SPARSE (classic feel), occasional lanes/clusters
   const r = Math.random();
   const pat = r < 0.55 ? 'SPARSE' : (r < 0.75 ? 'CORRIDOR' : (r < 0.90 ? 'CLUSTERS' : 'DIAGONAL'));
-
   const count = clamp(want, 0, state.caps.electrodes);
-
   if(pat==='CORRIDOR'){
     const x1=state.width*rand(0.22,0.34);
     const x2=state.width*rand(0.66,0.78);
@@ -969,7 +962,7 @@ function placeElectrodes(want){
         if(ok(x,y)) placed.push({x:clamp(x,30,state.width-30), y:clamp(y,30,state.height-30)});
       }
     }
-  } else { // SPARSE
+  } else {
     let guard=0;
     while(placed.length<count && guard<600){
       guard++;
@@ -977,19 +970,13 @@ function placeElectrodes(want){
       if(ok(pos.x,pos.y)) placed.push(pos);
     }
   }
-
-  for(const pos of placed){
-    state.entities.push(new Electrode(pos.x,pos.y));
-  }
+  for(const pos of placed){ state.entities.push(new Electrode(pos.x,pos.y)); }
 }
 
-// Wave manager
 function chooseTemplate(level){
   if(level<=2) return 'SWARM';
   const roll = (level*7 + Math.floor(Math.random()*100)) % 100;
-  if(level<=4){
-    return roll<60 ? 'SWARM' : 'SPAWNER';
-  }
+  if(level<=4) return roll<60 ? 'SWARM' : 'SPAWNER';
   if(level<=8){
     if(roll<30) return 'SWARM';
     if(roll<60) return 'SPAWNER';
@@ -1006,38 +993,34 @@ function spawnFromBudget(budget, edgeBias){
   const template = state.waveTemplate;
   let b=budget;
   if(totalEnemiesAlive() >= state.caps.enemies) return b;
-
   const spawn = (klass, cost, count=1) => {
     for(let i=0;i<count;i++){
       if(b < cost) return;
       if(totalEnemiesAlive() >= state.caps.enemies) return;
-      const pos=pickSpawnPos({avoidPlayer:true,edgeBias});
-      state.entities.push(new klass(pos.x,pos.y));
+
+      const pos = (klass===Tank) ? pickTankSpawnPos() : pickSpawnPos({avoidPlayer:true,edgeBias});
+      const ent = new klass(pos.x,pos.y);
+      pushAwayFromCenter(ent);
+      state.entities.push(ent);
+
       b -= cost;
     }
   };
-
   if(template==='SWARM'){
     while(b >= COST.grunt && totalEnemiesAlive() < state.caps.enemies){
-      const wantHulk = (state.level>=5) && (Math.random()<0.08) && b>=COST.hulk;
-      if(wantHulk) spawn(Hulk, COST.hulk, 1);
+      if((state.level>=5) && (Math.random()<0.08) && b>=COST.hulk) spawn(Hulk, COST.hulk, 1);
       else spawn(Grunt, COST.grunt, 1);
       if(Math.random()<0.08) break;
     }
   } else if(template==='SPAWNER'){
-    if(countType(Spawner) < state.caps.spawners && b>=COST.spawner){
-      spawn(Spawner, COST.spawner, 1);
-    }
+    if(countType(Spawner) < state.caps.spawners && b>=COST.spawner) spawn(Spawner, COST.spawner, 1);
     while(b >= COST.grunt && totalEnemiesAlive() < state.caps.enemies){
-      const r=Math.random();
-      if(r<0.10 && b>=COST.hulk) spawn(Hulk, COST.hulk, 1);
+      if(Math.random()<0.10 && b>=COST.hulk) spawn(Hulk, COST.hulk, 1);
       else spawn(Grunt, COST.grunt, 1);
       if(Math.random()<0.10) break;
     }
   } else if(template==='KIDNAP'){
-    if(countType(Brain) < state.caps.brains && b>=COST.brain){
-      spawn(Brain, COST.brain, 1);
-    }
+    if(countType(Brain) < state.caps.brains && b>=COST.brain) spawn(Brain, COST.brain, 1);
     while(b >= COST.grunt && totalEnemiesAlive() < state.caps.enemies){
       spawn(Grunt, COST.grunt, 1);
       if(Math.random()<0.12) break;
@@ -1046,21 +1029,16 @@ function spawnFromBudget(budget, edgeBias){
       spawn(Enforcer, COST.enforcer, 1);
     }
   } else if(template==='DENIAL'){
-    if(countType(Tank) < state.caps.tanks && b>=COST.tank){
-      spawn(Tank, COST.tank, 1);
-    }
-    if(countType(Enforcer) < Math.floor(state.caps.enforcers*0.7) && b>=COST.enforcer && Math.random()<0.65){
-      spawn(Enforcer, COST.enforcer, 1);
-    }
+    if(state.level>=5 && countType(Tank) < state.caps.tanks && b>=COST.tank) spawn(Tank, COST.tank, 1);
+    if(countType(Enforcer) < Math.floor(state.caps.enforcers*0.7) && b>=COST.enforcer && Math.random()<0.65) spawn(Enforcer, COST.enforcer, 1);
     while(b >= COST.grunt && totalEnemiesAlive() < state.caps.enemies){
       spawn(Grunt, COST.grunt, 1);
       if(Math.random()<0.18) break;
     }
-  } else { // MIXED
+  } else {
     if(b>=COST.spawner && countType(Spawner)<state.caps.spawners && Math.random()<0.55) spawn(Spawner, COST.spawner, 1);
     if(b>=COST.brain && countType(Brain)<state.caps.brains && Math.random()<0.45) spawn(Brain, COST.brain, 1);
-    if(b>=COST.tank && countType(Tank)<state.caps.tanks && Math.random()<0.35) spawn(Tank, COST.tank, 1);
-
+    if(state.level>=7 && b>=COST.tank && countType(Tank)<state.caps.tanks && Math.random()<0.35) spawn(Tank, COST.tank, 1);
     while(b >= COST.grunt && totalEnemiesAlive() < state.caps.enemies){
       const r=Math.random();
       if(r<0.09 && b>=COST.hulk) spawn(Hulk, COST.hulk, 1);
@@ -1073,62 +1051,37 @@ function spawnFromBudget(budget, edgeBias){
 }
 
 function startWave(level){
-  state.entities=[];
-  state.bullets=[];
-  state.enemyBullets=[];
-  state.particles=[];
-
+  state.entities=[]; state.bullets=[]; state.enemyBullets=[]; state.particles=[];
   const sT = computeScaleAndCaps();
-
   state.level = level;
   state.waveTemplate = chooseTemplate(level);
   state.wavePulseTimer = 0;
-
   state.entities.push(new Player(state.width/2, state.height/2));
-
   const humans = clamp(Math.round((2 + Math.floor(level/2)) * Math.pow(state.scale,0.65)), 2, 10);
   for(let i=0;i<humans;i++){
     const pos=pickSpawnPos({avoidPlayer:true,edgeBias:false});
     state.entities.push(new Human(pos.x,pos.y));
   }
-
-  // Fewer electrodes than last build, more classic density.
-  const baseElect = (state.waveTemplate==='SWARM' ? 2 : state.waveTemplate==='KIDNAP' ? 3 : 3);
+  const baseElect = (state.waveTemplate==='SWARM' ? 2 : 3);
   const electrodes = clamp(Math.round((baseElect + Math.floor(level/5)) * sT), 0, state.caps.electrodes);
   placeElectrodes(electrodes);
-
   const budget = Math.round((BUDGET_BASE + level*BUDGET_GROW) * sT);
   const initial = Math.round(budget*0.70);
   state._pulseReserve = budget - initial;
-
   spawnFromBudget(initial, true);
-
-  state.waveTimer = 0;
-  state.wavePulseTimer = 1.5;
-  state._clearTimer = 0;
-
-  AudioSys.levelUp();
-  updateHUD();
+  state.waveTimer = 0; state.wavePulseTimer = 1.5; state._clearTimer = 0;
+  AudioSys.levelUp(); updateHUD();
 }
 
-// Main loop
 let last=0, raf=0;
 
 function update(dt){
   let mx=0,my=0,ax=0,ay=0;
-  if(input.keys['w']) my-=1;
-  if(input.keys['s']) my+=1;
-  if(input.keys['a']) mx-=1;
-  if(input.keys['d']) mx+=1;
-
-  if(input.keys['arrowup']) ay-=1;
-  if(input.keys['arrowdown']) ay+=1;
-  if(input.keys['arrowleft']) ax-=1;
-  if(input.keys['arrowright']) ax+=1;
-
-  input.move.x=mx; input.move.y=my;
-  input.aim.x=ax; input.aim.y=ay;
-
+  if(input.keys['w']) my-=1; if(input.keys['s']) my+=1;
+  if(input.keys['a']) mx-=1; if(input.keys['d']) mx+=1;
+  if(input.keys['arrowup']) ay-=1; if(input.keys['arrowdown']) ay+=1;
+  if(input.keys['arrowleft']) ax-=1; if(input.keys['arrowright']) ax+=1;
+  input.move.x=mx; input.move.y=my; input.aim.x=ax; input.aim.y=ay;
   if(input.touchMove && (input.touchMove.x||input.touchMove.y)) input.move=input.touchMove;
   if(input.touchAim && (input.touchAim.x||input.touchAim.y)) input.aim=input.touchAim;
 
@@ -1142,121 +1095,49 @@ function update(dt){
   const hazards = state.entities.filter(e=>e.isHazard && !e.dead);
   const humans  = state.entities.filter(e=>e instanceof Human && !e.dead);
 
-  // Player bullets vs enemies
+  // Collisions
   for(const pb of state.bullets){
     if(pb.dead) continue;
     for(const e of enemies){
       if(e.dead) continue;
       if(circlesHit(pb,e)){
         pb.dead=true;
-        if(e instanceof Grunt){
-          e.dead=true; state.score+=100;
-          spawnExplosion(e.x,e.y,COLORS.GRUNT,12); AudioSys.boom();
-        } else if(e instanceof Enforcer){
-          e.dead=true; state.score+=500;
-          spawnExplosion(e.x,e.y,COLORS.ENFORCER,16); AudioSys.boom();
-        } else if(e instanceof Spawner){
-          e.dead=true; state.score+=750;
-          spawnExplosion(e.x,e.y,COLORS.SPAWNER,18); AudioSys.boom();
-        } else if(e instanceof Brain){
-          e.dead=true; state.score+=800;
-          if(e.latch && !e.latch.dead){ e.latch.dead=true; e.latch=null; }
-          spawnExplosion(e.x,e.y,COLORS.BRAIN,20); AudioSys.boom();
-        } else if(e instanceof Prog){
-          e.dead=true; state.score+=150;
-          spawnExplosion(e.x,e.y,COLORS.PROG,12); AudioSys.boom();
-        } else if(e instanceof Tank){
-          e.dead=true; state.score+=900;
-          spawnExplosion(e.x,e.y,COLORS.TANK,22); AudioSys.boom();
-        } else if(e instanceof Hulk){
-          e.x += pb.vx*dt*0.25;
-          e.y += pb.vy*dt*0.25;
-        }
+        if(e instanceof Grunt){ e.dead=true; state.score+=100; spawnExplosion(e.x,e.y,COLORS.GRUNT,12); AudioSys.boom(); }
+        else if(e instanceof Enforcer){ e.dead=true; state.score+=500; spawnExplosion(e.x,e.y,COLORS.ENFORCER,16); AudioSys.boom(); }
+        else if(e instanceof Spawner){ e.dead=true; state.score+=750; spawnExplosion(e.x,e.y,COLORS.SPAWNER,18); AudioSys.boom(); }
+        else if(e instanceof Brain){ e.dead=true; state.score+=800; if(e.latch) e.latch.dead=true; spawnExplosion(e.x,e.y,COLORS.BRAIN,20); AudioSys.boom(); }
+        else if(e instanceof Prog){ e.dead=true; state.score+=150; spawnExplosion(e.x,e.y,COLORS.PROG,12); AudioSys.boom(); }
+        else if(e instanceof Tank){ e.dead=true; state.score+=900; spawnExplosion(e.x,e.y,COLORS.TANK,22); AudioSys.boom(); }
+        else if(e instanceof Hulk){ e.x += pb.vx*dt*0.25; e.y += pb.vy*dt*0.25; }
         break;
       }
     }
   }
 
-  // Hazards hit player
   if(player){
-    for(const hz of hazards){
-      if(circlesHit(player,hz)){
-        killPlayer();
-        break;
-      }
-    }
+    for(const hz of hazards) if(circlesHit(player,hz)){ killPlayer(); break; }
+    for(const eb of state.enemyBullets) if(circlesHit(player, eb)){ eb.dead=true; killPlayer(); break; }
+    for(const e of enemies) if(circlesHit(player,e)){ killPlayer(); break; }
+    for(const h of humans) if(circlesHit(player,h)){ h.dead=true; state.score+=1000; spawnExplosion(h.x,h.y,COLORS.HUMAN,20); AudioSys.pickup(); }
   }
+  for(const hz of hazards) for(const h of humans) if(!h.dead && circlesHit(hz,h)){ h.dead=true; spawnExplosion(h.x,h.y,COLORS.HUMAN,18); AudioSys.die(); }
+  for(const hk of enemies) if(hk instanceof Hulk) for(const h of humans) if(!h.dead && circlesHit(hk,h)){ h.dead=true; spawnExplosion(h.x,h.y,'#f00',26); AudioSys.die(); }
 
-  // Hazards kill humans (classic brutality)
-  for(const hz of hazards){
-    for(const h of humans){
-      if(h.dead) continue;
-      if(circlesHit(hz,h)){
-        h.dead=true;
-        spawnExplosion(h.x,h.y,COLORS.HUMAN,18);
-        AudioSys.die();
-      }
-    }
-  }
-
-  // Enemy bullets hit player
-  if(player){
-    for(const eb of state.enemyBullets){
-      if(eb.dead) continue;
-      if(circlesHit(player, eb)){
-        eb.dead=true;
-        killPlayer();
-        break;
-      }
-    }
-  }
-
-  // Enemy bodies hit player
-  if(player){
-    for(const e of enemies){
-      if(e.dead) continue;
-      if(circlesHit(player,e)){
-        killPlayer();
-        break;
-      }
-    }
-  }
-
-  // Player rescues humans
-  if(player){
-    for(const h of humans){
-      if(h.dead) continue;
-      if(circlesHit(player,h)){
-        h.dead=true;
-        state.score += 1000;
-        spawnExplosion(h.x,h.y,COLORS.HUMAN,20);
-        AudioSys.pickup();
-      }
-    }
-  }
-
-  // Hulk kills humans
-  for(const hk of state.entities){
-    if(!(hk instanceof Hulk) || hk.dead) continue;
-    for(const h of humans){
-      if(h.dead) continue;
-      if(circlesHit(hk,h)){
-        h.dead=true;
-        spawnExplosion(h.x,h.y,'#f00',26);
-        AudioSys.die();
-      }
-    }
-  }
-
-  // Cleanup
   state.entities = state.entities.filter(e=>!e.dead);
   state.bullets = state.bullets.filter(b=>!b.dead);
   state.enemyBullets = state.enemyBullets.filter(b=>!b.dead);
   state.particles = state.particles.filter(p=>p.life>0);
 
-  // Wave progression
+  // Wave Logic
   state.waveTimer += dt;
   state.wavePulseTimer -= dt;
+
+  const aliveHostiles = state.entities.some(e=>e.isEnemy && !(e instanceof Tank) && !(e instanceof Hulk));
+  const isCapReached = totalEnemiesAlive() >= state.caps.enemies;
+
+  if(!aliveHostiles && isCapReached && state._pulseReserve > 0) {
+    state._pulseReserve = 0;
+  }
 
   if(state.wavePulseTimer<=0 && state._pulseReserve>0){
     const pulse = Math.min(state._pulseReserve, Math.round(3 + state.level*0.9));
@@ -1265,25 +1146,19 @@ function update(dt){
     state.wavePulseTimer = Math.max(0.9, 2.1 - Math.min(1.0, state.level*0.04)) + Math.random()*0.6;
   }
 
-  const aliveHostiles = state.entities.some(e=>e.isEnemy && !(e instanceof Tank));
   if(state._pulseReserve===0 && !aliveHostiles){
     if(!state._clearTimer) state._clearTimer=1.2;
     state._clearTimer -= dt;
-    if(state._clearTimer<=0){
-      startWave(state.level+1);
-    }
+    if(state._clearTimer<=0) startWave(state.level+1);
   } else {
     state._clearTimer=0;
   }
-
   updateHUD();
 }
 
 function draw(){
   ctx.fillStyle='rgba(0,0,0,0.42)';
   ctx.fillRect(0,0,state.width,state.height);
-
-  // Subtle grid like the arcade vibe (not a heavy pattern)
   const TILE = 40;
   ctx.strokeStyle='rgba(60,60,70,0.35)';
   ctx.lineWidth=1;
@@ -1291,10 +1166,8 @@ function draw(){
   for(let x=0;x<=state.width;x+=TILE){ ctx.moveTo(x,0); ctx.lineTo(x,state.height); }
   for(let y=0;y<=state.height;y+=TILE){ ctx.moveTo(0,y); ctx.lineTo(state.width,y); }
   ctx.stroke();
-
   for(const b of state.bullets) b.draw();
   for(const b of state.enemyBullets) b.draw();
-
   state.entities.sort((a,b)=>a.y-b.y);
   for(const e of state.entities) e.draw();
   for(const p of state.particles) p.draw();
@@ -1310,180 +1183,77 @@ function loop(ts){
   raf=requestAnimationFrame(loop);
 }
 
-// Game control
-function sendScoreOnce(){
-  if(state._scoreSent) return;
-  state._scoreSent=true;
-  try{ window.parent.postMessage({type:'GAME_OVER_SCORE', score: state.score}, '*'); }catch(_){}
-}
-
 function killPlayer(){
-  const p=getPlayer();
-  if(!p) return;
-
+  const p=getPlayer(); if(!p) return;
   spawnExplosion(p.x,p.y,COLORS.PLAYER,52);
-  p.dead=true;
-  AudioSys.die();
-  state.lives--;
-
-  if(state.lives < 0){
-    gameOver();
-  } else {
+  p.dead=true; AudioSys.die(); state.lives--;
+  if(state.lives < 0) gameOver();
+  else {
     setTimeout(()=>{
       if(!state.active) return;
-      const px=state.width/2, py=state.height/2;
-      state.entities.push(new Player(px,py));
-
-      // small safety: clear nearby enemies (except hulks)
+      state.entities.push(new Player(state.width/2, state.height/2));
       const sr = safeRadius()*0.75;
-      for(const e of state.entities){
-        if(e.isEnemy && dist(e.x,e.y,px,py)<sr && !(e instanceof Hulk)) e.dead=true;
-      }
-      // push hazards away from spawn
-      for(const e of state.entities){
-        if(e instanceof Electrode && dist(e.x,e.y,px,py)<sr*0.8){
-          e.x = clamp(e.x + rand(-140,140), 40, state.width-40);
-          e.y = clamp(e.y + rand(-140,140), 40, state.height-40);
-        }
-      }
+      for(const e of state.entities) if(e.isEnemy && dist(e.x,e.y,state.width/2,state.height/2)<sr && !(e instanceof Hulk)) e.dead=true;
     }, 900);
   }
 }
 
 function gameOver(){
-  state.active=false;
-  cancelAnimationFrame(raf);
-  sendScoreOnce();
+  state.active=false; cancelAnimationFrame(raf);
+
+  // PIXEL-NET score submission (ONCE)
+  if(!state._scoreSent){
+    state._scoreSent = true;
+    try{
+      window.parent.postMessage({ type:'GAME_OVER_SCORE', score: Math.floor(Number(state.score)||0) }, '*');
+    }catch(_){}
+  }
+
   document.getElementById('finalScore').textContent=String(state.score);
   document.getElementById('game-over-screen').classList.remove('hidden');
 }
 
+
 function resetGame(){
-  state._scoreSent=false;
-  state.score=0;
-  state.lives=3;
-  state.active=true;
-
-  last=0;
-  input.keys={};
-  input.move={x:0,y:0};
-  input.aim={x:0,y:0};
-  input.touchMove={x:0,y:0};
-  input.touchAim={x:0,y:0};
-
+  state.score=0; state.lives=3; state.active=true; state._scoreSent=false; last=0;
+  input.keys={}; input.move={x:0,y:0}; input.aim={x:0,y:0};
   document.getElementById('start-screen').style.display='none';
   document.getElementById('game-over-screen').classList.add('hidden');
-
-  resizeCanvas();
-  AudioSys.init();
-
-  startWave(1);
-  loop(0);
+  resizeCanvas(); AudioSys.init(); startWave(1); loop(0);
 }
 
-// Buttons
-const startBtn=document.getElementById('startBtn');
-const restartBtn=document.getElementById('restartBtn');
+document.getElementById('startBtn').addEventListener('click', resetGame);
+document.getElementById('restartBtn').addEventListener('click', resetGame);
 
-function startFromMenu(e){
-  if(e){e.preventDefault();e.stopPropagation();}
-  if(state.active) return;
-  resetGame();
-}
-function restartFromGO(e){
-  if(e){e.preventDefault();e.stopPropagation();}
-  resetGame();
-}
-['click','pointerup','touchend'].forEach(evt=>{
-  startBtn.addEventListener(evt,startFromMenu,{passive:false});
-  restartBtn.addEventListener(evt,restartFromGO,{passive:false});
-});
-
-// Keyboard
 window.addEventListener('keydown',(e)=>{
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) e.preventDefault();
-  if(!state.active && (e.code==='Enter' || e.code==='Space')){
-    startFromMenu(e);
-    return;
-  }
   input.keys[e.key.toLowerCase()]=true;
 });
 window.addEventListener('keyup',(e)=>{ input.keys[e.key.toLowerCase()]=false; });
-window.addEventListener('blur',()=>{
-  input.keys={};
-  input.move={x:0,y:0};
-  input.aim={x:0,y:0};
-});
 
-// Joysticks: mobile only
 function setupJoystick(zoneId,knobId,targetKey){
-  const zone=document.getElementById(zoneId);
-  const knob=document.getElementById(knobId);
+  const zone=document.getElementById(zoneId); const knob=document.getElementById(knobId);
   if(!zone||!knob) return;
-
-  let activeId=null;
-  const maxDist=35;
-
-  const update = (cx,cy)=>{
-    const r=zone.getBoundingClientRect();
-    const cX=r.left+r.width/2, cY=r.top+r.height/2;
-    let dx=cx-cX, dy=cy-cY;
-    const d=Math.hypot(dx,dy);
+  let activeId=null; const maxDist=35;
+  const upd = (cx,cy)=>{
+    const r=zone.getBoundingClientRect(); const cX=r.left+r.width/2, cY=r.top+r.height/2;
+    let dx=cx-cX, dy=cy-cY; const d=Math.hypot(dx,dy);
     if(d>maxDist){ dx=(dx/d)*maxDist; dy=(dy/d)*maxDist; }
     knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     input[targetKey]={x:dx/maxDist, y:dy/maxDist};
   };
-  const end=()=>{
-    activeId=null;
-    knob.style.transform='translate(-50%,-50%)';
-    input[targetKey]={x:0,y:0};
-  };
-
-  zone.addEventListener('touchstart',(e)=>{
-    e.preventDefault();
-    const t=e.changedTouches[0];
-    activeId=t.identifier;
-    update(t.clientX,t.clientY);
-  },{passive:false});
-
-  zone.addEventListener('touchmove',(e)=>{
-    e.preventDefault();
-    for(const t of e.changedTouches) if(t.identifier===activeId) update(t.clientX,t.clientY);
-  },{passive:false});
-
-  zone.addEventListener('touchend',(e)=>{
-    e.preventDefault();
-    for(const t of e.changedTouches) if(t.identifier===activeId) end();
-  },{passive:false});
-
-  zone.addEventListener('touchcancel',(e)=>{
-    e.preventDefault();
-    for(const t of e.changedTouches) if(t.identifier===activeId) end();
-  },{passive:false});
+  zone.addEventListener('touchstart',(e)=>{ e.preventDefault(); const t=e.changedTouches[0]; activeId=t.identifier; upd(t.clientX,t.clientY); },{passive:false});
+  zone.addEventListener('touchmove',(e)=>{ e.preventDefault(); for(const t of e.changedTouches) if(t.identifier===activeId) upd(t.clientX,t.clientY); },{passive:false});
+  zone.addEventListener('touchend',(e)=>{ e.preventDefault(); activeId=null; knob.style.transform='translate(-50%,-50%)'; input[targetKey]={x:0,y:0}; },{passive:false});
 }
 
 function enableMobileControlsIfNeeded(){
-  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-  const noHover = window.matchMedia && window.matchMedia('(hover: none)').matches;
-  const uaMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'');
-  const small = window.innerWidth <= 900;
-  const isMobileLike = ((coarse && noHover) || uaMobile) && small;
-
-  const mc=document.getElementById('mobile-controls');
-  mc.style.display = isMobileLike ? 'flex' : 'none';
-
-  if(isMobileLike){
-    setupJoystick('stick-move','knob-move','touchMove');
-    setupJoystick('stick-aim','knob-aim','touchAim');
-  }else{
-    input.touchMove={x:0,y:0};
-    input.touchAim={x:0,y:0};
-  }
+  const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent) || window.innerWidth < 900;
+  document.getElementById('mobile-controls').style.display = isMobile ? 'flex' : 'none';
+  if(isMobile){ setupJoystick('stick-move','knob-move','touchMove'); setupJoystick('stick-aim','knob-aim','touchAim'); }
 }
 enableMobileControlsIfNeeded();
-window.addEventListener('resize', enableMobileControlsIfNeeded);
-
-// Start inactive (menu visible)
+window.addEventListener('resize', resizeCanvas);
 state.active=false;
 </script>
 </body>

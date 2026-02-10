@@ -308,7 +308,7 @@ iframe{
 }
 
 /* responsive */
-@media (max-width: 980px){
+@media (max-width: 1200px){
   .grid{grid-template-columns: 1fr}
   .tabs{display:block}
   .panel{display:none}
@@ -322,7 +322,7 @@ iframe{
 <body>
   <div class="topbar">
     <div>
-      <a class="pillBtn" href="../../index.html"><span class="x">✕</span> EXIT</a>
+      <a class="pillBtn" id="exitLink" href="../../index.html"><span class="x">✕</span> EXIT</a>
     </div>
 
     <div class="titlePill">ROBO ARENA</div>
@@ -335,7 +335,7 @@ iframe{
   <div class="wrap">
     <div class="grid">
       <!-- HOW TO -->
-      <section class="panel active" id="pHow">
+      <section class="panel" id="pHow">
         <div class="panelHeader">HOW TO PLAY</div>
         <div class="panelBody">
           <ul class="bullets">
@@ -533,6 +533,19 @@ iframe{
   window.addEventListener('resize', fit);
   fit();
 })();
+
+/* ---------- Exit: force top-level navigation ---------- */
+(function(){
+  const a = document.getElementById('exitLink');
+  if(!a) return;
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const href = a.getAttribute('href') || '../../index.html';
+    try{ window.top.location.href = href; }
+    catch(_){ window.location.href = href; }
+  });
+})();
+
 </script>
 </body>
 </html>

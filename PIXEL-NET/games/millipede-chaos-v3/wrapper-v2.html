@@ -487,6 +487,34 @@ iframe{ width:100%; height:100%; border:0; display:block; background:#000; borde
   const loadLocal = () => { try{ return JSON.parse(localStorage.getItem(LOCAL_KEY)||'[]'); }catch(_){ return []; } };
   const saveLocal = (arr) => { try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(arr)); }catch(_){ } };
 
+  // Optional online leaderboard (wrapper-only). Game never calls APIs.
+  const BACKEND_URL = (() => {
+    try{
+      if(window.PixelNet && PixelNet.config && PixelNet.config.BACKEND_URL) return String(PixelNet.config.BACKEND_URL);
+    }catch(_){ }
+    return 'https://pixel-net-backend.onrender.com';
+  })();
+  const normalizeLB = (data) => {
+    if(Array.isArray(data)) return data;
+    if(!data) return [];
+    if(Array.isArray(data.top10)) return data.top10;
+    if(Array.isArray(data.scores)) return data.scores;
+    if(Array.isArray(data.leaderboard)) return data.leaderboard;
+    return [];
+  };
+
+// Small timeout wrapper so backend slowness never blocks local gameplay UI.
+const fetchWithTimeout = async (url, opts={}, ms=2500) => {
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), ms);
+  try{
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  }finally{
+    clearTimeout(t);
+  }
+};
+
+
   const lbEl = document.getElementById('lb');
   const lbElM = document.getElementById('lbM');
   const lbMeta = document.getElementById('lbMeta');
@@ -502,15 +530,43 @@ iframe{ width:100%; height:100%; border:0; display:block; background:#000; borde
       return `<div class="lbRow"><span class="rank">${i+1}</span><span class="who">${who}</span><span class="sc">${sc}</span></div>`;
     }).join('');
   };
-  const renderLB = (rows) => {
+  const renderLB = (rows, metaMsg) => {
     renderLBInto(lbEl, rows);
     renderLBInto(lbElM, rows);
-    const msg = `Saved locally • Key: ${LOCAL_KEY}`;
+    const msg = metaMsg || `Saved locally • Key: ${LOCAL_KEY}`;
     if(lbMeta) lbMeta.textContent = msg;
     if(lbMetaM) lbMetaM.textContent = msg;
   };
 
-  renderLB(loadLocal());
+  const fetchRemoteLB = async () => {
+    try{
+      const res = await fetchWithTimeout(`${BACKEND_URL}/api/leaderboard/${encodeURIComponent(slug)}`, { cache:'no-store' }, 2500);
+      const data = await res.json();
+      return normalizeLB(data);
+    }catch(_){ return []; }
+  };
+  const submitRemoteScore = async (initials, rawScore) => {
+    const score = Math.max(0, Math.floor(Number(rawScore)||0));
+    try{
+      const res = await fetchWithTimeout(`${BACKEND_URL}/api/score`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ game_slug: slug, initials: String(initials||'???').toUpperCase().slice(0,3), score })
+      });
+      return !!(res && res.ok);
+    }catch(_){ return false; }
+  };
+  const refreshLeaderboard = async () => {
+  // Always show local immediately; then upgrade to online if available.
+  renderLB(loadLocal(), `Saved locally • Key: ${LOCAL_KEY}`);
+  const remote = await fetchRemoteLB();
+  if(remote && remote.length){
+    renderLB(remote, 'Online leaderboard');
+  }
+};
+
+  // Initial render (prefer remote when available)
+  refreshLeaderboard();
 
   let lastSig = '';
   let lastAt = 0;
@@ -536,7 +592,14 @@ iframe{ width:100%; height:100%; border:0; display:block; background:#000; borde
     if(acceptsScoreMsg(d)){
       const initials = getInitials() || '???';
       const score = (d.score!=null) ? d.score : 0;
-      addScoreLocal(initials, score);
+      const added = addScoreLocal(initials, score);
+      // If we accepted it locally, also try to push online and then refresh displayed board.
+      if(added){
+        (async()=>{
+          await submitRemoteScore(initials, score);
+          await refreshLeaderboard();
+        })();
+      }
     }
   });
 

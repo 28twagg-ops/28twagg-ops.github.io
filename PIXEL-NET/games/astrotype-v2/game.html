@@ -315,6 +315,12 @@ Purpose: AI implementation for themes
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+
+    // START_ASSIST_PATCH: make canvas focusable so keyboard works reliably inside iframes
+    canvas.tabIndex = 0;
+    canvas.setAttribute('aria-label', 'AstroType Game');
+    canvas.style.outline = 'none';
+
     
     let stars = [];
     let moonSurface = [];
@@ -520,11 +526,21 @@ Purpose: AI implementation for themes
         updateHUD();
     }
 
+    // START_ACTION_PATCH: start should work even if click events are flaky inside cabinets/iframes
+    function startGame() {
+        if (state.screen === 'PLAYING') return;
+        initGame();
+    }
+
+
     function initGame() {
-        state = { ...state, screen: 'PLAYING', score: 0, lives: 3, streak: 0, level: 1, words: [], particles: [], lasers: [], targetIndex: -1, spawnTimer: 0, spawnRate: 120, wordSpeed: 0.4, shake: 0, empEffect: 0, landerGlow: 0 };
+        if (state.screen === 'PLAYING') return;
+        state = { ...state, screen: 'PLAYING', score: 0, lives: 3, streak: 0, level: 1, words: [], particles: [], lasers: [], targetIndex: -1, spawnTimer: 0, spawnRate: 120, wordSpeed: 0.4, shake: 0, empEffect: 0, landerGlow: 0, currentWordPerfect: true };
         document.getElementById('menu-screen').classList.add('hidden');
         document.getElementById('game-over-screen').classList.add('hidden');
         updateHUD();
+        try { canvas.focus(); } catch(_) {}
+        try { window.focus(); } catch(_) {}
         loop();
     }
 
@@ -651,8 +667,45 @@ Purpose: AI implementation for themes
         requestAnimationFrame(loop);
     }
 
-    document.getElementById('start-btn').addEventListener('click', initGame);
-    document.getElementById('restart-btn').addEventListener('click', initGame);
+    
+
+    // START_ASSIST_PATCH: allow a minimal "click anywhere / press any key" start while on the menu.
+    // Keeps wrapper layout unchanged; this lives entirely inside the game iframe.
+    const menuScreen = document.getElementById('menu-screen');
+    const startBtn = document.getElementById('start-btn');
+    const maybeStart = () => {
+        if (state.screen === 'MENU' || state.screen === 'GAMEOVER') initGame();
+    };
+
+    // Click/tap anywhere on the menu to start (button still works).
+    menuScreen?.addEventListener('pointerdown', (e)=>{
+        // If they clicked the actual button, let the normal handler run.
+        if (e.target === startBtn) return;
+        maybeStart();
+    });
+
+    // Press any letter to start (nice for typing games).
+    window.addEventListener('keydown', (e)=>{
+        if (state.screen !== 'MENU') return;
+        if (/^[a-zA-Z]$/.test(e.key)) {
+            maybeStart();
+        }
+    });
+
+    // Re-focus canvas after tab switching so typing resumes.
+    document.addEventListener('visibilitychange', ()=>{
+        if (!document.hidden && state.screen === 'PLAYING') {
+            try{ window.focus(); canvas.focus(); }catch(_){ }
+        }
+    });
+
+    // Focus on pointer interaction while playing.
+    canvas.addEventListener('pointerdown', ()=>{ if(state.screen==='PLAYING'){ try{ window.focus(); canvas.focus(); }catch(_){ } } });
+
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('start-btn').addEventListener('pointerup', startGame);
+    document.getElementById('restart-btn').addEventListener('click', startGame);
+    document.getElementById('restart-btn').addEventListener('pointerup', startGame);
 </script>
 </body>
 </html>
