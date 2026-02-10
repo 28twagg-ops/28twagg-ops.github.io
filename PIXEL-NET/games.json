@@ -1,59 +1,10 @@
 [
   {
-    "name": "MILLIPEDE CHAOS",
-    "type": "iframe",
-    "path": "games/millipede-react/index.html",
-    "thumb": "assets/millipede_thumb.png",
-    "description": "Defend the garden from the swarm."
-  },
-  {
-    "name": "NEON CHASE",
-    "type": "iframe",
-    "path": "games/neon-chase/wrapper-v2.html",
-    "thumb": "assets/neon-chase_thumb.png",
-    "description": "High-speed neon survival."
-  },
-  {
-    "name": "NEON CHASE (EMBED A TEST)",
-    "type": "iframe",
-    "path": "games/neon-chase__embedA/wrapper-v2.html",
-    "thumb": "assets/neon-chase_thumb.png",
-    "description": "Test wrapper embed method A."
-  },
-  {
-    "name": "ROBO ARENA",
-    "type": "iframe",
-    "path": "games/robo-arena/wrapper-v2.html",
-    "thumb": "assets/robo-arena_thumb.jpg",
-    "description": "Enter the arena. Win the fight."
-  },
-  {
-    "name": "ROBO ARENA (EMBED A TEST)",
-    "type": "iframe",
-    "path": "games/robo-arena__embedA/wrapper-v2.html",
-    "thumb": "assets/robo-arena_thumb.jpg",
-    "description": "Test wrapper embed method A (fixed 1:1 canvas)."
-  },
-  {
-    "name": "VECTOR DUEL",
-    "type": "iframe",
-    "path": "games/vector-duel/wrapper-v2.html",
-    "thumb": "assets/vector-duel_thumb.png",
-    "description": "Retro vectors. Modern reflex."
-  },
-  {
     "name": "CYBER PYTHON",
     "type": "iframe",
     "path": "games/cyber-python/wrapper-v2.html",
     "thumb": "assets/cyber-python_thumb.png",
     "description": "Classic snake, cyber style."
-  },
-  {
-    "name": "NEON MAZE CHASE",
-    "type": "iframe",
-    "path": "games/neon-maze-chase/wrapper-v2.html",
-    "thumb": "assets/neon-maze-chase_thumb.png",
-    "description": "Neon maze survival. Collect bits. Hack drones."
   },
   {
     "name": "CAKED UP CATS",
@@ -63,69 +14,56 @@
     "description": "Garden maze arcade. Eat cake, catch mice, avoid hazards."
   },
   {
-    "name": "ASTROTYPE",
-    "type": "iframe",
-    "path": "games/astrotype/wrapper-v2.html",
-    "thumb": "assets/astrotype_thumb.png",
-    "description": "Type alien codes to defend the lunar base."
-  },
-  {
-    "thumb": "assets/creek-crosser-thumb.png",
-    "path": "games/creek-crosser/wrapper-v2.html",
-    "name": "Creek Crosser",
-    "description": "Hop to the 5 nests. Avoid cars and the creek."
-  },
-  {
-    "name": "CREEK CROSSER (EMBED A TEST)",
+    "name": "CREEK CROSSER",
     "type": "iframe",
     "path": "games/creek-crosser__embedA/wrapper-v2.html",
     "thumb": "assets/creek-crosser_thumb.png",
     "description": "Test wrapper embed method A (full game HTML restored)."
   },
   {
-    "name": "ASTROTYPE (version 2.0)",
+    "name": "ASTROTYPE",
     "type": "iframe",
     "path": "games/astrotype-v2/wrapper-v2.html",
     "thumb": "assets/astrotype_thumb.png",
     "description": "Type the codes. Defend the moon."
   },
   {
-    "name": "KNIGHT FLIGHT (version 2.0)",
+    "name": "KNIGHT FLIGHT",
     "type": "iframe",
     "path": "games/knight-flight-v2/wrapper-v2.html",
     "thumb": "assets/knight-flight_thumb.png",
     "description": "Retro arcade jousting in the skies."
   },
   {
-    "name": "RETRO KOMBAT (version 2.0)",
+    "name": "RETRO KOMBAT",
     "type": "iframe",
     "path": "games/retro-kombat-v2/wrapper-v2.html",
     "thumb": "assets/retro-kombat_thumb.png",
     "description": "Tournament Edition \u2014 coming soon."
   },
   {
-    "name": "LOGIC BOMB (version 2.0)",
+    "name": "LOGIC BOMB",
     "type": "iframe",
     "path": "games/logic-bomb-v2/wrapper-v2.html",
     "thumb": "assets/logic-bomb_thumb.png",
     "description": "Defuse by thinking fast (v2)."
   },
   {
-    "name": "NEON CHASE (version 2.0)",
+    "name": "NEON CHASE",
     "type": "iframe",
     "path": "games/neon-chase-v2/wrapper-v2.html",
     "thumb": "assets/neon-chase_thumb.png",
     "description": "High-speed neon survival (v2)."
   },
   {
-    "name": "ROBO-ARENA (version 2.0)",
+    "name": "ROBO-ARENA",
     "type": "iframe",
     "path": "games/robo-arena-v2/wrapper-v2.html",
     "thumb": "assets/robo-arena_thumb.jpg",
     "description": "Top-down neon arena combat (v2)."
   },
   {
-    "name": "MILLIPEDE CHAOS (version 3.0)",
+    "name": "MILLIPEDE CHAOS",
     "type": "iframe",
     "path": "games/millipede-chaos-v3/wrapper-v2.html",
     "thumb": "assets/millipede_thumb.png",
