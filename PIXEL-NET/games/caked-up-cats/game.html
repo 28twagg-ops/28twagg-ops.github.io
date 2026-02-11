@@ -47,6 +47,8 @@ Purpose: AI implementation for themes
 
         #game-container {
             position: absolute;
+            /* establish containing block for canvas */
+            
 
             outline: none; /* Remove focus outline */
         
@@ -60,10 +62,12 @@ Purpose: AI implementation for themes
         }
 
         canvas {
+            position: absolute;
+            inset: 0;
             display: block;
-            H0%;
-            H0%;
-
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
         }
 
         /* UI Overlay */
@@ -227,11 +231,12 @@ Purpose: AI implementation for themes
         }
 
         .char-preview-canvas {
-            H0%;
-            H0%;
-            margin-bottom: 5px;
-        
+            position: absolute;
+            inset: 0;
             display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
         }
         
         .char-name { 
@@ -1650,7 +1655,72 @@ Purpose: AI implementation for themes
             }
         });
 
-        // Force focus to body so keydown works immediately
+        
+        // --- Mobile touch input (minimal; no UI) ---
+        // Swipe on the playfield to change direction; tap to activate menu buttons.
+        (function(){
+            const isTouch = () => ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            if (!isTouch()) return;
+
+            const SWIPE_PX = 18;
+            let startX = 0, startY = 0, active = false;
+
+            function dirFromDelta(dx, dy){
+                if (Math.abs(dx) > Math.abs(dy)){
+                    return dx > 0 ? {x: 1, y: 0} : {x: -1, y: 0};
+                } else {
+                    return dy > 0 ? {x: 0, y: 1} : {x: 0, y: -1};
+                }
+            }
+
+            function onPointerDown(e){
+                if (e.pointerType && e.pointerType !== 'touch') return;
+                active = true;
+                startX = e.clientX; startY = e.clientY;
+
+                // Tap-to-activate for menu/gameover/levelup (same as Enter)
+                if (gameState === 'MENU') {
+                    // let tap fall through; start on pointerup if it's a tap
+                }
+                try { gameCanvas.setPointerCapture?.(e.pointerId); } catch(_){}
+            }
+
+            function onPointerMove(e){
+                if (!active) return;
+                if (e.pointerType && e.pointerType !== 'touch') return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                if (Math.abs(dx) < SWIPE_PX && Math.abs(dy) < SWIPE_PX) return;
+
+                if (gameState === 'PLAYING') {
+                    player.nextDir = dirFromDelta(dx, dy);
+                }
+                // reset baseline so continuous swipes work
+                startX = e.clientX; startY = e.clientY;
+                e.preventDefault?.();
+            }
+
+            function onPointerUp(e){
+                if (!active) return;
+                active = false;
+                if (e.pointerType && e.pointerType !== 'touch') return;
+
+                // If it was essentially a tap, trigger the same UI actions as Enter
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                if (Math.abs(dx) < SWIPE_PX && Math.abs(dy) < SWIPE_PX) {
+                    if (gameState === 'MENU') triggerStart();
+                    else if (gameState === 'GAMEOVER') triggerRetry();
+                    else if (gameState === 'LEVELUP') triggerNext();
+                }
+            }
+
+            gameCanvas.addEventListener('pointerdown', onPointerDown, {passive:true});
+            gameCanvas.addEventListener('pointermove', onPointerMove, {passive:false});
+            gameCanvas.addEventListener('pointerup', onPointerUp, {passive:true});
+            gameCanvas.addEventListener('pointercancel', onPointerUp, {passive:true});
+        })();
+// Force focus to body so keydown works immediately
         window.onload = function() {
             document.body.focus();
         }
