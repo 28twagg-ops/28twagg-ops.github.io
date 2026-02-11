@@ -708,18 +708,32 @@ Purpose: AI implementation for themes
     document.getElementById('restart-btn').addEventListener('pointerup', startGame);
 
 
-// PIXELNET_MOBILE_FOCUS: ensure mobile keyboard opens on first tap
-(function(){
-  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints||0) > 0;
-  if(!isTouch) return;
-  function focusAny(){
-    const el = document.querySelector('input[type="text"], input:not([type]), textarea');
-    if(el){
-      try { el.focus({preventScroll:true}); } catch(_) { el.focus(); }
-    }
-  }
-  window.addEventListener('touchstart', ()=>{ focusAny(); }, {once:true, passive:true});
-})();
+    /* Mobile Keyboard Support (PIXEL-NET) */
+    (() => {
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      if (!isMobile) return;
+      const kb = document.getElementById('kb');
+      if (!kb) return;
+      let armed = true;
+      const armFocus = () => {
+        if (!armed) return;
+        try { kb.focus(); } catch(e) {}
+      };
+      // First user gesture is required on iOS
+      window.addEventListener('pointerdown', armFocus, { once: true });
+      // Feed characters into existing handleInput()
+      kb.addEventListener('input', (e) => {
+        const v = (e.target.value || '');
+        const ch = v.slice(-1).toUpperCase();
+        if (/^[A-Z]$/.test(ch)) handleInput(ch);
+        e.target.value = '';
+      });
+    })();
+
 </script>
+
+<input id="kb" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+  style="position:absolute;top:-200px;left:-200px;width:1px;height:1px;opacity:0;pointer-events:none;">
+
 </body>
 </html>

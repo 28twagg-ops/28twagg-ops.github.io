@@ -87,6 +87,12 @@ a{color:inherit;text-decoration:none}
   gap:12px;
   align-items:stretch;
   height:100%;
+  justify-items: center;
+}
+
+.panel#pGame{
+  width:100%;
+  max-width:100%;
 }
 .panel{
   background:var(--card);
@@ -320,7 +326,7 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
       <div class="center active" id="pGame">
         <div class="frameWrap">
           <div class="frameSizer">
-            <iframe src="./game.html" title="Neon Chase" allow="fullscreen" id="gameFrame"></iframe>
+            <iframe src="./game.html" title="Neon Chase" allow="fullscreen" id="gameFrame" data-aspect="0.95"></iframe>
           </div>
         </div>
       </div>

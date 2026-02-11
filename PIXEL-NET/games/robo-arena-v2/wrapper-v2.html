@@ -117,8 +117,17 @@ body{
 .grid{
   height:100%;
   display:grid;
-  grid-template-columns: 320px 1fr 320px;
+  grid-template-columns:
+    minmax(240px, 1fr)
+    minmax(0, calc(var(--game-aspect, 1.333) * (100vh - 62px - 28px)))
+    minmax(240px, 1fr);
   gap:14px;
+  justify-items: center;
+}
+
+.panel#pGame{
+  width:100%;
+  max-width:100%;
 }
 
 .panel{
@@ -181,6 +190,8 @@ body{
   align-items:center;
   justify-content:center;
   overflow:hidden;
+  aspect-ratio: var(--game-aspect, 1.333);
+  max-width: 100%;
 }
 .frameSizer{
   width:var(--fitW, 640px);
@@ -352,7 +363,7 @@ iframe{
         <div class="cabinetOuter">
           <div class="cabinetInner" id="cabinetInner">
             <div class="frameSizer" id="frameSizer">
-              <iframe id="gameFrame" src="./game.html" title="Robo-Arena (v2)"></iframe>
+              <iframe id="gameFrame" src="./game.html" title="Robo-Arena (v2)" data-aspect="auto" data-min-aspect="1.2" data-max-aspect="1.8"></iframe>
             </div>
           </div>
         </div>
@@ -505,7 +516,7 @@ iframe{
   const cabinetInner = document.getElementById('cabinetInner');
   const frameSizer = document.getElementById('frameSizer');
 
-  const ASPECT = 4/3;
+  const ASPECT = parseFloat(gameFrame.dataset.aspect || '1.333') || 1.333;
 
   function fit(){
     const r = cabinetInner.getBoundingClientRect();

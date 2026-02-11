@@ -638,31 +638,48 @@ window.addEventListener('keyup', e => {
     if (e.code === 'ArrowRight') keys.ArrowRight = false;
 });
 
-// PIXELNET_TOUCH_SWIPE: swipe left/right (diagonal resolves by horizontal sign)
-let _pnStartX = 0, _pnStartY = 0;
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    if(!e.touches || e.touches.length !== 1) return;
+/* PIXELNET Swipe (no buttons). Horizontal-dominant on diagonals. */
+const SwipeInput = (() => {
+  const MIN_DISTANCE = 30;
+  const MAX_TIME = 500;
+  let sx, sy, st;
+  function onStart(e){
     const t = e.touches[0];
-    _pnStartX = t.clientX; _pnStartY = t.clientY;
-    keys.Space = true; // hold joust
-    keys.ArrowLeft = false; keys.ArrowRight = false;
-}, {passive: false});
-canvas.addEventListener('touchmove', (e) => {
+    sx = t.clientX; sy = t.clientY; st = Date.now();
     e.preventDefault();
-    if(!e.touches || e.touches.length !== 1) return;
-    const t = e.touches[0];
-    const dx = t.clientX - _pnStartX;
-    const dy = t.clientY - _pnStartY;
-    // If diagonal up-left/up-right, horizontal sign wins.
+  }
+  function onEnd(e){
+    if(sx==null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+    const dt = Date.now() - st;
+    sx = sy = st = null;
+    if (Math.hypot(dx,dy) < MIN_DISTANCE || dt > MAX_TIME) return e.preventDefault();
+    // Horizontal dominance on diagonals:
     if (Math.abs(dx) >= Math.abs(dy)) {
-        keys.ArrowLeft = dx < 0;
-        keys.ArrowRight = dx > 0;
+      // steer left/right (pulse)
+      const isLeft = dx < 0;
+      keys.ArrowLeft = isLeft;
+      keys.ArrowRight = !isLeft;
+      setTimeout(()=>{ keys.ArrowLeft = false; keys.ArrowRight = false; }, 150);
+    } else {
+      // vertical swipe triggers SPACE pulse (attack/joust)
+      keys.Space = true;
+      setTimeout(()=>{ keys.Space = false; }, 150);
     }
-}, {passive: false});
-canvas.addEventListener('touchend', () => {
-    keys.Space = false; keys.ArrowLeft = false; keys.ArrowRight = false;
-});
+    e.preventDefault();
+  }
+  return {
+    init(el){
+      el.style.touchAction = 'none';
+      el.addEventListener('touchstart', onStart, {passive:false});
+      el.addEventListener('touchend', onEnd, {passive:false});
+      el.addEventListener('touchcancel', onEnd, {passive:false});
+    }
+  };
+})();
+SwipeInput.init(canvas);
 
 document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('restart-btn').addEventListener('click', startGame);
