@@ -366,6 +366,7 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
     </div>
   </div>
 
+  <script src="../../js/golden-leaderboard.js"></script>
 <script>
 (() => {
   // ===== Initials (canonical keys) =====
@@ -422,6 +423,7 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
 
   // ===== Leaderboard (localStorage Top-10) =====
   const lbEl = document.getElementById('lb');
+  const lbStatusEl = document.getElementById('lbStatus');
   const slug = (() => {
     try{
       const parts = location.pathname.split('/').filter(Boolean);
@@ -447,14 +449,15 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
       return `<div class="lbRow"><span class="rank">${i+1}</span><span class="who">${who}</span><span class="sc">${sc}</span></div>`;
     }).join('');
   };
-  renderLB();
+  renderLB(null, "Local top-10");
 
   let remoteRows = null;
   // Remote is source of truth; localStorage is fallback.
   (async ()=>{
     if(!window.GoldenLB) return;
     const rows = await GoldenLB.getLeaderboard(slug);
-    if(rows && rows.length){ remoteRows = rows; renderLB(remoteRows); }
+    if(rows && rows.length){ remoteRows = rows; renderLB(remoteRows, "Global top-10"); }
+    else { renderLB(null, "Local top-10"); }
   })();
 
   // ===== Score ingest + dedupe =====
@@ -495,7 +498,8 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
         const ok = await GoldenLB.submitScore(slug, initials, sc);
         if(!ok) return;
         const rows = await GoldenLB.getLeaderboard(slug);
-        if(rows && rows.length){ remoteRows = rows; renderLB(remoteRows); }
+        if(rows && rows.length){ remoteRows = rows; renderLB(remoteRows, "Global top-10"); }
+        else { renderLB(null, "Local top-10"); }
       })();
     }
   });

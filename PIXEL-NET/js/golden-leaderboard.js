@@ -1,4 +1,6 @@
 /**
+ * VERSION: 1.0.1
+
  * Golden Leaderboard Module (logic-only)
  * - No CSS injection
  * - Wrapper stays in full control of theme/layout
@@ -10,7 +12,22 @@
 (function(){
   const GoldenLB = {
     config: {
-      BACKEND_URL: "https://pixel-net-backend.onrender.com"
+      BACKEND_URL: "https://pixel-net-backend.onrender.com",
+      TIMEOUT_MS: 6000
+    },
+
+
+    _fetchJson: async function(url, opts){
+      try{
+        const ctl = (window.AbortController) ? new AbortController() : null;
+        const t = ctl ? setTimeout(()=>ctl.abort(), GoldenLB.config.TIMEOUT_MS||6000) : null;
+        const res = await fetch(url, Object.assign({ headers: { "Content-Type":"application/json" } }, opts||{}, ctl?{signal:ctl.signal}:{}) );
+        if(t) clearTimeout(t);
+        if(!res.ok) return null;
+        return await res.json();
+      }catch(e){
+        return null;
+      }
     },
 
     _normalizeLeaderboard: function (data) {
@@ -24,8 +41,7 @@
 
     getLeaderboard: async function (gameSlug) {
       try {
-        const res = await fetch(`${this.config.BACKEND_URL}/api/leaderboard/${encodeURIComponent(gameSlug)}`, { cache: "no-store" });
-        const data = await res.json();
+        const data = await GoldenLB._fetchJson(`${this.config.BACKEND_URL}/api/leaderboard/${encodeURIComponent(gameSlug)}`, { cache: "no-store" });
         return this._normalizeLeaderboard(data);
       } catch (err) {
         console.error("[GoldenLB] Could not fetch leaderboard", err);
