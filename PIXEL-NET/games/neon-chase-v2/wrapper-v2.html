@@ -80,15 +80,20 @@ a{color:inherit;text-decoration:none}
 }
 .grid{
   width:100%;
-  max-width:1800px;
+  max-width:1400px;
   margin:0 auto;
   display:grid;
-  grid-template-columns:minmax(260px,1fr) max-content minmax(260px,1fr);
+  grid-template-columns:320px minmax(300px,1fr) 320px;
   gap:12px;
   align-items:stretch;
   height:100%;
+  justify-items: center;
 }
 
+.panel#pGame{
+  width:100%;
+  max-width:100%;
+}
 .panel{
   background:var(--card);
   border:1px solid var(--border);
@@ -119,18 +124,14 @@ a{color:inherit;text-decoration:none}
   display:flex;
   flex-direction:column;
   min-height:0;
-  width:fit-content;
-  max-width:100%;
-  justify-self:center;
 }
 .frameWrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)}
 .frameSizer{
   margin:auto;
-  height:100%;
-  width:auto;
+  width:min(100%, 1100px);
   aspect-ratio:var(--aspect);
+  height:auto;
   max-height:100%;
-  max-width:100%;
 }
 iframe{width:100%;height:100%;border:0;display:block;background:#000}
 
@@ -434,8 +435,8 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
   const load = () => { try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(_){ return []; } };
   const save = (arr) => { try{ localStorage.setItem(KEY, JSON.stringify(arr)); }catch(_){ } };
 
-  const renderLB = () => {
-    const rows = load().slice(0,10);
+  const renderLB = (rowsOverride) => {
+    const rows = (Array.isArray(rowsOverride) ? rowsOverride : load()).slice(0,10);
     if(!rows.length){
       lbEl.innerHTML = '<div class="mini">No scores yet.</div>';
       return;
@@ -447,6 +448,14 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
     }).join('');
   };
   renderLB();
+
+  let remoteRows = null;
+  // Remote is source of truth; localStorage is fallback.
+  (async ()=>{
+    if(!window.GoldenLB) return;
+    const rows = await GoldenLB.getLeaderboard(slug);
+    if(rows && rows.length){ remoteRows = rows; renderLB(remoteRows); }
+  })();
 
   // ===== Score ingest + dedupe =====
   let lastSig = '';
@@ -479,6 +488,15 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
 
     if(d.type==='GAME_OVER_SCORE'){
       addScore(d.score);
+      (async ()=>{
+        if(!window.GoldenLB) return;
+        const initials = getInitials();
+        const sc = Math.floor(Number(d.score)||0);
+        const ok = await GoldenLB.submitScore(slug, initials, sc);
+        if(!ok) return;
+        const rows = await GoldenLB.getLeaderboard(slug);
+        if(rows && rows.length){ remoteRows = rows; renderLB(remoteRows); }
+      })();
     }
   });
 
@@ -501,7 +519,7 @@ iframe{width:100%;height:100%;border:0;display:block;background:#000}
     if(id==='pGame'){
       try{ document.getElementById('gameFrame')?.contentWindow?.postMessage({ type:'PIXELNET_RESIZE' }, '*'); }catch(_){}
     }
-    if(id==='pLB') renderLB();
+    if(id==='pLB') renderLB(remoteRows||undefined);
   };
 
   tabBtns.forEach((b)=>{
