@@ -124,6 +124,25 @@ iframe{width:100%;height:100%;border:0;display:block;background:transparent}
   .btn{padding:8px 10px}
 }
 
+
+/* Leaderboard rows (local Top-10) */
+.lb{display:flex;flex-direction:column;gap:10px}
+.lbRow{
+  display:grid;
+  grid-template-columns:28px 1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  box-shadow: 0 10px 24px rgba(0,0,0,.25) inset;
+}
+.lbRow .rank{color:var(--accent);font-weight:900}
+.lbRow .who{letter-spacing:.08em;font-weight:800}
+.lbRow .sc{color:var(--accent2);font-weight:900}
+.muted{color:var(--muted)}
+
 </style>
 </head>
 <body>
@@ -165,17 +184,97 @@ iframe{width:100%;height:100%;border:0;display:block;background:transparent}
       <div class="panel">
         <h3>Leaderboard</h3>
         <div class="content">
-          <div style="color:var(--muted);line-height:1.35">
-            Wrapper routing fixed. (Leaderboard UI wiring stays unchanged for now.)
-          </div>
+          <div class="muted" id="lbStatus">Local top-10</div>
+          <div class="lb" id="lb"></div>
         </div>
       </div>
     </div>
   </div>
 
 <script>
-const KEY="PIXELNET_INITIALS";
-document.getElementById("initials").textContent = localStorage.getItem(KEY) || "???";
+(() => {
+  // Initials (canonical)
+  const PRIMARY = 'playerInitials';
+  const MIRROR  = 'PIXELNET_INITIALS';
+  const norm = (v) => (v||'').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+  const getInitials = () => norm(localStorage.getItem(PRIMARY) || localStorage.getItem(MIRROR) || '');
+  const setInitials = (v) => {
+    v = norm(v);
+    if(!v) return;
+    localStorage.setItem(PRIMARY, v);
+    localStorage.setItem(MIRROR, v);
+  };
+
+  const initialsEl = document.getElementById('initials');
+  const renderInitials = () => { if(initialsEl) initialsEl.textContent = getInitials() || '???'; };
+  renderInitials();
+
+  // Leaderboard (local Top-10; remote integration later)
+  const lbEl = document.getElementById('lb');
+  const statusEl = document.getElementById('lbStatus');
+
+  const slug = (() => {
+    try{
+      const parts = location.pathname.split('/').filter(Boolean);
+      const gi = parts.lastIndexOf('games');
+      if(gi>=0 && parts[gi+1]) return parts[gi+1];
+    }catch(_){}
+    return 'unknown';
+  })();
+
+  const KEY = `LB_${slug}`;
+  const load = () => { try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(_){ return []; } };
+  const save = (arr) => { try{ localStorage.setItem(KEY, JSON.stringify(arr)); }catch(_){ } };
+
+  const renderLB = () => {
+    if(!lbEl) return;
+    const rows = load().slice(0,10);
+    if(!rows.length){
+      lbEl.innerHTML = '<div class="muted">No scores yet.</div>';
+      return;
+    }
+    lbEl.innerHTML = rows.map((r,i)=>{
+      const initials = (r && (r.initials || r.name)) ? String(r.initials || r.name).toUpperCase().slice(0,3) : '???';
+      const score = (r && r.score!=null) ? Math.floor(Number(r.score)||0) : 0;
+      return `<div class="lbRow"><span class="rank">${i+1}</span><span class="who">${initials}</span><span class="sc">${score}</span></div>`;
+    }).join('');
+  };
+
+  let lastSig = '';
+  let lastAt = 0;
+  const addScore = (rawScore) => {
+    const score = Math.max(0, Math.floor(Number(rawScore)||0));
+    const initials = getInitials() || '???';
+    const now = Date.now();
+    const sig = `${initials}:${score}`;
+    if(sig===lastSig && (now-lastAt) < 1200) return;
+    lastSig = sig; lastAt = now;
+
+    const rows = load();
+    rows.push({ initials, score, t: now });
+    rows.sort((a,b)=> (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
+    save(rows.slice(0,10));
+    renderLB();
+  };
+
+  window.addEventListener('message', (e)=>{
+    const d = e.data || {};
+    const type = d.type;
+    if(!type) return;
+
+    if(type==='PIXELNET_SET_INITIALS' && d.initials){
+      setInitials(d.initials); renderInitials(); return;
+    }
+
+    if(type==='GAME_OVER_SCORE' || type==='GAME_OVER' || type==='PIXELNET_SCORE' || type==='PIXELNET_SUBMIT_SCORE'){
+      const s = (d.score!=null)? d.score : (d.finalScore!=null? d.finalScore : d.value);
+      if(s!=null) addScore(s);
+    }
+  });
+
+  statusEl && (statusEl.textContent = 'Local top-10');
+  renderLB();
+})();
 </script>
 </body>
 </html>
