@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AstroType — PIXEL-NET</title>
+<style>
+:root{
+  --bg0:#000000;
+  --bg1:#061018;
+  --bg2:#000000;
+  --text:#f3f6ff;
+  --muted:rgba(243,246,255,.78);
+  --border:rgba(255,255,255,.14);
+  --accent:#ffd24a;   /* lander yellow */
+  --accent2:#39ff14;  /* alien green */
+  --accent3:#00eaff;  /* UI cyan */
+  --card:rgba(0,0,0,.30);
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --font:"VT323","Courier New",Courier,monospace;
+
+  --topbarH:58px;
+  --mobileBtnH:58px;
+  --mobileBtnGap:10px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  color:var(--text);
+  font-family:var(--font);
+  background:
+    radial-gradient(1200px 700px at 18% 10%, color-mix(in srgb, var(--accent) 25%, transparent), transparent 70%),
+    radial-gradient(900px 520px at 88% 18%, color-mix(in srgb, var(--accent2) 22%, transparent), transparent 70%),
+    linear-gradient(135deg,var(--bg0),var(--bg1) 55%,var(--bg2));
+  overflow:hidden;
+}
+a{color:inherit;text-decoration:none}
+.topbar{
+  position:sticky;top:0;z-index:5;
+  position:relative;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;
+  height:var(--topbarH);
+  background:rgba(0,0,0,.55);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.leftTop{display:flex;align-items:center;gap:10px}
+.btn{
+  appearance:none;border:1px solid var(--border);
+  background:rgba(0,0,0,.35);color:var(--text);
+  padding:8px 12px;border-radius:12px;
+  cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.25);
+}
+.btn:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--border));}
+.badge{
+  padding:7px 10px;border-radius:999px;
+  border:1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 18%, rgba(0,0,0,.35)), rgba(0,0,0,.35));
+  font-weight:800;letter-spacing:.08em;
+  text-transform:uppercase;font-size:14px;
+}
+.player{
+  display:flex;align-items:center;gap:10px;
+  padding:7px 10px;border-radius:999px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.35);
+  cursor:pointer;
+  user-select:none;
+}
+.player:hover{border-color:color-mix(in srgb, var(--accent) 70%, var(--border)); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);}
+.player .tag{opacity:.8;font-size:12px;letter-spacing:.12em}
+
+/* Initials badge: VT323 baseline sits low; enforce true visual centering. */
+.player #initials{
+  font-weight:900;
+  font-size:14px;
+  letter-spacing:.18em;
+  color:var(--accent);
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  /* Normalize box metrics so baseline doesn't "sink" inside pill */
+  line-height:1;
+  height:1em;
+  padding:0;
+
+  /* Tiny optical nudge for VT323 font metrics */
+  transform:translateY(-1px);
+}
+
+.wrap{max-width:1400px;margin:0 auto;padding:12px}
+.grid{display:grid;grid-template-columns:320px minmax(300px,1fr) 320px;gap:12px;align-items:stretch;grid-template-rows:1fr;height:100%;justify-items:center;
+}
+
+.panel#pGame{
+  width:100%;
+  max-width:100%;
+}
+/* AstroType v2 — desktop expanded layout stability (no spacing changes) */
+.wrap{height:calc(100svh - var(--topbarH));}
+.panel{display:flex;flex-direction:column;min-height:0;}
+.center{display:flex;flex-direction:column;min-height:0;}
+.panel{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.panel h3{
+  margin:0;
+  padding:12px 14px;
+  font-size:13px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+  background:rgba(0,0,0,.25);
+}
+.panel .content{padding:12px 14px;flex:1}
+.howto p{margin:0 0 10px 0;color:var(--muted);line-height:1.35}
+.howto ul{margin:10px 0 0 18px;padding:0}
+.howto li{margin:8px 0}
+.center{
+  background:rgba(0,0,0,.28);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.gameTitle{display:none;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.25)}
+.gameTitle .name{font-weight:900;letter-spacing:.06em}
+.gameTitle .hint{font-size:12px;color:var(--muted)}
+.frameWrap{width:100%;flex:1;min-height:520px;background:rgba(0,0,0,.35)}
+iframe{width:100%;height:100%;border:0;display:block;background:transparent}
+@media (max-width:1100px){.grid{grid-template-columns:1fr}.frameWrap{height:min(calc(100svh - 240px), 880px);min-height:520px}}
+@media (max-width:520px){.wrap{padding:10px}.frameWrap{min-height:480px}.btn{padding:8px 10px}}
+
+/* PN_CENTER_PATCH */
+.topbar .badge{position:absolute;left:50%;transform:translateX(-50%);}
+/* gameTitle hidden for AstroType */
+
+
+#pGame h3{text-align:center}
+/* LB rows (shared) */
+.lb{display:flex;flex-direction:column;gap:10px}
+.lbRow{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;
+  padding:10px 12px;border:1px solid var(--border);border-radius:14px;
+  background:color-mix(in srgb, var(--card) 85%, transparent);
+  box-shadow:0 10px 24px rgba(0,0,0,.25) inset}
+.lbRow .rank{color:var(--accent);font-weight:900}
+.lbRow .who{letter-spacing:.08em;font-weight:800}
+.lbRow .sc{color:var(--accent2);font-weight:900}
+.muted{color:var(--muted)}
+
+/* ===== Mobile: bottom tabs (Creek Crosser Embed A behavior) ===== */
+.mobileWrap{display:none; height: calc(100svh - var(--topbarH)); padding:12px;}
+.mobileStack{height:100%; display:flex; flex-direction:column; gap:12px;}
+.mobileZone{flex:1; min-height:0; display:flex;}
+.mobileZone > *{flex:1; min-height:0;}
+.mobileZone .content{min-height:0;}
+.mobileZone .panel .content{overflow:auto;}
+.mobileZone .center{display:flex; flex-direction:column; min-height:0;}
+.mobileZone .frameWrap{flex:1; min-height:0; height:auto;}
+.hidden{display:none !important;}
+
+.mobileTabs{display:flex; gap: var(--mobileBtnGap); height: var(--mobileBtnH);}
+.tabBtn{
+  flex:1;
+  appearance:none;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.35);
+  color:var(--text);
+  border-radius:18px;
+  font-family:var(--font);
+  font-size:22px;
+  letter-spacing:.04em;
+  cursor:pointer;
+  height: var(--mobileBtnH);
+}
+.tabBtn[aria-selected="true"]{
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, rgba(0,0,0,.35)), rgba(0,0,0,.35));
+}
+
+@media (max-width: 980px){
+  .wrap{display:none;}
+  .mobileWrap{display:block;}
+}
+
+/* Initials modal (match Creek Crosser Embed A structure) */
+.modalBack{
+  position:fixed; inset:0; z-index:50;
+  display:none;
+  align-items:center; justify-content:center;
+  background: rgba(0,0,0,.68);
+  backdrop-filter: blur(10px);
+}
+.modalCard{
+  width: min(520px, calc(100vw - 28px));
+  border-radius: 22px;
+  border:1px solid color-mix(in srgb, var(--accent) 55%, rgba(255,255,255,.12));
+  background: rgba(0,0,0,.72);
+  box-shadow: 0 28px 80px rgba(0,0,0,.55);
+  overflow:hidden;
+  position:relative;
+}
+.modalClose{
+  position:absolute; top:14px; right:14px;
+  width:44px; height:44px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.25);
+  color: var(--text);
+  cursor:pointer;
+  font-size:18px;
+}
+.modalClose:hover{ border-color: color-mix(in srgb, var(--accent) 70%, rgba(255,255,255,.16)); }
+.modalInner{ padding: 22px 22px 18px; display:grid; gap: 14px; }
+.modalTitle{ text-align:center; font-size: 26px; letter-spacing:.10em; font-weight:900; text-transform:uppercase; }
+.modalInput{
+  height: 56px;
+  border-radius: 16px;
+  border:1px solid rgba(255,255,255,.18);
+  background: rgba(0,0,0,.25);
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 30px;
+  letter-spacing: .30em;
+  text-align:center;
+  outline:none;
+}
+.modalInput:focus{ border-color: color-mix(in srgb, var(--accent) 70%, rgba(255,255,255,.18)); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
+.modalSave{
+  height: 52px;
+  border-radius: 16px;
+  border:1px solid color-mix(in srgb, var(--accent2) 55%, rgba(255,255,255,.12));
+  background: color-mix(in srgb, var(--accent2) 12%, rgba(0,0,0,.28));
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 24px;
+  cursor:pointer;
+}
+.modalSave:hover{ border-color: color-mix(in srgb, var(--accent2) 80%, rgba(255,255,255,.12)); }
+.modalHint{ text-align:center; color: rgba(243,246,255,.72); font-size: 16px; opacity: .92; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="leftTop">
+      <a class="btn" href="../../index.html" id="exitLink">EXIT</a>
+      <div class="badge">ASTROTYPE</div>
+    </div>
+    <button class="player" id="playerBtn" title="Set initials" type="button">
+      <div class="tag">PLAYER</div>
+      <div id="initials">???</div>
+    </button>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+      <div class="panel howto">
+        <h3>How To Play</h3>
+        <div class="content">
+          <p>Type the falling alien codes to defend the lunar base.</p>
+          <ul>
+            <li>Keyboard: type the code exactly</li>
+            <li>Keep streaks for bonus zaps</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="center">
+        <div class="frameWrap">
+          <iframe id="gameFrame" src="./game.html" allow="autoplay; fullscreen *" title="AstroType" data-aspect="1.333"></iframe>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Leaderboard</h3>
+        <div class="content">
+          <div id="lb" class="lb"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile: one panel visible with bottom tabs -->
+  <div class="mobileWrap" id="mobileWrap">
+    <div class="mobileStack">
+      <div class="mobileZone">
+        <div class="panel howto hidden" id="mHow">
+          <h3>How To Play</h3>
+          <div class="content">
+            <p>Type the falling alien codes to defend the lunar base.</p>
+            <ul>
+              <li>Keyboard: type the code exactly</li>
+              <li>Keep streaks for bonus zaps</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="center" id="mGame">
+          <div class="frameWrap">
+          <iframe id="gameFrameM" src="./game.html" allow="autoplay; fullscreen *" title="AstroType"></iframe>
+          </div>
+        </div>
+
+        <div class="panel hidden" id="mLb">
+          <h3>Leaderboard</h3>
+          <div class="content">
+            <div id="lbM" class="lb"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mobileTabs" role="tablist" aria-label="Panels">
+        <button class="tabBtn" id="tabHow" type="button" role="tab" aria-selected="false">How-To</button>
+        <button class="tabBtn" id="tabGame" type="button" role="tab" aria-selected="true">Game</button>
+        <button class="tabBtn" id="tabLb" type="button" role="tab" aria-selected="false">Leaderboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Initials modal (Creek-like) -->
+  <div class="modalBack" id="modalBack" aria-hidden="true">
+    <div class="modalCard" role="dialog" aria-modal="true">
+      <button class="modalClose" id="modalClose" type="button">✕</button>
+      <div class="modalInner">
+        <div class="modalTitle">Enter Initials</div>
+        <input class="modalInput" id="initialsInput" maxlength="3" placeholder="— — —" />
+        <button class="modalSave" id="saveInitials" type="button">Save</button>
+        <div class="modalHint">Press Enter to save</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // --------- Initials (canonical) ----------
+  const PRIMARY = 'playerInitials';
+  const MIRROR  = 'PIXELNET_INITIALS';
+  const norm = (v) => (v||'').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+  const getInitials = () => norm(localStorage.getItem(PRIMARY) || localStorage.getItem(MIRROR) || '');
+  const setInitials = (v) => {
+    v = norm(v);
+    if(!v) return;
+    localStorage.setItem(PRIMARY, v);
+    localStorage.setItem(MIRROR, v);
+  };
+
+  const initialsEl = document.getElementById('initials');
+  const renderInitials = () => { if(initialsEl) initialsEl.textContent = getInitials() || '???'; };
+  renderInitials();
+  window.addEventListener('storage', (e)=>{ if(e.key===PRIMARY || e.key===MIRROR) renderInitials(); });
+
+  // Initials modal (Creek Crosser style)
+  const modalBack = document.getElementById("modalBack");
+  const modalClose = document.getElementById("modalClose");
+  const initialsInput = document.getElementById("initialsInput");
+  const saveInitialsBtn = document.getElementById("saveInitials");
+  const playerBtn = document.getElementById('playerBtn') || initialsEl;
+
+  const openModal = () => {
+    if(!modalBack || !initialsInput) return;
+    initialsInput.value = getInitials() || '';
+    modalBack.style.display = 'flex';
+    modalBack.setAttribute('aria-hidden','false');
+    setTimeout(()=>initialsInput.focus(), 50);
+  };
+  const closeModal = () => {
+    if(!modalBack) return;
+    modalBack.style.display = 'none';
+    modalBack.setAttribute('aria-hidden','true');
+  };
+
+  const focusGame = () => {
+    // focus whichever iframe is currently visible
+    const fm = document.getElementById('gameFrameM');
+    const fd = document.getElementById('gameFrame');
+    const useM = window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
+    const fr = useM ? fm : fd;
+    try{ fr?.contentWindow?.focus?.(); }catch(_){ try{ fr?.focus?.(); }catch(__){} }
+  };
+
+  playerBtn?.addEventListener('click', (e)=>{ e.preventDefault(); openModal(); });
+  modalClose?.addEventListener('click', ()=>{ closeModal(); setTimeout(focusGame, 0); });
+  modalBack?.addEventListener('click', (e)=>{ if(e.target===modalBack){ closeModal(); setTimeout(focusGame, 0); } });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modalBack?.style.display==='flex'){ closeModal(); setTimeout(focusGame, 0); } });
+
+  const commitInitials = () => {
+    setInitials(initialsInput?.value || '');
+    renderInitials();
+    closeModal();
+    setTimeout(focusGame, 0);
+  };
+  saveInitialsBtn?.addEventListener('click', commitInitials);
+  initialsInput?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); commitInitials(); } });
+
+  // --------- Leaderboard (localStorage Top-10 per copy) ----------
+  const lbEl = document.getElementById('lb');
+  const lbElM = document.getElementById('lbM');
+
+  // slug from folder name (…/games/<slug>/wrapper-v2.html)
+  const slug = (() => {
+    try{
+      const parts = location.pathname.split('/').filter(Boolean);
+      const gi = parts.lastIndexOf('games');
+      if(gi>=0 && parts[gi+1]) return parts[gi+1];
+    }catch(_){}
+    return 'unknown';
+  })();
+
+  const NEW_KEY = `LB_${slug}`;
+  const LEGACY_KEYS = [
+    `PIXELNET_LB_${slug}_v2_0`,
+    `PIXELNET_LB_${slug}_v2_0`.replace(/-/g,'_'),
+    `PIXELNET_LB_${slug}`,
+  ];
+
+  const load = (k) => { try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch(_){ return []; } };
+  const save = (k, arr) => { try{ localStorage.setItem(k, JSON.stringify(arr)); }catch(_){ } };
+
+  // migrate legacy -> new (only if new empty)
+  try{
+    if(load(NEW_KEY).length===0){
+      for(const k of LEGACY_KEYS){
+        const v = load(k);
+        if(Array.isArray(v) && v.length){
+          save(NEW_KEY, v);
+          break;
+        }
+      }
+    }
+  }catch(_){}
+
+  const renderLB = () => {
+    const targets = [lbEl, lbElM].filter(Boolean);
+    if(!targets.length) return;
+    const rows = load(NEW_KEY).slice(0,10);
+    if(!rows.length){
+      targets.forEach(t=>{ t.innerHTML = '<div class="muted">No scores yet.</div>'; });
+      return;
+    }
+    const html = rows.map((r,i)=>{
+      const initials = (r && (r.initials || r.name)) ? String(r.initials || r.name).toUpperCase().slice(0,3) : '???';
+      const score = (r && r.score!=null) ? Math.floor(Number(r.score)||0) : 0;
+      return `<div class="lbRow"><span class="rank">${i+1}</span><span class="who">${initials}</span><span class="sc">${score}</span></div>`;
+    }).join('');
+    targets.forEach(t=>{ t.innerHTML = html; });
+  };
+  window.PX_refreshLeaderboard = renderLB;
+  renderLB();
+
+  // --------- Score intake (single-submit guard) ----------
+  let lastSig = '';
+  let lastAt = 0;
+  const addScore = (rawScore) => {
+    const score = Math.max(0, Math.floor(Number(rawScore)||0));
+    const initials = getInitials() || '???';
+
+    const now = Date.now();
+    const sig = `${initials}:${score}`;
+    if(sig===lastSig && (now-lastAt) < 1200) return; // de-dupe burst
+    lastSig = sig; lastAt = now;
+
+    const rows = load(NEW_KEY);
+    rows.push({ initials, score, t: now });
+    rows.sort((a,b)=> (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
+    save(NEW_KEY, rows.slice(0,10));
+    renderLB();
+  };
+
+  window.addEventListener('message', (e)=>{
+    const d = e.data || {};
+    const type = d.type;
+    if(!type) return;
+
+    // set initials from home if sent
+    if(type==='PIXELNET_SET_INITIALS' && d.initials){
+      setInitials(d.initials); renderInitials(); return;
+    }
+
+    // accept score signals
+    if(type==='GAME_OVER_SCORE' || type==='GAME_OVER' || type==='PIXELNET_SCORE' || type==='PIXELNET_SUBMIT_SCORE'){
+      const s = (d.score!=null)? d.score : (d.finalScore!=null? d.finalScore : d.value);
+      if(s!=null) addScore(s);
+    }
+  });
+
+  // Mobile tabs: exactly one panel visible
+  const mHow = document.getElementById('mHow');
+  const mGame = document.getElementById('mGame');
+  const mLb = document.getElementById('mLb');
+  const tabHow = document.getElementById('tabHow');
+  const tabGame = document.getElementById('tabGame');
+  const tabLb = document.getElementById('tabLb');
+  const setTab = (which) => {
+    if(!mHow || !mGame || !mLb || !tabHow || !tabGame || !tabLb) return;
+    mHow.classList.toggle('hidden', which!=='how');
+    mGame.classList.toggle('hidden', which!=='game');
+    mLb.classList.toggle('hidden', which!=='lb');
+    tabHow.setAttribute('aria-selected', which==='how' ? 'true' : 'false');
+    tabGame.setAttribute('aria-selected', which==='game' ? 'true' : 'false');
+    tabLb.setAttribute('aria-selected', which==='lb' ? 'true' : 'false');
+    if(which==='game') setTimeout(focusGame, 0);
+  };
+  tabHow?.addEventListener('click', ()=>setTab('how'));
+  tabGame?.addEventListener('click', ()=>setTab('game'));
+  tabLb?.addEventListener('click', ()=>setTab('lb'));
+  setTab('game');
+
+  // focus iframe when interacting (don’t steal focus while typing in modal)
+  const focusFrameAny = () => {
+    if(modalBack?.style.display==='flex') return;
+    focusGame();
+  };
+  document.addEventListener('pointerdown', (e)=>{
+    const t = e.target;
+    if(t===initialsInput) return;
+    focusFrameAny();
+  }, {passive:true});
+  window.addEventListener('visibilitychange', ()=>{ if(!document.hidden) setTimeout(focusFrameAny, 0); });
+
+  // --------- Exit: always break out to arcade grid ----------
+  // Some cabinets load wrappers inside an iframe; a plain <a href> only navigates the iframe.
+  // Force top-level navigation back to PIXEL-NET/index.html.
+  const exitLink = document.getElementById('exitLink');
+  exitLink?.addEventListener('click', (e)=>{
+    e.preventDefault();
+    try{ window.top.location.href = exitLink.getAttribute('href') || '../../index.html'; }
+    catch(_){ window.location.href = exitLink.getAttribute('href') || '../../index.html'; }
+  });
+
+})();
+</script>
+</body>
+</html>

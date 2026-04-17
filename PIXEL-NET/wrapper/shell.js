@@ -1,0 +1,252 @@
+(() => {
+  const CFG = (window.PX_WRAPPER || {});
+  const T = CFG.theme || {};
+  const root = document.documentElement;
+  // Apply per-game theme
+  if (T.hero)  root.style.setProperty('--hero',  T.hero);
+  if (T.hero2) root.style.setProperty('--hero2', T.hero2);
+  if (T.bg0)   root.style.setProperty('--bg0',   T.bg0);
+  if (T.bg2)   root.style.setProperty('--bg2',   T.bg2);
+
+  const title = CFG.title || 'PIXEL-NET';
+  document.title = title + ' — PIXEL-NET';
+
+  const instructions = Array.isArray(CFG.instructions) ? CFG.instructions : [];
+  const liHTML = instructions.map(x => `<li>${x}</li>`).join('');
+
+  // Inject markup
+  document.body.innerHTML = `
+    <div class="topbar">
+      <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a></div>
+      <div class="gameBadge" id="gameBadge">${title.toUpperCase()}</div>
+      <div class="playerBtn" id="playerBtn" role="button" aria-label="Set player initials">
+        <span class="muted">PLAYER</span><strong id="initials">???</strong>
+      </div>
+    </div>
+
+    <div class="shell">
+      <div class="panel">
+        <h3>How To Play</h3>
+        <div class="content">
+          <ul id="instructionsDesktop" class="small clampList">${liHTML}</ul>
+          <div class="noteLine">No scrolling.</div>
+        </div>
+      </div>
+      <div class="center">
+        <div class="frame"><iframe id="gameDesktop" allow="gamepad *; fullscreen *; autoplay"></iframe></div>
+      </div>
+      <div class="panel leaderboard">
+        <h3>Leaderboard</h3>
+        <div class="content"><div class="boardStack" id="boardDesktop"></div></div>
+      </div>
+    </div>
+
+    <div class="mobileWrap">
+      <div class="mobileStack">
+        <div class="displayZone">
+          <div class="displayCard mobileFrame" id="view-game">
+            <iframe id="gameMobile" allow="gamepad *; fullscreen *; autoplay"></iframe>
+          </div>
+          <div class="panel displayCard hidden" id="view-howto">
+            <div class="content">
+              <ul id="instructionsMobile" class="small clampList">${liHTML}</ul>
+              <div class="noteLine">No scrolling.</div>
+            </div>
+          </div>
+          <div class="panel leaderboard displayCard hidden" id="view-board">
+            <div class="content"><div class="boardStack" id="boardMobile"></div></div>
+          </div>
+        </div>
+        <div class="btnbar">
+          <button class="tabBtn active" data-tab="game" type="button">Game</button>
+          <button class="tabBtn" data-tab="howto" type="button">How To Play</button>
+          <button class="tabBtn" data-tab="board" type="button">Leaderboard</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modalBack" id="modalBack" aria-hidden="true">
+      <div class="modalCard" role="dialog" aria-modal="true">
+        <button class="modalClose" id="modalClose" type="button">✕</button>
+        <div class="modalInner">
+          <div class="modalTitle">Enter Initials</div>
+          <input class="modalInput" id="initialsInput" maxlength="3" placeholder="— — —" />
+          <button class="modalSave" id="saveInitials" type="button">Save</button>
+          <div class="modalHint">Press Enter to save</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // --- Initials (shared across all games) ---
+  const KEY_MAIN = 'PIXELNET_INITIALS';
+  const KEY_ALT  = 'playerInitials';
+  const clean = s => (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+  const getInitials = () =>
+    localStorage.getItem(KEY_MAIN) || localStorage.getItem(KEY_ALT) ||
+    sessionStorage.getItem(KEY_ALT) || '???';
+  const setInitialsAll = v => {
+    localStorage.setItem(KEY_MAIN, v);
+    localStorage.setItem(KEY_ALT, v);
+    sessionStorage.setItem(KEY_ALT, v);
+  };
+  const renderInitials = () => {
+    const el = document.getElementById('initials');
+    if (el) el.textContent = getInitials();
+  };
+  renderInitials();
+  window.addEventListener('storage', e => {
+    if (e.key === KEY_MAIN || e.key === KEY_ALT) renderInitials();
+  });
+
+  // Exit: prefer history.back, fallback to home
+  document.getElementById('exitBtn').addEventListener('click', e => {
+    if (history.length > 1) { e.preventDefault(); history.back(); }
+  });
+
+  // --- Iframe (desktop + mobile share src) ---
+  const entry = CFG.entry || './game.html';
+  const gd = document.getElementById('gameDesktop');
+  const gm = document.getElementById('gameMobile');
+  gd.src = entry;
+  gm.src = entry;
+
+  const focusFrame = el => {
+    try { el.focus(); } catch(_) {}
+    try { el.contentWindow && el.contentWindow.focus && el.contentWindow.focus(); } catch(_) {}
+  };
+  gd.addEventListener('load', () => focusFrame(gd));
+  gm.addEventListener('load', () => focusFrame(gm));
+  document.querySelector('.center .frame')?.addEventListener('pointerdown', () => focusFrame(gd));
+  document.querySelector('#view-game')?.addEventListener('pointerdown', () => focusFrame(gm));
+
+  // --- Leaderboard (localStorage Top-10 per slug) ---
+  const slug = CFG.slug || (location.pathname.split('/').filter(Boolean).slice(-2,-1)[0] || 'unknown');
+  const LB_KEY = `LB_${slug}`;
+  const LEGACY_KEYS = [
+    `PIXELNET_LB_${slug}_v2_0`,
+    `PIXELNET_LB_${slug}_v2_0`.replace(/-/g,'_'),
+    `PIXELNET_LB_${slug}`,
+  ];
+
+  const lbLoadRaw = k => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch(_) { return []; } };
+  const lbSave    = arr => { try { localStorage.setItem(LB_KEY, JSON.stringify(arr || [])); } catch(_) {} };
+
+  // Migrate legacy on first run if new is empty
+  (function migrate(){
+    if (lbLoadRaw(LB_KEY).length) return;
+    for (const k of LEGACY_KEYS) {
+      const v = lbLoadRaw(k);
+      if (Array.isArray(v) && v.length) { lbSave(v); break; }
+    }
+  })();
+
+  const lbLoad = () => {
+    let rows = lbLoadRaw(LB_KEY);
+    // Strip known seeded "JRF" demo rows and any flagged demo entries
+    try {
+      if (rows.length >= 5) {
+        const ini = rows.map(r => String((r && (r.initials || r.name)) || '').toUpperCase().slice(0,3));
+        const allSame = ini.every(x => x && x === ini[0]);
+        if ((allSame && ini[0] === 'JRF') || rows.some(r => r && (r.seeded || r.demo))) {
+          localStorage.removeItem(LB_KEY);
+          rows = [];
+        }
+      }
+    } catch(_) {}
+    return Array.isArray(rows) ? rows : [];
+  };
+
+  function renderBoard(targetId, rows) {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    el.innerHTML = '';
+    if (!rows.length) { el.innerHTML = `<div class="small">No scores yet.</div>`; return; }
+    rows.slice(0,10).forEach((r, i) => {
+      const name = (r.initials || r.name || '???').toString().toUpperCase().slice(0,3);
+      const score = (r.score ?? r.value ?? 0);
+      const row = document.createElement('div');
+      row.className = 'boardRow' + (i===0 ? ' top1' : '');
+      row.innerHTML = `<div class="rank">${i+1}.</div><div class="name">${name}</div><div class="score">${score}</div>`;
+      el.appendChild(row);
+    });
+  }
+  const refreshBoards = () => {
+    const rows = lbLoad().slice(0,10);
+    renderBoard('boardDesktop', rows);
+    renderBoard('boardMobile', rows);
+  };
+  refreshBoards();
+
+  // --- Score intake (dedupe burst) ---
+  let lastSig = '', lastAt = 0;
+  function addScore(rawScore) {
+    const initials = getInitials() || '???';
+    const score = Math.max(0, Math.floor(Number(rawScore) || 0));
+    const now = Date.now();
+    const sig = `${initials}:${score}`;
+    if (sig === lastSig && (now - lastAt) < 1200) return;
+    lastSig = sig; lastAt = now;
+    const rows = lbLoad();
+    rows.push({ initials, score, t: now });
+    rows.sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
+    lbSave(rows.slice(0,10));
+    refreshBoards();
+  }
+
+  window.addEventListener('message', e => {
+    const d = e.data || {};
+    if (!d || !d.type) return;
+    if (d.type === 'PIXELNET_SET_INITIALS' && d.initials) {
+      const v = clean(d.initials);
+      if (v) { setInitialsAll(v); renderInitials(); }
+      return;
+    }
+    if (d.type === 'GAME_OVER_SCORE' || d.type === 'GAME_OVER' ||
+        d.type === 'PIXELNET_SCORE' || d.type === 'PIXELNET_SUBMIT_SCORE') {
+      const s = d.score != null ? d.score : (d.finalScore != null ? d.finalScore : d.value);
+      if (s != null) addScore(s);
+    }
+  });
+
+  // --- Initials modal ---
+  const modalBack = document.getElementById('modalBack');
+  const input = document.getElementById('initialsInput');
+  const openModal = () => {
+    modalBack.style.display = 'flex';
+    modalBack.setAttribute('aria-hidden','false');
+    input.value = getInitials().replace(/\?/g,'');
+    input.focus(); input.select();
+  };
+  const closeModal = () => {
+    modalBack.style.display = 'none';
+    modalBack.setAttribute('aria-hidden','true');
+  };
+  document.getElementById('playerBtn').addEventListener('click', openModal);
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  modalBack.addEventListener('click', e => { if (e.target === modalBack) closeModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modalBack.style.display === 'flex') closeModal();
+  });
+  function saveNow(){
+    const v = clean(input.value);
+    if (!v) return;
+    setInitialsAll(v); renderInitials(); closeModal();
+  }
+  document.getElementById('saveInitials').addEventListener('click', saveNow);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') saveNow(); });
+
+  // --- Mobile tab switcher ---
+  const btns = document.querySelectorAll('.tabBtn');
+  const views = {
+    game:  document.getElementById('view-game'),
+    howto: document.getElementById('view-howto'),
+    board: document.getElementById('view-board'),
+  };
+  const setTab = tab => {
+    Object.keys(views).forEach(k => views[k].classList.toggle('hidden', k !== tab));
+    btns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    if (tab === 'game') setTimeout(() => focusFrame(gm), 50);
+  };
+  btns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+})();
