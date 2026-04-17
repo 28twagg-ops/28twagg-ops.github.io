@@ -1,7 +1,28 @@
+// ================================================================
+// PIXEL-NET Shared Wrapper Shell
+// ================================================================
+// FIREBASE SETUP — Shared cross-device leaderboards (free)
+//
+// 1. Go to https://console.firebase.google.com → Add project
+// 2. Click "Realtime Database" in the left sidebar → Create database
+//    → Start in TEST MODE (sets read/write to true)
+// 3. Copy your database URL (looks like:
+//    https://YOUR-PROJECT-default-rtdb.firebaseio.com)
+// 4. Paste it below and replace null:
+//
+const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
+// example: "https://pixel-net-arcade-default-rtdb.firebaseio.com"
+//
+// After saving this file and pushing to GitHub, all players on
+// all devices will share the same leaderboard per game.
+// See PIXEL-NET/wrapper/FIREBASE_SETUP.md for full instructions.
+// ================================================================
+
 (() => {
   const CFG = (window.PX_WRAPPER || {});
   const T = CFG.theme || {};
   const root = document.documentElement;
+
   // Apply per-game theme
   if (T.hero)  root.style.setProperty('--hero',  T.hero);
   if (T.hero2) root.style.setProperty('--hero2', T.hero2);
@@ -33,7 +54,9 @@
         </div>
       </div>
       <div class="center">
-        <div class="frame"><iframe id="gameDesktop" allow="gamepad *; fullscreen *; autoplay"></iframe></div>
+        <div class="frame" id="gameFrame">
+          <iframe id="gameDesktop" allow="gamepad *; fullscreen *; autoplay"></iframe>
+        </div>
       </div>
       <div class="panel leaderboard">
         <h3>Leaderboard</h3>
@@ -78,7 +101,24 @@
     </div>
   `;
 
-  // --- Initials (shared across all games) ---
+  // --- Aspect ratio: prevent game canvas stretching ---
+  // Games with a fixed canvas size get letterboxed instead of stretched.
+  if (CFG.aspectRatio) {
+    const ratioStyle = [
+      `aspect-ratio:${CFG.aspectRatio}`,
+      'width:auto',
+      'height:auto',
+      'max-width:100%',
+      'max-height:100%',
+      'align-self:center',
+    ].join(';') + ';';
+    const frame = document.getElementById('gameFrame');
+    const mframe = document.getElementById('view-game');
+    if (frame)  frame.setAttribute('style', ratioStyle);
+    if (mframe) mframe.setAttribute('style', ratioStyle + 'border-radius:22px;overflow:hidden;');
+  }
+
+  // --- Initials (shared across all games, all tabs) ---
   const KEY_MAIN = 'PIXELNET_INITIALS';
   const KEY_ALT  = 'playerInitials';
   const clean = s => (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
@@ -104,7 +144,7 @@
     if (history.length > 1) { e.preventDefault(); history.back(); }
   });
 
-  // --- Iframe (desktop + mobile share src) ---
+  // --- Iframe setup ---
   const entry = CFG.entry || './game.html';
   const gd = document.getElementById('gameDesktop');
   const gm = document.getElementById('gameMobile');
@@ -117,10 +157,10 @@
   };
   gd.addEventListener('load', () => focusFrame(gd));
   gm.addEventListener('load', () => focusFrame(gm));
-  document.querySelector('.center .frame')?.addEventListener('pointerdown', () => focusFrame(gd));
-  document.querySelector('#view-game')?.addEventListener('pointerdown', () => focusFrame(gm));
+  document.getElementById('gameFrame')?.addEventListener('pointerdown', () => focusFrame(gd));
+  document.getElementById('view-game')?.addEventListener('pointerdown', () => focusFrame(gm));
 
-  // --- Leaderboard (localStorage Top-10 per slug) ---
+  // --- Leaderboard: slug + local storage keys ---
   const slug = CFG.slug || (location.pathname.split('/').filter(Boolean).slice(-2,-1)[0] || 'unknown');
   const LB_KEY = `LB_${slug}`;
   const LEGACY_KEYS = [
@@ -132,7 +172,7 @@
   const lbLoadRaw = k => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch(_) { return []; } };
   const lbSave    = arr => { try { localStorage.setItem(LB_KEY, JSON.stringify(arr || [])); } catch(_) {} };
 
-  // Migrate legacy on first run if new is empty
+  // Migrate legacy keys on first run
   (function migrate(){
     if (lbLoadRaw(LB_KEY).length) return;
     for (const k of LEGACY_KEYS) {
@@ -143,7 +183,6 @@
 
   const lbLoad = () => {
     let rows = lbLoadRaw(LB_KEY);
-    // Strip known seeded "JRF" demo rows and any flagged demo entries
     try {
       if (rows.length >= 5) {
         const ini = rows.map(r => String((r && (r.initials || r.name)) || '').toUpperCase().slice(0,3));
@@ -157,13 +196,42 @@
     return Array.isArray(rows) ? rows : [];
   };
 
+  // --- Firebase REST helpers (shared leaderboard) ---
+  const FB_BASE = FIREBASE_DB_URL ? `${FIREBASE_DB_URL}/lb/${slug}` : null;
+
+  async function fbFetch() {
+    if (!FB_BASE) return null;
+    try {
+      const r = await fetch(`${FB_BASE}.json`);
+      if (!r.ok) return null;
+      const data = await r.json();
+      if (!data || typeof data !== 'object') return [];
+      return Object.values(data)
+        .filter(x => x && typeof x.score === 'number')
+        .sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0))
+        .slice(0, 10);
+    } catch(_) { return null; }
+  }
+
+  async function fbPost(entry) {
+    if (!FB_BASE) return;
+    try {
+      await fetch(`${FB_BASE}.json`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(entry),
+      });
+    } catch(_) {}
+  }
+
+  // --- Render leaderboard rows ---
   function renderBoard(targetId, rows) {
     const el = document.getElementById(targetId);
     if (!el) return;
     el.innerHTML = '';
     if (!rows.length) { el.innerHTML = `<div class="small">No scores yet.</div>`; return; }
     rows.slice(0,10).forEach((r, i) => {
-      const name = (r.initials || r.name || '???').toString().toUpperCase().slice(0,3);
+      const name  = (r.initials || r.name || '???').toString().toUpperCase().slice(0,3);
       const score = (r.score ?? r.value ?? 0);
       const row = document.createElement('div');
       row.className = 'boardRow' + (i===0 ? ' top1' : '');
@@ -171,29 +239,41 @@
       el.appendChild(row);
     });
   }
-  const refreshBoards = () => {
-    const rows = lbLoad().slice(0,10);
+
+  // Refresh both desktop + mobile boards.
+  // If Firebase is configured, shows global scores; otherwise falls back to local.
+  const refreshBoards = async () => {
+    const cloud = await fbFetch();
+    const rows  = (cloud !== null ? cloud : lbLoad()).slice(0, 10);
     renderBoard('boardDesktop', rows);
     renderBoard('boardMobile', rows);
   };
   refreshBoards();
 
-  // --- Score intake (dedupe burst) ---
+  // --- Score intake (dedup burst within 1.2 s) ---
   let lastSig = '', lastAt = 0;
-  function addScore(rawScore) {
+  async function addScore(rawScore) {
     const initials = getInitials() || '???';
     const score = Math.max(0, Math.floor(Number(rawScore) || 0));
     const now = Date.now();
     const sig = `${initials}:${score}`;
     if (sig === lastSig && (now - lastAt) < 1200) return;
     lastSig = sig; lastAt = now;
+
+    const entry = { initials, score, t: now };
+
+    // Always save locally (works offline / no Firebase configured)
     const rows = lbLoad();
-    rows.push({ initials, score, t: now });
+    rows.push(entry);
     rows.sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
     lbSave(rows.slice(0,10));
-    refreshBoards();
+
+    // Also push to Firebase (fire-and-forget, then refresh)
+    fbPost(entry).finally(() => refreshBoards());
+    refreshBoards(); // show local result immediately; Firebase update follows
   }
 
+  // Listen for score / initials messages from iframed games
   window.addEventListener('message', e => {
     const d = e.data || {};
     if (!d || !d.type) return;
@@ -203,7 +283,7 @@
       return;
     }
     if (d.type === 'GAME_OVER_SCORE' || d.type === 'GAME_OVER' ||
-        d.type === 'PIXELNET_SCORE' || d.type === 'PIXELNET_SUBMIT_SCORE') {
+        d.type === 'PIXELNET_SCORE'  || d.type === 'PIXELNET_SUBMIT_SCORE') {
       const s = d.score != null ? d.score : (d.finalScore != null ? d.finalScore : d.value);
       if (s != null) addScore(s);
     }
@@ -247,6 +327,7 @@
     Object.keys(views).forEach(k => views[k].classList.toggle('hidden', k !== tab));
     btns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     if (tab === 'game') setTimeout(() => focusFrame(gm), 50);
+    if (tab === 'board') refreshBoards();
   };
   btns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 })();
