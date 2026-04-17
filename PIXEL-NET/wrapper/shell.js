@@ -102,20 +102,44 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   `;
 
   // --- Aspect ratio: prevent game canvas stretching ---
-  // Games with a fixed canvas size get letterboxed instead of stretched.
+  // CSS aspect-ratio is unreliable on iframes (no intrinsic size).
+  // We compute pixel dimensions in JS and re-apply on every resize.
   if (CFG.aspectRatio) {
-    const ratioStyle = [
-      `aspect-ratio:${CFG.aspectRatio}`,
-      'width:auto',
-      'height:auto',
-      'max-width:100%',
-      'max-height:100%',
-      'align-self:center',
-    ].join(';') + ';';
-    const frame = document.getElementById('gameFrame');
-    const mframe = document.getElementById('view-game');
-    if (frame)  frame.setAttribute('style', ratioStyle);
-    if (mframe) mframe.setAttribute('style', ratioStyle + 'border-radius:22px;overflow:hidden;');
+    const [rw, rh] = CFG.aspectRatio.split('/').map(Number);
+    const ratio = rw / rh;
+
+    const fitFrame = (container, frame) => {
+      if (!container || !frame) return;
+      const availW = container.clientWidth;
+      const availH = container.clientHeight;
+      if (!availW || !availH) return;
+      const w = availW / availH > ratio
+        ? Math.floor(availH * ratio)   // height-constrained → width = h × ratio
+        : availW;                       // width-constrained  → width = availW
+      const h = Math.round(w / ratio);
+      frame.style.width  = w + 'px';
+      frame.style.height = h + 'px';
+      frame.style.flex   = '0 0 auto';
+    };
+
+    const desktopFrame  = document.getElementById('gameFrame');
+    const desktopCenter = document.querySelector('.center');
+    const mobileFrame   = document.getElementById('view-game');
+    const mobileZone    = document.querySelector('.displayZone');
+
+    const refit = () => {
+      fitFrame(desktopCenter, desktopFrame);
+      fitFrame(mobileZone,    mobileFrame);
+    };
+
+    // Run once after layout is ready, then on every resize
+    requestAnimationFrame(refit);
+    if (window.ResizeObserver) {
+      new ResizeObserver(refit).observe(desktopCenter);
+      new ResizeObserver(refit).observe(mobileZone);
+    } else {
+      window.addEventListener('resize', refit);
+    }
   }
 
   // --- Initials (shared across all games, all tabs) ---

@@ -1248,7 +1248,7 @@ function setupJoystick(zoneId,knobId,targetKey){
 }
 
 function enableMobileControlsIfNeeded(){
-  const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent) || window.innerWidth < 900;
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.matchMedia('(pointer: coarse)').matches;
   document.getElementById('mobile-controls').style.display = isMobile ? 'flex' : 'none';
   if(isMobile){ setupJoystick('stick-move','knob-move','touchMove'); setupJoystick('stick-aim','knob-aim','touchAim'); }
 }
