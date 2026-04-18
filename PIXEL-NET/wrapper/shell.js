@@ -35,6 +35,9 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const instructions = Array.isArray(CFG.instructions) ? CFG.instructions : [];
   const liHTML = instructions.map(x => `<li>${x}</li>`).join('');
 
+  const globalBadge = FIREBASE_DB_URL ? '<span class="badge">GLOBAL</span>' : '';
+  const stepsHTML   = instructions.map(x => `<li>${x}</li>`).join('');
+
   // Inject markup
   document.body.innerHTML = `
     <div class="topbar">
@@ -49,8 +52,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       <div class="panel">
         <h3>How To Play</h3>
         <div class="content">
-          <ul id="instructionsDesktop" class="small clampList">${liHTML}</ul>
-          <div class="noteLine">No scrolling.</div>
+          <ol id="instructionsDesktop" class="stepList">${stepsHTML}</ol>
         </div>
       </div>
       <div class="center">
@@ -59,7 +61,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
         </div>
       </div>
       <div class="panel leaderboard">
-        <h3>Leaderboard</h3>
+        <h3>Leaderboard ${globalBadge}</h3>
         <div class="content"><div class="boardStack" id="boardDesktop"></div></div>
       </div>
     </div>
@@ -72,18 +74,18 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
           </div>
           <div class="panel displayCard hidden" id="view-howto">
             <div class="content">
-              <ul id="instructionsMobile" class="small clampList">${liHTML}</ul>
-              <div class="noteLine">No scrolling.</div>
+              <ol id="instructionsMobile" class="stepList">${stepsHTML}</ol>
             </div>
           </div>
           <div class="panel leaderboard displayCard hidden" id="view-board">
+            <h3 style="margin:0;padding:11px 14px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);border-bottom:1px solid rgba(255,255,255,.08);">Leaderboard ${globalBadge}</h3>
             <div class="content"><div class="boardStack" id="boardMobile"></div></div>
           </div>
         </div>
         <div class="btnbar">
-          <button class="tabBtn active" data-tab="game" type="button">Game</button>
-          <button class="tabBtn" data-tab="howto" type="button">How To Play</button>
-          <button class="tabBtn" data-tab="board" type="button">Leaderboard</button>
+          <button class="tabBtn active" data-tab="game" type="button">▶ Game</button>
+          <button class="tabBtn" data-tab="howto" type="button">? How To</button>
+          <button class="tabBtn" data-tab="board" type="button">🏆 Scores</button>
         </div>
       </div>
     </div>
