@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="30%">
+      <stop offset="0%" stop-color="#1e7040"/>
+      <stop offset="100%" stop-color="#0a160a"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <!-- felt texture lines -->
+  <rect width="400" height="400" fill="none" stroke="#1e7040" stroke-width="0.5" opacity="0.3"/>
+
+  <!-- CARD 1 — back left -->
+  <rect x="60" y="90" width="110" height="160" rx="10" fill="#1a3a6e" stroke="rgba(255,255,255,.3)" stroke-width="2" transform="rotate(-12,115,170)"/>
+  <rect x="70" y="100" width="90" height="140" rx="7" fill="#0d2249" transform="rotate(-12,115,170)"/>
+
+  <!-- CARD 2 — center -->
+  <rect x="145" y="80" width="110" height="160" rx="10" fill="#f5f0e8" stroke="rgba(255,255,255,.4)" stroke-width="2"/>
+  <text x="158" y="112" font-family="Georgia,serif" font-size="22" font-weight="bold" fill="#c0392b">A</text>
+  <text x="160" y="132" font-family="Georgia,serif" font-size="18" fill="#c0392b">♥</text>
+  <text x="200" y="175" font-family="Georgia,serif" font-size="48" fill="#c0392b" text-anchor="middle" opacity="0.6">♥</text>
+  <text x="242" y="228" font-family="Georgia,serif" font-size="18" fill="#c0392b" transform="rotate(180,242,228)">♥</text>
+  <text x="244" y="210" font-family="Georgia,serif" font-size="22" font-weight="bold" fill="#c0392b" transform="rotate(180,244,210)">A</text>
+
+  <!-- CARD 3 — back right -->
+  <rect x="230" y="90" width="110" height="160" rx="10" fill="#1a3a6e" stroke="rgba(255,255,255,.3)" stroke-width="2" transform="rotate(10,285,170)"/>
+  <rect x="240" y="100" width="90" height="140" rx="7" fill="#0d2249" transform="rotate(10,285,170)"/>
+
+  <!-- Title -->
+  <text x="200" y="290" font-family="'Courier New',monospace" font-size="22" font-weight="bold" fill="#00ff41" text-anchor="middle" filter="url(#glow)" letter-spacing="4">SPYDER CASINO</text>
+  <text x="200" y="315" font-family="'Courier New',monospace" font-size="13" fill="#d4a843" text-anchor="middle" letter-spacing="2" opacity="0.85">BLACKJACK  ·  HOLD'EM</text>
+
+  <!-- Chips row -->
+  <circle cx="130" cy="355" r="18" fill="#5c0000" stroke="#ff4444" stroke-width="3"/>
+  <text x="130" y="360" font-family="monospace" font-size="11" font-weight="bold" fill="#ffaaaa" text-anchor="middle">$5</text>
+  <circle cx="175" cy="355" r="18" fill="#003070" stroke="#4488ff" stroke-width="3"/>
+  <text x="175" y="360" font-family="monospace" font-size="11" font-weight="bold" fill="#aaccff" text-anchor="middle">$10</text>
+  <circle cx="220" cy="355" r="18" fill="#0d3a1a" stroke="#44cc66" stroke-width="3"/>
+  <text x="220" y="360" font-family="monospace" font-size="11" font-weight="bold" fill="#aaffcc" text-anchor="middle">$25</text>
+  <circle cx="265" cy="355" r="18" fill="#3a2500" stroke="#ffaa00" stroke-width="3"/>
+  <text x="265" y="360" font-family="monospace" font-size="11" font-weight="bold" fill="#ffdd88" text-anchor="middle">$50</text>
+</svg>
