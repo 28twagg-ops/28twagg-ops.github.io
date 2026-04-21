@@ -257,6 +257,42 @@ body:not(.casino) .mode-hint{
   outline:none;
 }
 .term-input:focus{border-color:#00ff41;}
+.term-screen{
+  display:none;
+  border:1px solid #00cc33;
+  padding:10px 12px;
+  background:#000;
+}
+body:not(.casino) .term-screen{display:block;}
+.term-view{
+  white-space:pre;
+  font-size:12px;
+  line-height:1.25;
+  color:#00ff41;
+  min-height:320px;
+}
+.term-cmd{
+  margin-top:8px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.term-cmd input{
+  flex:1;
+  background:#000;
+  color:#00ff41;
+  border:1px solid #00cc33;
+  border-radius:0;
+  font-family:inherit;
+  font-size:12px;
+  padding:6px 8px;
+}
+body:not(.casino) .bj-container > .section,
+body:not(.casino) #bjActionBtns,
+body:not(.casino) #bjNextBtns,
+body:not(.casino) .table-wrap{
+  display:none !important;
+}
 .btn:hover{background:rgba(0,255,65,.1);border-color:var(--g);}
 .btn.pri{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.15);}
 .btn.red{color:var(--red);border-color:var(--red);}
@@ -585,6 +621,13 @@ Select a game:
       <button class="btn" style="padding:3px 8px;font-size:9px" onclick="goLobby()">◀ LOBBY</button>
     </div>
   </div>
+  <div class="term-screen terminal-only" id="bjTermScreen">
+    <pre class="term-view" id="bjTermView"></pre>
+    <div class="term-cmd">
+      <span>Command:</span>
+      <input id="bjTermCmdInp" placeholder="bet 25 | h | s | d | p | n | q" />
+    </div>
+  </div>
   <div class="mode-hint">TERMINAL KEYS: BET [1-5] DEAL [ENTER] PLAY [H,S,D,P] NEXT [N] CASHOUT [C] LOBBY [ESC]</div>
   <div class="bj-container">
     <div class="section" id="bjDealerSec" style="display:none">
@@ -657,6 +700,13 @@ Select a game:
       <span class="he-chips-val">$<span id="heChipsHud">200</span></span>
       <button class="btn red" style="padding:3px 8px;font-size:9px" onclick="heQuit()">QUIT</button>
       <button class="btn" style="padding:3px 8px;font-size:9px" onclick="goLobby()">◀ LOBBY</button>
+    </div>
+  </div>
+  <div class="term-screen terminal-only" id="heTermScreen">
+    <pre class="term-view" id="heTermView"></pre>
+    <div class="term-cmd">
+      <span>Command:</span>
+      <input id="heTermCmdInp" placeholder="c | k | r 60 | f | q" />
     </div>
   </div>
   <div class="mode-hint">TERMINAL KEYS: CALL/CHECK [C] RAISE [R] FOLD [F] CONFIRM [ENTER] LOBBY [ESC]</div>
@@ -963,6 +1013,7 @@ function bjReset() {
   if(aMsg) aMsg.textContent='';
   bjApplyTerminalLayout();
   bjUpdateHUD();
+  bjRenderTerminalView();
 }
 function bjAddBet(amt) {
   if(bjPhase!=='bet') return;
@@ -1023,6 +1074,61 @@ function bjApplyTerminalLayout() {
   if (dealBtn) dealBtn.style.display = terminal ? 'none' : '';
   if (clearBtn) clearBtn.style.display = terminal ? 'none' : '';
   if (betWrap) betWrap.style.display = terminal ? 'block' : 'none';
+  const cmd = document.getElementById('bjTermCmdInp');
+  if (terminal && cmd) setTimeout(()=>cmd.focus(),0);
+}
+function bjTermHandLine(h, idx){
+  const pv=bjHV(h.cards);
+  const cards=h.cards.map(c=>`${c.rank}${SUIT_SYM[c.suit]}`).join(' ');
+  const cur=(idx===bjHandIdx&&bjPhase==='play')?' <<<':'';
+  return `HAND ${idx+1}${cur}  BET $${h.bet}  TOTAL ${pv}\n${cards}`;
+}
+function bjRenderTerminalView(){
+  if(!bjIsTerminal()) return;
+  const el=document.getElementById('bjTermView');
+  if(!el) return;
+  const dv = bjDealer.length ? (bjPhase==='play' ? `${bjDealer[0].value} + ?` : `${bjHV(bjDealer)}`) : '-';
+  const dealerCards = bjDealer.length
+    ? bjDealer.map((c,i)=> (bjPhase==='play'&&i===1) ? '??' : `${c.rank}${SUIT_SYM[c.suit]}`).join(' ')
+    : '';
+  const out = [
+    '================================================================================',
+    'SPYDER BLACKJACK',
+    '================================================================================',
+    `Bankroll: $${bjBank.toFixed(2)}   Mode: ${bjMode}`,
+    '',
+    `DEALER  TOTAL ${dv}`,
+    dealerCards,
+    '--------------------------------------------------------------------------------',
+    ...(bjHands.length?bjHands.map((h,i)=>bjTermHandLine(h,i)).join('\n\n').split('\n'):['No hand dealt yet.']),
+    '--------------------------------------------------------------------------------',
+    bjPhase==='bet' ? "Enter Bet (example: bet 25). Use 'q' to cash out." :
+      bjPhase==='play' ? 'Action: h(hit) s(stay) d(double) p(split)' :
+      'Round complete: n(next hand) or q(cash out)'
+  ].join('\n');
+  el.textContent=out;
+}
+function bjRunTerminalCommand(raw){
+  if(!bjIsTerminal()) return;
+  const s=(raw||'').trim().toLowerCase();
+  if(!s) return;
+  if(s==='q'){bjCashOut();return;}
+  if(bjPhase==='bet'){
+    const m=s.match(/^bet\s+(\d+(?:\.\d+)?)$/) || s.match(/^(\d+(?:\.\d+)?)$/);
+    if(m){
+      const bet=Math.floor(Number(m[1]));
+      if(Number.isFinite(bet)&&bet>=BJ_MIN&&bet<=bjBank){ bjBet=bet; bjDeal(); return; }
+    }
+    return;
+  }
+  if(bjPhase==='play'){
+    if(s==='h'||s==='hit') return bjHit();
+    if(s==='s'||s==='stay'||s==='stand') return bjStay();
+    if(s==='d'||s==='double') return bjDouble();
+    if(s==='p'||s==='split') return bjSplit();
+    return;
+  }
+  if(bjPhase==='done' && (s==='n'||s==='next')) return bjNextHand();
 }
 function bjDeal() {
   if(bjBet<BJ_MIN||bjBet>bjBank) return;
@@ -1043,6 +1149,7 @@ function bjDeal() {
     bjRenderPlayer(false); bjShowResults(); return;
   }
   bjRenderDealer(true); bjRenderPlayer(false); bjRenderActions(); bjRunProb();
+  bjRenderTerminalView();
 }
 function bjCurH() { return bjHands[bjHandIdx]; }
 function bjHit() {
@@ -1106,6 +1213,7 @@ function bjShowResults() {
   else {cls='push';txt='SPLIT RESULT';}
   rb.innerHTML=`<div class="res-banner ${cls}">${txt}</div>`;
   if(bjBank<BJ_MIN) setTimeout(()=>bjEndGame(),1100);
+  bjRenderTerminalView();
 }
 function bjNextHand() { if(bjBank<BJ_MIN){bjEndGame();return;} bjReset(); }
 function bjCashOut() { bjEndGame(); }
@@ -1125,6 +1233,7 @@ function bjRenderDealer(hideHole) {
   tot.textContent=hideHole?`Shows: ${dv}`:`Total: ${dv}${bjHV(bjDealer)>21&&!hideHole?' (BUST)':''}`;
   tot.className='tot'+(bjHV(bjDealer)>21&&!hideHole?' bust':'');
   document.getElementById('bjDealerSec').className='section';
+  bjRenderTerminalView();
 }
 function bjRenderPlayer(showRes) {
   const c=document.getElementById('bjPlayerSecs');c.innerHTML='';
@@ -1145,6 +1254,7 @@ function bjRenderPlayer(showRes) {
         ${rh}
       </div>`);
   });
+  bjRenderTerminalView();
 }
 function bjRenderActions() {
   const h=bjCurH();if(!h)return;
@@ -1164,6 +1274,7 @@ function bjRenderActions() {
     if(line) line.textContent=`Action Hand ${bjHandIdx+1} [${opts.join(', ')}]:`;
     if(inp) setTimeout(()=>inp.focus(), 0);
   }
+  bjRenderTerminalView();
 }
 function bjRunProb() {
   const sec=document.getElementById('bjProbSec');
@@ -1566,6 +1677,7 @@ function heUserTurn(p){
       fold: () => heKeyActions.fold && heKeyActions.fold()
     };
     heRenderTerminalPrompt();
+    heRenderTerminalView();
   });
 }
 function heActCall(p,res){
@@ -1609,6 +1721,51 @@ function heRenderTerminalPrompt() {
     ? `Action [To call: $${heTermHandlers.toCall}] (C)all, (R)aise, (F)old:`
     : 'Action [(K)eck/(C)all, (R)aise, (F)old]:';
   setTimeout(() => inp.focus(), 0);
+}
+function heRenderTerminalView() {
+  if (visualStyle !== 'terminal') return;
+  const el = document.getElementById('heTermView');
+  if (!el) return;
+  const bots = hePlayers.slice(0,3).map((p,i)=>`${i+1}) ${p.name} $${p.chips} ${p.status==='FOLDED'?'[FOLD]':''} ${p.lastAction||''}`).join('\n');
+  const user = heUser();
+  const userCards = (user?.hand||[]).map(c=>`${c.rank}${SUIT_SYM[c.suit]}`).join(' ');
+  const comm = heCommunity.map(c=>`${c.rank}${SUIT_SYM[c.suit]}`).join(' ');
+  const prompt = heTermHandlers
+    ? (heTermHandlers.toCall>0 ? `To call $${heTermHandlers.toCall} | c(call) r <amt>(raise) f(fold) q(quit)` : `k(check)/c, r <amt>, f, q`)
+    : 'Waiting for next action...';
+  el.textContent = [
+    '================================================================================',
+    "TEXAS HOLD'EM",
+    '================================================================================',
+    `Round ${heRoundNum}  Stage: ${heStageName || 'PRE-FLOP'}  Pot: $${hePot}`,
+    '',
+    'OPPONENTS',
+    bots || '-',
+    '--------------------------------------------------------------------------------',
+    `BOARD: ${comm || '(none)'}`,
+    `YOU:   ${userCards || '(none)'}   Chips: $${user?.chips ?? 0}`,
+    `Hand:  ${document.getElementById('heHandRank')?.textContent || ''}`,
+    '--------------------------------------------------------------------------------',
+    prompt
+  ].join('\n');
+  const inp=document.getElementById('heTermCmdInp');
+  if(inp) setTimeout(()=>inp.focus(),0);
+}
+function heRunTerminalCommand(raw){
+  if (visualStyle !== 'terminal') return;
+  const s=(raw||'').trim().toLowerCase();
+  if(!s) return;
+  if(s==='q'){heQuit();return;}
+  if(!heTermHandlers) return;
+  if(s==='c'||s==='k'||s==='call'||s==='check'){heTermHandlers.call();return;}
+  if(s==='f'||s==='fold'){heTermHandlers.fold();return;}
+  const m=s.match(/^r(?:aise)?\s+(\d+)$/);
+  if(m){
+    const ri=document.getElementById('heRaiseInp');
+    if(ri){ ri.value = m[1]; }
+    heTermHandlers.raise();
+    setTimeout(()=>heConfirmRaise(),0);
+  }
 }
 function heSubmitTerminalAction() {
   if (visualStyle !== 'terminal' || !heTermHandlers) return;
@@ -1705,6 +1862,7 @@ function heRenderAll(showdown){
     const ao=hePlayers.filter(p=>p.name!=='YOU'&&p.status!=='FOLDED').length;
     document.getElementById('heEqBar').textContent=heCalcEquity(u.hand,heCommunity,ao);
   } else document.getElementById('heEqBar').textContent='';
+  heRenderTerminalView();
 }
 function heSetChatter(msg){document.getElementById('heChatter').textContent=msg;}
 
@@ -1832,6 +1990,26 @@ document.addEventListener('DOMContentLoaded', () => {
     heInp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         heSubmitTerminalAction();
+        e.preventDefault();
+      }
+    });
+  }
+  const bjCmd = document.getElementById('bjTermCmdInp');
+  if (bjCmd) {
+    bjCmd.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        bjRunTerminalCommand(bjCmd.value);
+        bjCmd.value = '';
+        e.preventDefault();
+      }
+    });
+  }
+  const heCmd = document.getElementById('heTermCmdInp');
+  if (heCmd) {
+    heCmd.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        heRunTerminalCommand(heCmd.value);
+        heCmd.value = '';
         e.preventDefault();
       }
     });
