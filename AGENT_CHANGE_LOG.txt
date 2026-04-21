@@ -261,3 +261,8 @@ Entry - 2026-04-21 (Hit-style pivot pass: puzzle/climber/shooter)
   - Existing slugs/paths kept stable to avoid leaderboard key churn.
 - Updated `PIXEL-NET/version.json` for this push cycle:
   - `v2026.04.21-04`
+
+Entry - 2026-04-21 (Thumbnail implementation: Stack Drop DX)
+- Implemented user-approved generated art as live Stack Drop thumbnail:
+  - Added/updated `PIXEL-NET/assets/stack-drop-dx_thumb.png`.
+  - Updated `PIXEL-NET/games.json` Stack Drop entry thumb path to `assets/stack-drop-dx_thumb.png`.

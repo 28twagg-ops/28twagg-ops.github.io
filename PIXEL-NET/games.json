@@ -103,7 +103,7 @@
     "type": "iframe",
     "slug": "circuit-salvager",
     "path": "games/circuit-salvager/wrapper-v2.html",
-    "thumb": "assets/circuit-salvager_thumb.svg",
+    "thumb": "assets/stack-drop-dx_thumb.png",
     "description": "Neon block puzzler: rotate, stack, clear lines, and survive speed ramps.",
     "tags": ["block puzzler", "line clear", "stacking", "falling blocks", "arcade puzzle"],
     "aliases": ["stack drop", "block stacker"]

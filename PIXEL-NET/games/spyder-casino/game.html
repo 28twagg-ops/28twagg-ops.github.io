@@ -469,9 +469,9 @@ BLACKJACK - TOP 5                         TEXAS HOLD'EM - TOP 5
       <div class="term-menu">
         <pre>================================================================================
 Select a game:
-[1] Spyder Blackjack (STANDARD)
-[2] Spyder Blackjack (ANALYSIS)
-[3] Texas Hold'em (STANDARD)
+[1] Spyder Blackjack
+[2] Texas Hold'em
+[3] Spyder Blackjack (ANALYSIS)
 [4] Texas Hold'em (ANALYSIS)
 [Q] Back
 ================================================================================</pre>
@@ -690,7 +690,7 @@ const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 const SUIT_SYM = {Hearts:'♥',Diamonds:'♦',Clubs:'♣',Spades:'♠'};
 const RED_S = new Set(['Hearts','Diamonds']);
 
-let visualStyle = (localStorage.getItem('SC_STYLE') || 'terminal').toLowerCase(); // 'terminal'|'casino'
+let visualStyle = (localStorage.getItem('SC_STYLE') || 'terminal').toLowerCase().trim(); // 'terminal'|'casino'
 let userInitials = localStorage.getItem('PIXELNET_INITIALS') || localStorage.getItem('playerInitials') || '';
 let endGameSlug = '', endGameMode = '';
 let heKeyActions = null;
@@ -703,10 +703,13 @@ function applyStyle() {
   document.body.classList.toggle('casino', visualStyle === 'casino');
   document.getElementById('knob').style.transform = visualStyle === 'casino' ? 'translateX(20px)' : 'translateX(0)';
   document.getElementById('knob').style.background = visualStyle === 'casino' ? 'var(--gold)' : 'var(--g)';
-  const t = document.getElementById('terminalLobby');
-  const c = document.querySelector('.casino-only');
-  if (t) t.style.display = visualStyle === 'terminal' ? 'block' : 'none';
-  if (c) c.style.display = visualStyle === 'casino' ? 'block' : 'none';
+  document.documentElement.setAttribute('data-style', visualStyle);
+  document.querySelectorAll('.terminal-only').forEach((el) => {
+    el.style.setProperty('display', visualStyle === 'terminal' ? 'block' : 'none', 'important');
+  });
+  document.querySelectorAll('.casino-only').forEach((el) => {
+    el.style.setProperty('display', visualStyle === 'casino' ? 'block' : 'none', 'important');
+  });
 }
 function toggleStyle() {
   visualStyle = visualStyle === 'terminal' ? 'casino' : 'terminal';
@@ -809,8 +812,8 @@ function renderTerminalLobbyBoard(){
 function runTerminalSelection(v){
   const key = (v||'').toLowerCase();
   if (key === '1') { startBJ('STANDARD'); return true; }
-  if (key === '2') { startBJ('ANALYSIS'); return true; }
-  if (key === '3') { startHE('STANDARD'); return true; }
+  if (key === '2') { startHE('STANDARD'); return true; }
+  if (key === '3') { startBJ('ANALYSIS'); return true; }
   if (key === '4') { startHE('ANALYSIS'); return true; }
   if (key === 'q') { return true; }
   return false;
