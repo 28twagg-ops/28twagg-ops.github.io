@@ -1209,6 +1209,7 @@ function casinoCard(card, hidden, size='') {
 const BJ_START = 200, BJ_MIN = 5, BJ_THRESH = 20, BJ_SIMS = 700;
 let bjDeck=[], bjRC=0, bjBank=BJ_START, bjBet=0, bjHands=[], bjHandIdx=0, bjDealer=[], bjHole=null, bjMode='STANDARD', bjPhase='bet';
 let bjTermLog=[];
+let bjDoneAt=0;
 
 function bjRC_val(c) { if(c.value<=6) return 1; if(c.value===10||c.rank==='A') return -1; return 0; }
 function bjHV(cards) { let v=0,a=0; for(const c of cards){v+=c.value;if(c.rank==='A')a++;} while(v>21&&a){v-=10;a--;} return v; }
@@ -1497,7 +1498,10 @@ function bjRenderTerminalView(){
 function bjRunTerminalCommand(raw){
   if(!bjIsTerminal()) return;
   const s=(raw||'').trim().toLowerCase();
-  if(bjPhase==='done' && (s===''||s==='n'||s==='next')) { return bjNextHand(); }
+  if(bjPhase==='done' && (s===''||s==='n'||s==='next')) {
+    if(Date.now()-bjDoneAt < 500) return;
+    return bjNextHand();
+  }
   if(!s) return;
   if(s==='q'){bjLog('You cash out.'); bjCashOut();return;}
   if(bjPhase==='bet'){
@@ -1592,6 +1596,7 @@ function bjSettle() {
 }
 function bjShowResults() {
   bjPhase='done';
+  bjDoneAt=Date.now();
   document.getElementById('bjActionBtns').style.display='none';
   document.getElementById('bjProbSec').style.display='none';
   document.getElementById('bjNextBtns').style.display='flex';
@@ -2486,7 +2491,11 @@ window.addEventListener('keydown', (e) => {
   if (bjOn) {
     if (visualStyle === 'terminal') {
       if (key === 'q') { e.preventDefault(); bjCashOut(); return; }
-      if ((key === 'n' || e.key === 'Enter') && bjPhase === 'done') { e.preventDefault(); bjNextHand(); return; }
+      if ((key === 'n' || e.key === 'Enter') && bjPhase === 'done') {
+        e.preventDefault();
+        if (Date.now()-bjDoneAt >= 500) bjNextHand();
+        return;
+      }
       if ((key === 'h' || key === 's' || key === 'd' || key === 'p') && bjPhase === 'play') { e.preventDefault(); bjRunTerminalCommand(key); return; }
       return;
     }
@@ -2565,7 +2574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bjCmd.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         if (bjPhase === 'done') {
-          bjNextHand();
+          if (Date.now()-bjDoneAt >= 500) bjNextHand();
           bjCmd.value = '';
           e.stopPropagation();
           e.preventDefault();
