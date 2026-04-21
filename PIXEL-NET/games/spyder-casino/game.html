@@ -364,24 +364,20 @@ body:not(.casino) .tc{
 .cc .pips{position:absolute;inset:16px 10px 16px 10px;}
 .cc .pip{position:absolute;transform:translate(-50%,-50%);font-size:14px;line-height:1;}
 .cc .face{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;opacity:.75;letter-spacing:.06em;}
-.cc.sm{width:42px;height:60px;font-size:10px;}
-.cc.sm .pips{inset:12px 7px 12px 7px;}
-.cc.sm .pip{font-size:11px;}
-.cc.sm .ct,.cc.sm .cb{font-size:8px;}
-.cc.xs{width:32px;height:46px;font-size:8px;}
-.cc.xs .pips{inset:10px 6px 10px 6px;}
-.cc.xs .pip{font-size:9px;}
-.cc.xs .ct,.cc.xs .cb{font-size:7px;}
+/* sm = community cards in casino HE */
+.cc.sm{width:52px;height:74px;font-size:12px;}
+.cc.sm .pips{inset:14px 8px 14px 8px;}
+.cc.sm .pip{font-size:13px;}
+.cc.sm .ct,.cc.sm .cb{font-size:9px;}
+/* xs = bot hole cards in casino HE */
+.cc.xs{width:42px;height:60px;font-size:10px;}
+.cc.xs .pips{inset:12px 7px 12px 7px;}
+.cc.xs .pip{font-size:11px;}
+.cc.xs .ct,.cc.xs .cb{font-size:8px;}
 .cards-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:4px 0;}
 body:not(.casino) .cards-row{gap:10px;}
-.mode-hint{
-  font-size:9px;
-  letter-spacing:1px;
-  color:var(--g2);
-  text-align:center;
-  margin:5px 0 2px 0;
-}
-.cc-empty{width:46px;height:66px;border-radius:5px;border:1px dashed rgba(255,255,255,.14);background:rgba(0,0,0,.2);}
+.mode-hint{display:none !important;}
+.cc-empty{width:52px;height:74px;border-radius:5px;border:1px dashed rgba(255,255,255,.2);background:rgba(0,0,0,.2);}
 body:not(.casino) .cc,
 body:not(.casino) .cc-empty{
   display:none;
@@ -600,9 +596,10 @@ body:not(.casino) .res-box{
 /* mobile */
 @media(max-width:480px){
   .panel{font-size:11px;padding:14px;}
-  .cc{width:46px;height:66px;font-size:11px;}
-  .cc.sm{width:34px;height:50px;}.cc.xs{width:26px;height:38px;}
-  .cc-empty{width:36px;height:52px;}
+  .cc{width:50px;height:72px;font-size:12px;}
+  .cc.sm{width:42px;height:60px;font-size:10px;}
+  .cc.xs{width:34px;height:50px;font-size:9px;}
+  .cc-empty{width:42px;height:60px;}
   .chip{width:44px;height:44px;font-size:9px;}
   .he-hud,.bj-hud{font-size:9px;}
 }
@@ -854,7 +851,7 @@ Select a game:
 </div>
 
 <!-- Hold'em result overlay -->
-<div class="res-overlay casino-only" id="heResOverlay">
+<div class="res-overlay" id="heResOverlay">
   <div class="res-box">
     <div class="res-ttl" id="heResTtl">WINNER</div>
     <div id="heResBody" style="font-size:10px;color:var(--g2);margin:6px 0;text-align:center;"></div>
@@ -929,6 +926,9 @@ function applyStyle() {
   document.querySelectorAll('.casino-only').forEach((el) => {
     el.style.setProperty('display', visualStyle === 'casino' ? 'block' : 'none', 'important');
   });
+  // Clear any inline styles set by terminal prompt helpers so CSS rules take over
+  const heTermWrap = document.getElementById('heTermActWrap');
+  if (heTermWrap) heTermWrap.style.display = '';
 }
 function toggleStyle() {
   visualStyle = visualStyle === 'terminal' ? 'casino' : 'terminal';
@@ -2197,10 +2197,19 @@ function showEndScreen(game,score,subtitle,slug){
   document.getElementById('endSubtitle').textContent=subtitle;
   document.getElementById('endMsg').textContent='';
   document.getElementById('endIni').value=userInitials;
-  if (userInitials && userInitials.length >= 3) {
-    document.getElementById('endMsg').textContent=`Using saved initials: ${userInitials.slice(0,3)}`;
-  }
   endGameSlug=slug;
+
+  if(userInitials&&userInitials.length>=3){
+    // Saved initials — submit silently, skip the form
+    const scoreNum=slug===BJ_SLUG
+      ? Math.round(parseFloat(score.replace('$','')))
+      : parseInt(score)||0;
+    fbPost(slug,{initials:userInitials,score:scoreNum,mode:endGameMode,t:Date.now()});
+    window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:slug},'*');
+    fbFetch(BJ_SLUG,5).then(r=>{lobbyBjRows=Array.isArray(r)?r:[];renderLb(lobbyBjRows,'bjLobbyLb','bj');renderTerminalLobbyBoard();});
+    fbFetch(HE_SLUG,5).then(r=>{lobbyHeRows=Array.isArray(r)?r:[];renderLb(lobbyHeRows,'heLobbyLb','he');renderTerminalLobbyBoard();});
+    document.getElementById('endMsg').textContent=`✓ Score saved for ${userInitials}`;
+  }
   fbFetch(slug,5).then(r=>renderLb(r,'endLb',slug===BJ_SLUG?'bj':'he'));
 }
 async function endSubmit(){
