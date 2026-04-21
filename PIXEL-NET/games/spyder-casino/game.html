@@ -2131,6 +2131,11 @@ function heRenderTerminalView(){
       ucl.forEach(l=>out.push(cp+l));
       const[,rn]=hBest(user.hand,heCommunity);
       if(rn&&rn!=='Waiting...') out.push(ctr(`(${rn})`));
+      if(heMode==='ANALYSIS'&&!heTerminalResult){
+        const ao=hePlayers.filter(p=>p.name!=='YOU'&&p.status!=='FOLDED').length;
+        out.push('');
+        out.push(ctr(`[ ANALYST: ${heCalcEquity(user.hand,heCommunity,ao)} ]`));
+      }
     }
     out.push('');
   }
@@ -2316,7 +2321,7 @@ function heRenderAll(showdown){
   // Equity
   if(heMode==='ANALYSIS'&&u.hand.length>=2&&!showdown){
     const ao=hePlayers.filter(p=>p.name!=='YOU'&&p.status!=='FOLDED').length;
-    document.getElementById('heEqBar').textContent=heCalcEquity(u.hand,heCommunity,ao);
+    document.getElementById('heEqBar').textContent=`[ ANALYST: ${heCalcEquity(u.hand,heCommunity,ao)} ]`;
   } else document.getElementById('heEqBar').textContent='';
   heRenderTerminalView();
 }
