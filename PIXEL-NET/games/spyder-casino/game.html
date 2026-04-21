@@ -723,8 +723,7 @@ Select a game:
   <div class="term-screen terminal-only" id="bjTermScreen">
     <pre class="term-view" id="bjTermView"></pre>
     <div class="term-cmd">
-      <span>Command:</span>
-      <input id="bjTermCmdInp" placeholder="bet 25 | h | s | d | p | n | q" />
+      <input id="bjTermCmdInp" placeholder="type command and press Enter" autocomplete="off" spellcheck="false" />
     </div>
   </div>
   <div class="mode-hint">TERMINAL KEYS: BET [1-5] DEAL [ENTER] PLAY [H,S,D,P] NEXT [N] CASHOUT [C] LOBBY [ESC]</div>
@@ -804,8 +803,7 @@ Select a game:
   <div class="term-screen terminal-only" id="heTermScreen">
     <pre class="term-view" id="heTermView"></pre>
     <div class="term-cmd">
-      <span>Command:</span>
-      <input id="heTermCmdInp" placeholder="c | k | r 60 | f | q" />
+      <input id="heTermCmdInp" placeholder="type command and press Enter" autocomplete="off" spellcheck="false" />
     </div>
   </div>
   <div class="mode-hint">TERMINAL KEYS: CALL/CHECK [C] RAISE [R] FOLD [F] CONFIRM [ENTER] LOBBY [ESC]</div>
@@ -853,7 +851,7 @@ Select a game:
 </div>
 
 <!-- Hold'em result overlay -->
-<div class="res-overlay" id="heResOverlay">
+<div class="res-overlay casino-only" id="heResOverlay">
   <div class="res-box">
     <div class="res-ttl" id="heResTtl">WINNER</div>
     <div id="heResBody" style="font-size:10px;color:var(--g2);margin:6px 0;text-align:center;"></div>
@@ -910,6 +908,8 @@ let userInitials = localStorage.getItem('PIXELNET_INITIALS') || localStorage.get
 let endGameSlug = '', endGameMode = '';
 let heKeyActions = null;
 let heTermHandlers = null;
+let heTerminalResult = null;  // holds {winners,reason} after a HE hand ends in terminal mode
+let bjBankBefore = 200;       // bankroll at start of current round (before bet deducted)
 let lobbyBjRows = [];
 let lobbyHeRows = [];
 
@@ -1129,12 +1129,24 @@ function bjAsciiRow(cards, hideHole=false){
   const arts = cards.map((c,i)=>bjAsciiCard(c, hideHole && i===1));
   return arts[0].map((_,line)=>arts.map(a=>a[line]).join('  ')).join('\n');
 }
+// 3-line small card art used by Hold'em terminal (matches Python generate_card_art for holdem)
+function heSmallCard(card, hidden=false){
+  if(hidden||!card) return ['┌───┐','│░░░│','└───┘'];
+  const sym=SUIT_SYM[card.suit], r=card.rank;
+  const content=r.length===2?`${r}${sym}`:`${r} ${sym}`;
+  return ['┌───┐',`│${content}│`,'└───┘'];
+}
+function heSmallCardRow(cards, hidden=false){
+  if(!cards||!cards.length) return ['     ','     ','     '];
+  const arts=cards.map(c=>heSmallCard(c,hidden));
+  return arts[0].map((_,li)=>arts.map(a=>a[li]).join(' '));
+}
 function bjPop() { if(bjDeck.length<BJ_THRESH){bjDeck=buildDeck();bjRC=0;} return bjDeck.pop(); }
 function bjCount(c) { if(bjMode==='ANALYSIS') bjRC+=bjRC_val(c); }
 function bjTrueCount() { return (bjRC/Math.max(1,bjDeck.length/52)).toFixed(1); }
 
 function startBJ(mode) {
-  bjMode=mode; bjBank=BJ_START; bjDeck=buildDeck(); bjRC=0;
+  bjMode=mode; bjBank=BJ_START; bjBankBefore=BJ_START; bjDeck=buildDeck(); bjRC=0;
   document.getElementById('bjModeTag').textContent=mode;
   document.getElementById('bjCountDisp').style.display=mode==='ANALYSIS'?'inline':'none';
   showScreen('bjScreen');
@@ -1236,30 +1248,85 @@ function bjRenderTerminalView(){
   if(!bjIsTerminal()) return;
   const el=document.getElementById('bjTermView');
   if(!el) return;
-  const dv = bjDealer.length ? (bjPhase==='play' ? `${bjDealer[0].value} + ?` : `${bjHV(bjDealer)}`) : '-';
-  const dealerCards = bjDealer.length ? bjAsciiRow(bjDealer, bjPhase==='play') : '';
-  const handBlocks = bjHands.length
-    ? bjHands.map((h,i)=>`HAND ${i+1}${(i===bjHandIdx&&bjPhase==='play')?' <<<':''}  BET $${h.bet}  TOTAL ${bjHV(h.cards)}\n${bjAsciiRow(h.cards,false)}`).join('\n\n')
-    : 'No hand dealt yet.';
-  const out = [
-    '================================================================================',
-    '★ SPYDER BLACKJACK ★',
-    '================================================================================',
-    `Bankroll: $${bjBank.toFixed(2)}   Mode: ${bjMode}`,
-    '',
-    `DEALER  TOTAL ${dv}`,
-    dealerCards,
-    '--------------------------------------------------------------------------------',
-    handBlocks,
-    '--------------------------------------------------------------------------------',
-    bjPhase==='bet' ? "Enter Bet (Min $5 or 'q' to cash out):" :
-      bjPhase==='play' ? 'Action Hand 1 (h/s/d/p):' :
-      'Press n for next hand, or q to cash out.',
-    '',
-    'LOG:',
-    ...(bjTermLog.length ? bjTermLog : ['-'])
-  ].join('\n');
-  el.textContent=out;
+  const W=80;
+  const ctr=(s)=>s.padStart(s.length+Math.floor((W-s.length)/2)).padEnd(W);
+  const out=[];
+
+  // ── Title ──
+  out.push('');
+  out.push(ctr('★ SPYDER BLACKJACK ★'));
+  out.push('='.repeat(W));
+  out.push('');
+  out.push(`Bankroll: $${bjBank.toFixed(2)}`);
+  out.push('');
+
+  if(bjPhase==='bet'||!bjDealer.length){
+    // ── Bet phase: no cards yet ──
+    out.push('-'.repeat(W));
+    out.push(`Enter Bet (Min $${BJ_MIN} or 'q' to cash out):`);
+  } else {
+    // ── Dealer section ──
+    const isDone = bjPhase==='done';
+    const hideHole = bjPhase==='play';
+    out.push(`DEALER ${isDone ? '(REVEAL)' : '(Hidden)'}`);
+    out.push(bjAsciiRow(bjDealer, hideHole));
+    const dv = hideHole ? bjDealer[0].value : bjHV(bjDealer);
+    if(isDone){
+      out.push(`Dealer Total: ${dv}${bjHV(bjDealer)>21?' (BUST)':''}`);
+    } else {
+      out.push(`Total: ${dv} + ?`);
+    }
+    out.push('');
+    out.push('-'.repeat(W));
+
+    // ── Player hands ──
+    bjHands.forEach((h,i)=>{
+      const isCur = i===bjHandIdx && bjPhase==='play';
+      let status='';
+      if(!isDone){
+        if(isCur) status=' >>> CURRENTLY PLAYING <<<';
+        else if(h.finished) status=' (FINISHED)';
+        else status=' (WAITING...)';
+      }
+      out.push(`HAND ${i+1}${status} (Bet: $${h.bet.toFixed(2)})`);
+      out.push(bjAsciiRow(h.cards, false));
+      const pv=bjHV(h.cards);
+      out.push(`Total: ${pv}${pv>21?' (BUST)':''}`);
+      if(h.result){
+        const rt={bj:'>>> BLACKJACK! Win! (3:2) <<<',win:'>>> WIN! <<<',lose:'>>> LOSE <<<',push:'>>> PUSH! <<<',bust:'>>> BUST! <<<'}[h.result]||h.result.toUpperCase();
+        out.push(rt);
+      }
+      out.push('');
+    });
+
+    out.push('-'.repeat(W));
+
+    if(isDone){
+      // ── Round results footer (mirrors Python show_round_results) ──
+      const net=bjBank-bjBankBefore;
+      out.push(`Bankroll: $${bjBank.toFixed(2)}   (Net: ${net>=0?'+':''}${net.toFixed(2)})`);
+      out.push('='.repeat(W));
+      out.push('');
+      out.push("Press ENTER for next hand...  (or type 'q' to cash out)");
+    } else if(bjPhase==='play'){
+      const h=bjCurH();
+      if(h){
+        const pv=bjHV(h.cards);
+        const canD=h.cards.length===2&&bjBank>=h.bet&&pv<21;
+        const srk=h.cards.length===2&&h.cards[0].rank===h.cards[1].rank;
+        const svl=h.cards.length===2&&h.cards[0].value===h.cards[1].value;
+        const canSp=(srk||svl)&&bjBank>=h.bet&&bjHands.length<4&&h.cards.length===2;
+        const opts=['(H)it','(S)tay'];
+        if(canD) opts.push('(D)ouble');
+        if(canSp) opts.push('S(p)lit');
+        out.push(`Action Hand ${bjHandIdx+1} ${opts.join(', ')}:`);
+      }
+    }
+  }
+
+  el.textContent=out.join('\n');
+  const cmd=document.getElementById('bjTermCmdInp');
+  if(cmd) setTimeout(()=>cmd.focus(),0);
 }
 function bjRunTerminalCommand(raw){
   if(!bjIsTerminal()) return;
@@ -1283,10 +1350,11 @@ function bjRunTerminalCommand(raw){
     bjLog('Invalid action.');
     return;
   }
-  if(bjPhase==='done' && (s==='n'||s==='next')) { bjLog('Starting next hand...'); return bjNextHand(); }
+  if(bjPhase==='done' && (s===''||s==='n'||s==='next')) { return bjNextHand(); }
 }
 function bjDeal() {
   if(bjBet<BJ_MIN||bjBet>bjBank) return;
+  bjBankBefore=bjBank;
   bjBank-=bjBet; bjUpdateHUD();
   const c1=bjPop();bjCount(c1);
   const d1=bjPop();bjCount(d1);
@@ -1883,49 +1951,123 @@ function heRenderTerminalPrompt() {
     : 'Action [(K)eck/(C)all, (R)aise, (F)old]:';
   setTimeout(() => inp.focus(), 0);
 }
-function heRenderTerminalView() {
-  if (visualStyle !== 'terminal') return;
-  const el = document.getElementById('heTermView');
-  if (!el) return;
-  const bots = hePlayers.slice(0,3).map((p,i)=>`${i+1}) ${p.name} $${p.chips} ${p.status==='FOLDED'?'[FOLD]':''} ${p.lastAction||''}`).join('\n');
-  const user = heUser();
-  const userCards = (user?.hand||[]).map(c=>`${c.rank}${SUIT_SYM[c.suit]}`).join(' ');
-  const comm = heCommunity.map(c=>`${c.rank}${SUIT_SYM[c.suit]}`).join(' ');
-  const prompt = heTermHandlers
-    ? (heTermHandlers.toCall>0 ? `To call $${heTermHandlers.toCall} | c(call) r <amt>(raise) f(fold) q(quit)` : `k(check)/c, r <amt>, f, q`)
-    : 'Waiting for next action...';
-  el.textContent = [
-    '================================================================================',
-    "TEXAS HOLD'EM",
-    '================================================================================',
-    `Round ${heRoundNum}  Stage: ${heStageName || 'PRE-FLOP'}  Pot: $${hePot}`,
-    '',
-    'OPPONENTS',
-    bots || '-',
-    '--------------------------------------------------------------------------------',
-    `BOARD: ${comm || '(none)'}`,
-    `YOU:   ${userCards || '(none)'}   Chips: $${user?.chips ?? 0}`,
-    `Hand:  ${document.getElementById('heHandRank')?.textContent || ''}`,
-    '--------------------------------------------------------------------------------',
-    prompt
-  ].join('\n');
+function heRenderTerminalView(){
+  if(visualStyle!=='terminal') return;
+  const el=document.getElementById('heTermView');
+  if(!el) return;
+  const W=80, CW=26;
+  const ctr=(s,w)=>s.padStart(s.length+Math.floor(((w||W)-s.length)/2)).padEnd(w||W);
+  const out=[];
+
+  // ── Header ──
+  out.push('='.repeat(W));
+  out.push(ctr(` TEXAS HOLD'EM - POT: $${hePot} (${heStageName||'PRE-FLOP'}) `));
+  out.push('='.repeat(W));
+  out.push('');
+
+  // ── Three bot columns (26 chars each) ──
+  const bots=hePlayers.slice(0,3);
+  out.push(bots.map(p=>ctr(`[${p.name}${p.role||''} $${p.chips}]`,CW)).join(''));
+
+  const botCL=['','',''];
+  const reveal=heStageName==='SHOWDOWN'||heStageName==='REVEAL';
+  bots.forEach(p=>{
+    let cLines;
+    if(!p.hand||!p.hand.length) cLines=['     ','     ','     '];
+    else if(p.status==='FOLDED') cLines=['     ',' FOLD','     '];
+    else cLines=heSmallCardRow(p.hand,!reveal);
+    for(let li=0;li<3;li++) botCL[li]+=ctr(cLines[li]||'     ',CW);
+  });
+  botCL.forEach(l=>out.push(l));
+  out.push(bots.map(p=>ctr(`(${p.lastAction||''})`,CW)).join(''));
+
+  out.push('-'.repeat(W));
+
+  // ── Community cards (5 × 7-line big art, centered) ──
+  out.push(ctr('COMMUNITY CARDS'));
+  const cArts=[];
+  for(let i=0;i<5;i++) cArts.push(bjAsciiCard(i<heCommunity.length?heCommunity[i]:null, i>=heCommunity.length));
+  // 5 cards × 12 wide + 4 × 2 space separators = 68 chars total
+  const commPad=' '.repeat(Math.max(0,Math.floor((W-68)/2)));
+  cArts[0].forEach((_,li)=>out.push(commPad+cArts.map(a=>a[li]).join('  ')));
+  out.push('-'.repeat(W));
+
+  // ── User hand ──
+  const user=heUser();
+  if(user){
+    out.push(ctr(`YOUR HAND (Bankroll: $${user.chips})`));
+    if(user.hand&&user.hand.length>=2){
+      const ucl=heSmallCardRow(user.hand,false);
+      const cp=' '.repeat(Math.max(0,Math.floor((W-ucl[0].length)/2)));
+      ucl.forEach(l=>out.push(cp+l));
+      const[,rn]=hBest(user.hand,heCommunity);
+      if(rn&&rn!=='Waiting...') out.push(ctr(`(${rn})`));
+    }
+    out.push('');
+  }
+
+  // ── End-of-hand result block (terminal mode, no overlay) ──
+  if(heTerminalResult){
+    const{winners,reason}=heTerminalResult;
+    out.push('-'.repeat(W));
+    out.push(ctr(`END OF HAND — ${reason}`));
+    out.push('-'.repeat(W));
+    if(winners&&winners.length){
+      if(winners.length===1) out.push(ctr(`WINNER: ${winners[0].name}`));
+      else out.push(ctr(`SPLIT POT: ${winners.map(w=>w.name).join(', ')}`));
+    }
+    out.push('-'.repeat(W));
+    out.push('');
+    out.push("Press ENTER for next round...  (or type 'q' to quit)");
+  } else if(heTermHandlers){
+    // ── Action prompt (mirrors Python handle_player_turn) ──
+    const toCall=heTermHandlers.toCall;
+    const sep='-'.repeat(40);
+    out.push(sep);
+    if(user&&toCall>user.chips){
+      out.push(ctr(`>>> COST: $${toCall} — YOU ONLY HAVE $${user.chips} <<<`,40));
+      out.push(ctr('>>> NO SIDE POTS — YOU MUST FOLD <<<',40));
+      out.push(sep);
+      out.push('Action [(F)old]:');
+    } else if(toCall===0){
+      out.push(ctr('>>> YOU CAN CHECK ($0) <<<',40));
+      out.push(sep);
+      out.push('Action [(C)heck, (B)et/Raise, (F)old]:');
+    } else {
+      out.push(ctr(`>>> COST TO MATCH: $${toCall} <<<`,40));
+      out.push(sep);
+      out.push(`Action [(C)all $${toCall}, (B)et/Raise, (F)old]:`);
+    }
+  } else {
+    out.push('');
+    out.push('Waiting for next action...');
+  }
+
+  el.textContent=out.join('\n');
   const inp=document.getElementById('heTermCmdInp');
   if(inp) setTimeout(()=>inp.focus(),0);
 }
 function heRunTerminalCommand(raw){
-  if (visualStyle !== 'terminal') return;
+  if(visualStyle!=='terminal') return;
   const s=(raw||'').trim().toLowerCase();
-  if(!s) return;
   if(s==='q'){heQuit();return;}
+  // After hand ends: Enter/n advances to next round
+  if(heTerminalResult){
+    if(s===''||s==='n'||s==='next'||s==='enter'){heNextHand();return;}
+    return;
+  }
+  if(!s) return;
   if(!heTermHandlers) return;
   if(s==='c'||s==='k'||s==='call'||s==='check'){heTermHandlers.call();return;}
   if(s==='f'||s==='fold'){heTermHandlers.fold();return;}
-  const m=s.match(/^r(?:aise)?\s+(\d+)$/);
+  // Raise: accept "b <amt>", "r <amt>", "raise <amt>", "bet <amt>"
+  const m=s.match(/^(?:b|r|raise|bet)\s+(\d+)$/);
   if(m){
     const ri=document.getElementById('heRaiseInp');
-    if(ri){ ri.value = m[1]; }
+    if(ri) ri.value=m[1];
     heTermHandlers.raise();
     setTimeout(()=>heConfirmRaise(),0);
+    return;
   }
 }
 function heSubmitTerminalAction() {
@@ -1941,7 +2083,23 @@ function heSubmitTerminalAction() {
 }
 
 async function heShowResult(winners,reason){
-  heStageName='SHOWDOWN';heRenderAll(true);await sleep(250);
+  heStageName='REVEAL'; heRenderAll(true); await sleep(250);
+  // Update showdown stats regardless of mode
+  const user=heUser();
+  if(user&&user.status!=='FOLDED'){
+    heUserModel.showdowns++;
+    const[uScore]=hBest(user.hand,heCommunity);
+    if(uScore&&uScore[0]>=1) heUserModel.strongShowdowns++;
+    else if(heUserRaisedPreflop) heUserModel.bluffsSeen++;
+  }
+  if(visualStyle==='terminal'){
+    // Terminal mode: display result in heTermView instead of overlay
+    heTermHandlers=null;
+    heTerminalResult={winners,reason};
+    heRenderTerminalView();
+    return;
+  }
+  // Casino mode: show overlay as before
   const overlay=document.getElementById('heResOverlay');
   const ttl=document.getElementById('heResTtl');
   const isUser=winners.some(w=>w.name==='YOU');
@@ -1958,23 +2116,21 @@ async function heShowResult(winners,reason){
       <div style="font-size:8px;color:var(--g2);margin-top:2px">${hn}</div>`;
     rc.appendChild(div);
   }
-  const user=heUser();
-  if(user&&user.status!=='FOLDED'){
-    heUserModel.showdowns++;
-    const [uScore]=hBest(user.hand,heCommunity);
-    if((uScore && uScore[0] >= 1)) heUserModel.strongShowdowns++;
-    else if(heUserRaisedPreflop) heUserModel.bluffsSeen++;
-  }
   overlay.classList.add('show');
 }
 function heNextHand(){
+  heTerminalResult=null;
   document.getElementById('heResOverlay').classList.remove('show');
   heClearAct();
-  heDealerIdx=(heDealerIdx+1)%hePlayers.length;heRoundNum++;
+  heDealerIdx=(heDealerIdx+1)%hePlayers.length; heRoundNum++;
   if(heUser().chips<=0){heEndGame();return;}
   setTimeout(()=>hePlayRound(),150);
 }
-function heQuit(){document.getElementById('heResOverlay').classList.remove('show');heEndGame();}
+function heQuit(){
+  heTerminalResult=null;
+  document.getElementById('heResOverlay').classList.remove('show');
+  heEndGame();
+}
 function heEndGame(){
   endGameSlug=HE_SLUG;endGameMode=heMode;
   showEndScreen('TEXAS HOLD\'EM',`${heUser().chips} chips`,heMode+' MODE',HE_SLUG);
@@ -2093,9 +2249,8 @@ window.addEventListener('keydown', (e) => {
   if (bjOn) {
     if (visualStyle === 'terminal') {
       if (key === 'q') { bjCashOut(); return; }
-      if (key === 'n' && bjPhase === 'done') { bjNextHand(); return; }
+      if ((key === 'n' || e.key === 'Enter') && bjPhase === 'done') { bjNextHand(); return; }
       if ((key === 'h' || key === 's' || key === 'd' || key === 'p') && bjPhase === 'play') { bjRunTerminalCommand(key); return; }
-      if (/^\d$/.test(key) && bjPhase === 'bet') { bjRunTerminalCommand(key); return; }
       return;
     }
     if (bjPhase === 'bet') {
@@ -2117,6 +2272,7 @@ window.addEventListener('keydown', (e) => {
   }
   if (heOn && visualStyle === 'terminal') {
     if (key === 'q') { heQuit(); return; }
+    if (heTerminalResult && (key === 'n' || e.key === 'Enter')) { heNextHand(); return; }
     if (key === 'c' || key === 'k' || key === 'f') { heRunTerminalCommand(key); return; }
     return;
   }
