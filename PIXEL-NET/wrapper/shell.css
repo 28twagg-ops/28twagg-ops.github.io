@@ -166,6 +166,61 @@ body{
   display:flex; align-items:center; justify-content:center;
   box-shadow: 0 0 8px color-mix(in srgb, var(--hero) 40%, transparent);
 }
+.instructionGrid{
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  flex:1;
+  overflow-y:auto;
+}
+.instrCard{
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid color-mix(in srgb, var(--hero) 18%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--hero) 6%, rgba(0,0,0,.12)), rgba(0,0,0,.18));
+  display:grid;
+  gap:6px;
+}
+.instrAction{
+  font-family:var(--arcadeFont);
+  font-size:12px;
+  letter-spacing:.06em;
+  color:var(--hero2);
+  font-weight:900;
+}
+.instrDetail{
+  font-size:13px;
+  color:rgba(243,246,255,.9);
+  line-height:1.45;
+}
+.kbd{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:24px;
+  height:22px;
+  padding:0 6px;
+  margin-right:3px;
+  border-radius:6px;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(0,0,0,.25);
+  color:#fff;
+  font-family:var(--arcadeFont);
+  font-size:11px;
+  font-weight:900;
+}
+.arrowPad{
+  display:grid;
+  grid-template-columns:repeat(3, 24px);
+  grid-template-rows:repeat(2, 24px);
+  gap:4px;
+  width:max-content;
+}
+.arrowPad .up{grid-column:2;grid-row:1;}
+.arrowPad .left{grid-column:1;grid-row:2;}
+.arrowPad .down{grid-column:2;grid-row:2;}
+.arrowPad .right{grid-column:3;grid-row:2;}
 
 /* ── GAME FRAME — transparent so body gradient shows in letterbox gaps ── */
 .center{ height:100%; min-height:0; display:flex; justify-content:center; align-items:center; }

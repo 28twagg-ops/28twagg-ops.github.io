@@ -433,7 +433,7 @@
         takeoverEl.innerHTML = `<div class="takeover-row">No takeovers yet. Be the first to set a record.</div>`;
         return;
       }
-      meta.textContent = `Live ${sourceLabel}. Hold time is based on leaderboard timestamps.`;
+      meta.textContent = `Live ${sourceLabel}. Ranked by longest standing top records.`;
       list.innerHTML = items.slice(0, 5).map((row, i) => `
         <div class="pixel-row">
           <div class="pixel-rank">#${i+1}</div>
@@ -452,7 +452,7 @@
 
     async function loadTopPixels(games){
       const scored = [];
-      const withSlug = games.map(g => ({ ...g, slug: getSlugFromPath(g.path) })).filter(g => g.slug);
+      const withSlug = games.map(g => ({ ...g, slug: g.slug || getSlugFromPath(g.path) })).filter(g => g.slug);
       const pulls = withSlug.map(async g => {
         const rows = await fetchLeaderboardForSlug(g.slug);
         if(rows === null) return;
@@ -477,8 +477,9 @@
         }
       });
       await Promise.all(pulls);
-      scored.sort((a,b) => (b.score - a.score) || (a.t - b.t));
-      renderTopPixels(scored, "cross-game podium");
+      // Top Pixels = longest-standing current #1 records (oldest top timestamp first).
+      scored.sort((a,b) => (a.t - b.t) || (b.score - a.score));
+      renderTopPixels(scored, "record holders");
     }
 
     function renderGrid(list){

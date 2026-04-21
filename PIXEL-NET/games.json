@@ -2,6 +2,7 @@
   {
     "name": "CAKED UP CATS",
     "type": "iframe",
+    "slug": "caked-up-cats",
     "path": "games/caked-up-cats/wrapper-v2.html",
     "thumb": "assets/caked-up-cats_thumb.png",
     "description": "Garden maze arcade. Eat cake, catch mice, avoid hazards."
@@ -9,6 +10,7 @@
   {
     "name": "CREEK CROSSER",
     "type": "iframe",
+    "slug": "creek-crosser",
     "path": "games/creek-crosser__embedA/wrapper-v2.html",
     "thumb": "assets/creek-crosser_thumb.png",
     "description": "Arcade lane-dodger with creek, traffic, and timed crossings.",
@@ -17,6 +19,7 @@
   {
     "name": "ASTROTYPE",
     "type": "iframe",
+    "slug": "astrotype",
     "path": "games/astrotype-v2/wrapper-v2.html",
     "thumb": "assets/astrotype_thumb.png",
     "description": "Type the codes. Defend the moon.",
@@ -25,6 +28,7 @@
   {
     "name": "KNIGHT FLIGHT",
     "type": "iframe",
+    "slug": "knight-flight",
     "path": "games/knight-flight-v2/wrapper-v2.html",
     "thumb": "assets/knight-flight_thumb.png",
     "description": "Retro arcade jousting in the skies.",
@@ -33,6 +37,7 @@
   {
     "name": "RETRO KOMBAT",
     "type": "iframe",
+    "slug": "retro-kombat",
     "path": "games/retro-kombat-v2/wrapper-v2.html",
     "thumb": "assets/retro-kombat_thumb.png",
     "description": "Tournament Edition \u2014 coming soon."
@@ -40,6 +45,7 @@
   {
     "name": "LOGIC BOMB",
     "type": "iframe",
+    "slug": "logic-bomb",
     "path": "games/logic-bomb-v2/wrapper-v2.html",
     "thumb": "assets/logic-bomb_thumb.png",
     "description": "Defuse by thinking fast (v2).",
@@ -48,6 +54,7 @@
   {
     "name": "NEON CHASE",
     "type": "iframe",
+    "slug": "neon-chase",
     "path": "games/neon-chase-v2/wrapper-v2.html",
     "thumb": "assets/neon-chase_thumb.png",
     "description": "High-speed neon survival (v2).",
@@ -56,6 +63,7 @@
   {
     "name": "ROBO-ARENA",
     "type": "iframe",
+    "slug": "robo-arena",
     "path": "games/robo-arena-v2/wrapper-v2.html",
     "thumb": "assets/robo-arena_thumb.jpg",
     "description": "Top-down neon arena combat (v2).",
@@ -64,9 +72,19 @@
   {
     "name": "MILLIPEDE CHAOS",
     "type": "iframe",
+    "slug": "millipede-chaos",
     "path": "games/millipede-chaos-v3/wrapper-v2.html",
     "thumb": "assets/millipede_thumb.png",
     "description": "Millipede Chaos remake (v3).",
     "tags": ["centipede", "millipede", "shooter", "arcade"]
+  },
+  {
+    "name": "SPYDER CASINO",
+    "type": "iframe",
+    "slug": "spyder-casino",
+    "path": "games/spyder-casino/wrapper-v2.html",
+    "thumb": "assets/spyder-casino_thumb.svg",
+    "description": "Blackjack + Texas Hold'em hub with classic/polished UI and adaptive bots.",
+    "tags": ["casino", "blackjack", "holdem", "poker", "cards"]
   }
 ]

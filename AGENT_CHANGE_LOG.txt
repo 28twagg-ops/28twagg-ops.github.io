@@ -107,3 +107,18 @@ Entry - 2026-04-21 (Final competitive atmosphere completion)
   - Logic Bomb level 1–3 easing present.
 - Validation:
   - Lints/diagnostics for updated `index.html`: no errors reported.
+
+Entry - 2026-04-21 (Top Pixels + Spyder listing + visual instruction pass)
+- Updated `PIXEL-NET/games.json`:
+  - Added explicit `slug` keys for active games so homepage leaderboard aggregation uses the same IDs as wrapper/Firebase.
+  - Added missing `SPYDER CASINO` game entry to Arcade Floor, including path, slug, thumbnail, and tags.
+- Updated `PIXEL-NET/index.html`:
+  - Top Pixels now ranks by **longest-standing current #1 records** (oldest top timestamp first), not raw score magnitude.
+  - Leaderboard slug resolution now prefers `games.json.slug` and falls back to path parsing.
+  - Existing takeover board retained and now reflects resolved slug data, improving chance of live holder/takeover rows.
+- Updated wrapper instruction UX:
+  - `PIXEL-NET/wrapper/shell.js` now renders instruction cards (action + detail) instead of plain numbered list markup.
+  - Added keycap formatting (`Arrow Keys`, `WASD`, `Space`, `Enter`) and direction-pad diagram support for movement guidance lines.
+  - `PIXEL-NET/wrapper/shell.css` now includes styles for instruction cards, keycaps, and arrow-pad visualization.
+- Validation:
+  - Lints/diagnostics for `index.html`, `shell.js`, `shell.css`, and `games.json`: no errors reported.

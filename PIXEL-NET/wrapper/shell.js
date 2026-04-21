@@ -33,10 +33,34 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   document.title = title + ' — PIXEL-NET';
 
   const instructions = Array.isArray(CFG.instructions) ? CFG.instructions : [];
-  const liHTML = instructions.map(x => `<li>${x}</li>`).join('');
+  const esc = s => String(s||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+  const fmt = s => esc(s)
+    .replace(/\bArrow Keys\b/gi,'<span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">←</span><span class="kbd">→</span>')
+    .replace(/\bWASD\b/gi,'<span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>')
+    .replace(/\bSpace\b/gi,'<span class="kbd">SPACE</span>')
+    .replace(/\bEnter\b/gi,'<span class="kbd">ENTER</span>');
+  const buildInstructionCard = line => {
+    const raw = String(line || '');
+    const parts = raw.split(':');
+    if (parts.length > 1) {
+      const action = fmt(parts.shift().trim());
+      const detail = fmt(parts.join(':').trim());
+      return `<div class="instrCard"><div class="instrAction">${action}</div><div class="instrDetail">${detail}</div></div>`;
+    }
+    const looksDirectional = /arrow keys|wasd|move|left|right|up|down/i.test(raw);
+    if (looksDirectional) {
+      return `<div class="instrCard"><div class="instrAction">${fmt(raw)}</div><div class="arrowPad"><span class="kbd up">↑</span><span class="kbd left">←</span><span class="kbd down">↓</span><span class="kbd right">→</span></div></div>`;
+    }
+    return `<div class="instrCard"><div class="instrDetail">${fmt(raw)}</div></div>`;
+  };
 
   const globalBadge = FIREBASE_DB_URL ? '<span class="badge">GLOBAL</span>' : '';
-  const stepsHTML   = instructions.map(x => `<li>${x}</li>`).join('');
+  const stepsHTML   = instructions.map(buildInstructionCard).join('');
 
   // Inject markup
   document.body.innerHTML = `
@@ -52,7 +76,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       <div class="panel">
         <h3>How To Play</h3>
         <div class="content">
-          <ol id="instructionsDesktop" class="stepList">${stepsHTML}</ol>
+          <div id="instructionsDesktop" class="instructionGrid">${stepsHTML}</div>
         </div>
       </div>
       <div class="center">
@@ -74,7 +98,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
           </div>
           <div class="panel displayCard hidden" id="view-howto">
             <div class="content">
-              <ol id="instructionsMobile" class="stepList">${stepsHTML}</ol>
+              <div id="instructionsMobile" class="instructionGrid">${stepsHTML}</div>
             </div>
           </div>
           <div class="panel leaderboard displayCard hidden" id="view-board">
