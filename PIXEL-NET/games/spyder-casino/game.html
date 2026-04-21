@@ -528,10 +528,28 @@ body.casino .bot-panel{
 .bot-panel.active-t{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.2);}
 .bot-panel.folded-p{opacity:.38;}
 .bot-nm{font-size:9px;letter-spacing:1px;color:var(--amb);margin-bottom:2px;}
+.bot-msg{
+  min-height:24px;
+  margin:0 0 4px 0;
+  padding:2px 6px;
+  font-size:8px;
+  line-height:1.2;
+  color:var(--g2);
+  border:1px dashed rgba(0,255,65,.18);
+  border-radius:6px;
+  background:rgba(0,0,0,.2);
+}
 .bot-ch{color:var(--g2);font-size:8px;}
 .bot-rl{color:var(--amb);font-size:8px;}
 .bot-ac{color:var(--g);font-size:8px;min-height:11px;margin-top:1px;}
 body.casino .bot-nm{font-size:11px;letter-spacing:1.4px;}
+body.casino .bot-msg{
+  min-height:30px;
+  font-size:9px;
+  color:#f2d78a;
+  border-color:rgba(212,168,67,.35);
+  background:rgba(0,0,0,.36);
+}
 body.casino .bot-ch{font-size:10px;}
 body.casino .bot-rl{font-size:10px;}
 body.casino .bot-ac{font-size:10px;min-height:14px;}
@@ -848,9 +866,9 @@ Select a game:
   <div class="mode-hint">TERMINAL KEYS: CALL/CHECK [C] RAISE [R] FOLD [F] CONFIRM [ENTER] LOBBY [ESC]</div>
   <div class="table-wrap">
     <div class="bots-row" id="heBotsRow">
-      <div class="bot-panel" id="hb0"><div class="bot-nm" id="hb0n">THE ROCK</div><div id="hb0c_row"></div><div class="bot-ch" id="hb0ch">$200</div><div class="bot-rl" id="hb0rl"></div><div class="bot-ac" id="hb0ac"></div></div>
-      <div class="bot-panel" id="hb1"><div class="bot-nm" id="hb1n">VIPER</div><div id="hb1c_row"></div><div class="bot-ch" id="hb1ch">$200</div><div class="bot-rl" id="hb1rl"></div><div class="bot-ac" id="hb1ac"></div></div>
-      <div class="bot-panel" id="hb2"><div class="bot-nm" id="hb2n">LOOSE CANNON</div><div id="hb2c_row"></div><div class="bot-ch" id="hb2ch">$200</div><div class="bot-rl" id="hb2rl"></div><div class="bot-ac" id="hb2ac"></div></div>
+      <div class="bot-panel" id="hb0"><div class="bot-nm" id="hb0n">THE ROCK</div><div class="bot-msg" id="hb0msg"></div><div id="hb0c_row"></div><div class="bot-ch" id="hb0ch">$200</div><div class="bot-rl" id="hb0rl"></div><div class="bot-ac" id="hb0ac"></div></div>
+      <div class="bot-panel" id="hb1"><div class="bot-nm" id="hb1n">VIPER</div><div class="bot-msg" id="hb1msg"></div><div id="hb1c_row"></div><div class="bot-ch" id="hb1ch">$200</div><div class="bot-rl" id="hb1rl"></div><div class="bot-ac" id="hb1ac"></div></div>
+      <div class="bot-panel" id="hb2"><div class="bot-nm" id="hb2n">LOOSE CANNON</div><div class="bot-msg" id="hb2msg"></div><div id="hb2c_row"></div><div class="bot-ch" id="hb2ch">$200</div><div class="bot-rl" id="hb2rl"></div><div class="bot-ac" id="hb2ac"></div></div>
     </div>
     <div class="comm-area">
       <div class="stage-lbl" id="heStageLbl">WAITING</div>
@@ -1050,6 +1068,17 @@ function terminalRow(i, row, type){
   const chips = `${Math.round(Number(row.score||0))}`.padStart(6,' ');
   return `#${i+1} ${nm}  ${md.padEnd(8,' ')} ${chips}`;
 }
+function terminalPairRow(i, stdRow, anRow, type){
+  const fmt = (row) => {
+    if(!row) return '...';
+    const nm = (row.initials||row.name||'...').toString().toUpperCase().slice(0,3);
+    const score = type==='bj'
+      ? fmtMoney(row.score||0)
+      : `${Math.round(Number(row.score||0))} chips`;
+    return `${nm} ${score}`;
+  };
+  return `#${i+1} STD ${fmt(stdRow).padEnd(18,' ')} | ANL ${fmt(anRow)}`;
+}
 function isAnalysisMode(row){
   const m = (row && row.mode ? String(row.mode) : 'STANDARD').toUpperCase();
   return m.startsWith('A');
@@ -1088,16 +1117,14 @@ function renderTerminalLobbyBoard(){
     'LEGENDS OF SPYDER',
     '================================================================================'
   ];
-  const addSection = (title, rows, type) => {
+  const addSection = (title, stdRows, anRows, type) => {
     lines.push(title);
     lines.push('-'.repeat(title.length));
-    for(let i=0;i<5;i++) lines.push(terminalRow(i, rows[i], type));
+    for(let i=0;i<5;i++) lines.push(terminalPairRow(i, stdRows[i], anRows[i], type));
     lines.push('');
   };
-  addSection('BLACKJACK - STANDARD TOP 5', lobbyBjStdRows, 'bj');
-  addSection('BLACKJACK - ANALYSIS TOP 5', lobbyBjAnRows, 'bj');
-  addSection("TEXAS HOLD'EM - STANDARD TOP 5", lobbyHeStdRows, 'he');
-  addSection("TEXAS HOLD'EM - ANALYSIS TOP 5", lobbyHeAnRows, 'he');
+  addSection('BLACKJACK - TOP 5', lobbyBjStdRows, lobbyBjAnRows, 'bj');
+  addSection("TEXAS HOLD'EM - TOP 5", lobbyHeStdRows, lobbyHeAnRows, 'he');
   while(lines.length && lines[lines.length-1] === ''){
     lines.pop();
   }
@@ -1654,7 +1681,7 @@ const HAND_NAMES=['High Card','Pair','Two Pair','Trips','Straight','Flush','Full
 let hePlayers=[], hePot=0, heCommunity=[], heDeck=[], heDealerIdx=0, heRoundNum=1, heCurrentBet=0, heStageName='', heMode='STANDARD';
 let heWaitResolve=null, heRaiseMin=0;
 let heUserRaisedPreflop=false;
-const heUserModel={hands:0,preflopRaises:0,showdowns:0,strongShowdowns:0,bluffsSeen:0};
+const heUserModel={hands:0,preflopRaises:0,showdowns:0,strongShowdowns:0,bluffsSeen:0,folds:0,calls:0,checks:0};
 function heAdaptiveLine(){
   const hands=Math.max(1,heUserModel.hands);
   const raiseRate=heUserModel.preflopRaises/hands;
@@ -1665,6 +1692,25 @@ function heAdaptiveLine(){
   if(hands>=6&&raiseRate<0.25) return "ACE: Too passive. Start stealing those blinds.";
   if(hands>=6&&bluffRate>0.5) return "GRIT: Pure smoke. Call lighter on the river.";
   return null;
+}
+function heBotRemark(bot){
+  const hands=Math.max(1,heUserModel.hands);
+  const foldRate=heUserModel.folds/hands;
+  const raiseRate=heUserModel.preflopRaises/hands;
+  const bluffRate=heUserModel.showdowns>0?heUserModel.bluffsSeen/heUserModel.showdowns:0;
+  const strongRate=heUserModel.showdowns>0?heUserModel.strongShowdowns/heUserModel.showdowns:0;
+  if(hands>=4&&foldRate<0.12) return `${bot.name}: "No folds? You're paying tuition tonight."`;
+  if(hands>=4&&foldRate>0.55) return `${bot.name}: "Too many folds. Blinds are mine."`;
+  if(hands>=4&&raiseRate>0.55&&strongRate>0.45) return `${bot.name}: "You only raise with heat. I'll just get out early."`;
+  if(hands>=5&&bluffRate>0.45) return `${bot.name}: "That story doesn't sell. I'm calling lighter now."`;
+  const quips=[
+    `${bot.name}: "Pressure makes diamonds... and bad calls."`,
+    `${bot.name}: "Keep betting. I love donations."`,
+    `${bot.name}: "That line was cute. Not convincing."`,
+    `${bot.name}: "River's coming. Hope you're ready."`,
+    `${bot.name}: "You're readable. I'm profitable."`
+  ];
+  return quips[Math.floor(Math.random()*quips.length)];
 }
 
 // ── HAND EVAL ──────────────────────────────────────────────────
@@ -1822,10 +1868,10 @@ function startHE(mode){
   heMode=mode;heRoundNum=1;heDealerIdx=0;
   document.getElementById('heModeTag').textContent=mode;
   hePlayers=[
-    {name:'THE ROCK',    chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'CONSERVATIVE'},
-    {name:'VIPER',       chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'AGGRESSIVE'},
-    {name:'LOOSE CANNON',chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'BALANCED'},
-    {name:'YOU',         chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'HUMAN'},
+    {name:'THE ROCK',    chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'CONSERVATIVE',remark:''},
+    {name:'VIPER',       chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'AGGRESSIVE',remark:''},
+    {name:'LOOSE CANNON',chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'BALANCED',remark:''},
+    {name:'YOU',         chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'HUMAN',remark:''},
   ];
   showScreen('heScreen');
   setTimeout(()=>hePlayRound(),150);
@@ -1850,7 +1896,7 @@ async function hePlayRound(){
   const num=hePlayers.length;
   const sbI=(heDealerIdx+1)%num,bbI=(heDealerIdx+2)%num;
 
-  for(const p of hePlayers){p.roundBet=0;p.role='';p.lastAction='';p.hand=[];p.status='ACTIVE';}
+  for(const p of hePlayers){p.roundBet=0;p.role='';p.lastAction='';p.hand=[];p.status='ACTIVE';p.remark='';}
   hePlayers[heDealerIdx].role='(D)';hePlayers[sbI].role='(SB)';hePlayers[bbI].role='(BB)';
 
   for(const[idx,amt] of[[sbI,HE_SB],[bbI,HE_BB]]){
@@ -1932,6 +1978,7 @@ async function heBotTurn(p,phase){
   let line=`${p.name} → ${p.lastAction}`;
   const adap=heAdaptiveLine();
   if(adap&&Math.random()<0.28) line=`${line}\n${adap}`;
+  if(Math.random()<0.55) p.remark=heBotRemark(p);
   heSetChatter(line);
   heRenderAll(false);await sleep(200);
 }
@@ -1961,7 +2008,7 @@ function heUserTurn(p){
     }
     // Fold
     const fb=document.createElement('button');fb.className='btn red';fb.textContent='FOLD';
-    fb.onclick=()=>{heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heWaitResolve=null;heRenderAll(false);res();};
+    fb.onclick=()=>{heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heWaitResolve=null;heRenderAll(false);res();};
     az.appendChild(fb);
     // Keyboard actions for terminal-style play
     heKeyActions = {
@@ -1970,7 +2017,7 @@ function heUserTurn(p){
         const oppAllInNow=hePlayers.filter(x=>x!==p&&x.status!=='FOLDED').every(x=>x.chips===0);
         if(!oppAllInNow) heShowRaise(p,res);
       },
-      fold: () => { heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heWaitResolve=null;heRenderAll(false);res(); },
+      fold: () => { heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heWaitResolve=null;heRenderAll(false);res(); },
       confirmRaise: () => {
         const rz = document.getElementById('heRaiseZ');
         if (rz.classList.contains('show')) heConfirmRaise();
@@ -1990,6 +2037,10 @@ function heActCall(p,res){
   const toCall=heCurrentBet-p.roundBet,pay=Math.min(toCall,p.chips);
   p.chips-=pay;p.roundBet+=pay;hePot+=pay;
   p.lastAction=pay===0?'CHECK':'CALL';
+  if(p.style==='HUMAN'){
+    if(pay===0) heUserModel.checks++;
+    else heUserModel.calls++;
+  }
   heWaitResolve=null;heClearAct();heRenderAll(false);res();
 }
 function heShowRaise(p,res){
@@ -2237,6 +2288,8 @@ function heRenderAll(showdown){
     const bp=document.getElementById(`hb${i}`);
     bp.className='bot-panel'+(p.status==='FOLDED'?' folded-p':'');
     document.getElementById(`hb${i}n`).textContent=p.name;
+    const bm=document.getElementById(`hb${i}msg`);
+    if(bm) bm.textContent=p.remark||'';
     document.getElementById(`hb${i}ch`).textContent=`$${p.chips}`;
     document.getElementById(`hb${i}rl`).textContent=p.role;
     document.getElementById(`hb${i}ac`).textContent=p.lastAction;
@@ -2341,6 +2394,9 @@ window.addEventListener('keydown', (e) => {
   const bjOn = document.getElementById('bjScreen').classList.contains('active');
   const heOn = document.getElementById('heScreen').classList.contains('active');
   const endOn = document.getElementById('endScreen').classList.contains('active');
+  const ae = document.activeElement;
+  const typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+  if (typing) return;
   if (key === 'escape' && (bjOn || heOn || endOn)) { goLobby(); return; }
   if (lobby) {
     if (visualStyle === 'terminal') {
