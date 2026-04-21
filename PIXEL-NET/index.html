@@ -377,7 +377,9 @@
         const res = await fetch(normalizePath("version.json"), { cache: "no-store" });
         if(!res.ok) throw new Error("version not found");
         const data = await res.json();
-        el.textContent = `version: ${(data && data.version) ? data.version : "unknown"}`;
+        const raw = (data && data.version) ? String(data.version).trim() : "unknown";
+        const normalized = raw.replace(/^v/i, "");
+        el.textContent = `version: ${normalized}`;
       } catch(_) {
         el.textContent = "version: unavailable";
       }

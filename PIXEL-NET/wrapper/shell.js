@@ -143,7 +143,9 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       const r = await fetch('../../version.json', { cache: 'no-store' });
       if (!r.ok) throw new Error('version missing');
       const d = await r.json();
-      el.textContent = `version: ${(d && d.version) ? d.version : 'unknown'}`;
+      const raw = (d && d.version) ? String(d.version).trim() : 'unknown';
+      const normalized = raw.replace(/^v/i, '');
+      el.textContent = `version: ${normalized}`;
     } catch (_) {
       el.textContent = 'version: n/a';
     }
