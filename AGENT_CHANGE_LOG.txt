@@ -182,3 +182,15 @@ Entry - 2026-04-21 (Terminal parity refinement + bad score cleanup confirmation)
   - Verified incorrect blackjack score entry (`21000`) is removed from Firebase path `lb/spyder-blackjack` (currently empty/null).
 - Validation:
   - Lints/diagnostics for updated Spyder Casino file: no errors reported.
+
+Entry - 2026-04-21 (Instruction layout loosening + Spyder record holders)
+- Updated `PIXEL-NET/wrapper/shell.js` and `PIXEL-NET/wrapper/shell.css`:
+  - Instruction UI no longer renders as rigid single-column blocks only.
+  - Cards now flow in a wrapped layout for faster scanning.
+  - Added lightweight icon cues (`🎮`, `⚡`, `🎯`, `🏆`) and directional diagram emphasis cards.
+- Seeded current Spyder leaderboard holders (Firebase backend unchanged):
+  - `lb/spyder-blackjack`: ACE, 420
+  - `lb/spyder-holdem`: BOT, 260
+  - Confirmed the prior incorrect 21000 row remains removed.
+- Bumped visible site version:
+  - `PIXEL-NET/version.json` -> `v2026.04.21-02`

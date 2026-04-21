@@ -44,19 +44,29 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     .replace(/\bWASD\b/gi,'<span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>')
     .replace(/\bSpace\b/gi,'<span class="kbd">SPACE</span>')
     .replace(/\bEnter\b/gi,'<span class="kbd">ENTER</span>');
+  const iconFor = s => {
+    const t = String(s || '').toLowerCase();
+    if (/move|navigate|steer|flap|control|arrow|wasd/.test(t)) return '🎮';
+    if (/shoot|fire|bomb|attack|combat/.test(t)) return '⚡';
+    if (/objective|goal|collect|cross|clear|survive/.test(t)) return '🎯';
+    if (/score|leaderboard|save|submit/.test(t)) return '🏆';
+    return '•';
+  };
   const buildInstructionCard = line => {
     const raw = String(line || '');
     const parts = raw.split(':');
     if (parts.length > 1) {
       const action = fmt(parts.shift().trim());
       const detail = fmt(parts.join(':').trim());
-      return `<div class="instrCard"><div class="instrAction">${action}</div><div class="instrDetail">${detail}</div></div>`;
+      const icon = iconFor(raw);
+      return `<div class="instrCard"><div class="instrAction"><span class="i">${icon}</span> ${action}</div><div class="instrDetail">${detail}</div></div>`;
     }
     const looksDirectional = /arrow keys|wasd|move|left|right|up|down/i.test(raw);
     if (looksDirectional) {
-      return `<div class="instrCard"><div class="instrAction">${fmt(raw)}</div><div class="arrowPad"><span class="kbd up">↑</span><span class="kbd left">←</span><span class="kbd down">↓</span><span class="kbd right">→</span></div></div>`;
+      return `<div class="instrCard diagramCard"><div class="instrAction"><span class="i">🎮</span> ${fmt(raw)}</div><div class="arrowPad"><span class="kbd up">↑</span><span class="kbd left">←</span><span class="kbd down">↓</span><span class="kbd right">→</span></div></div>`;
     }
-    return `<div class="instrCard"><div class="instrDetail">${fmt(raw)}</div></div>`;
+    const icon = iconFor(raw);
+    return `<div class="instrCard"><div class="instrDetail"><span class="i">${icon}</span> ${fmt(raw)}</div></div>`;
   };
 
   const globalBadge = FIREBASE_DB_URL ? '<span class="badge">GLOBAL</span>' : '';
