@@ -2464,7 +2464,13 @@ window.addEventListener('keydown', (e) => {
   const endOn = document.getElementById('endScreen').classList.contains('active');
   const ae = document.activeElement;
   const typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
-  if (typing) return;
+  if (typing) {
+    const allowDoneAdvance = e.key === 'Enter' && (
+      (bjOn && visualStyle === 'terminal' && bjPhase === 'done') ||
+      (heOn && visualStyle === 'terminal' && !!heTerminalResult)
+    );
+    if (!allowDoneAdvance) return;
+  }
   if (key === 'escape' && (bjOn || heOn || endOn)) { goLobby(); return; }
   if (lobby) {
     if (visualStyle === 'terminal') {
@@ -2557,6 +2563,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (bjCmd) {
     bjCmd.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
+        if (bjPhase === 'done') {
+          bjNextHand();
+          bjCmd.value = '';
+          e.preventDefault();
+          return;
+        }
         bjRunTerminalCommand(bjCmd.value);
         bjCmd.value = '';
         e.preventDefault();
@@ -2567,6 +2579,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (heCmd) {
     heCmd.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
+        if (heTerminalResult) {
+          heNextHand();
+          heCmd.value = '';
+          e.preventDefault();
+          return;
+        }
         heRunTerminalCommand(heCmd.value);
         heCmd.value = '';
         e.preventDefault();
