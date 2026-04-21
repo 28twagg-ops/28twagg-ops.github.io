@@ -394,6 +394,49 @@ Entry - 2026-04-21 (v0.0.26 - Stack Drop DX readability/scale pass)
   - Result: noticeably larger active gameplay area and easier piece readability
 - Bumped PIXEL-NET/version.json to 0.0.26
 
+Entry - 2026-04-21 (v0.0.31 - arcade-authentic mechanics pass: Stack Drop + Galaxy Swarm + Tower Rush)
+- PIXEL-NET/games/circuit-salvager/game.html:
+  - Replaced ultra-fast down-key repeat behavior with guideline-like soft drop gravity cap (~50ms/row)
+  - Down key now modifies fall interval instead of stepping through ARR repeat spam
+  - Preserves classic left/right DAS while making soft drop feel like original Tetris rules
+- PIXEL-NET/games/galaxy-swarm-2084/game.html:
+  - Switched to global Galaga-style attack cadence:
+    - global shot timer picks only bottom-most enemies in columns to fire
+    - global dive timer launches upper-row enemies into dive sorties
+  - Removed random per-enemy fire spam and random per-enemy dive triggers
+  - Diving enemies now rejoin their formation lane after sortie (instead of drifting unpredictably)
+  - Keeps boss-specific behavior while making regular waves read like classic Galaga flow
+- PIXEL-NET/games/orbit-siege/game.html:
+  - Stage-authentic DK pacing: fireballs now unlock from stage 2 onward (stage 1 barrel-focused)
+  - Blue barrels now unlock from stage 2 onward
+  - Barrel ladder descent chance tuned to lower early-stage chaos and scale more naturally by stage
+  - Updated instruction text to reflect staged fireball unlock
+- Bumped PIXEL-NET/version.json to 0.0.31
+
+Entry - 2026-04-21 (v0.0.35 - classic physics pass + Dig Dug Delve implementation)
+- PIXEL-NET/games/circuit-salvager/game.html (Stack Drop DX):
+  - Switched to classic-style gravity profile using frame-per-row table
+  - Reworked soft drop to row-by-row accelerated gravity (no ultra-fast repeat spam)
+  - Removed hard drop behavior to align with classic profile
+  - Updated line scoring base values to classic-style 40/100/300/1200
+  - Shifted lock behavior to immediate lock on touchdown for classic feel
+- PIXEL-NET/games/galaxy-swarm-2084/game.html:
+  - Replaced random per-enemy firing/diving with global Galaga-style attack cadence
+  - Added bottom-row shooter selection by formation column
+  - Added global dive sortie timer with upper-row attacker selection
+  - Diving enemies now return to their formation lane cleanly after attacks
+- PIXEL-NET/games/orbit-siege/game.html:
+  - Preserved DK pacing adjustments (stage-gated fireballs and blue barrels) from prior pass
+- NEW GAME: PIXEL-NET/games/dig-dug-delve/
+  - Added new playable Dig Dug-style game (game.html + wrapper-v2.html)
+  - Implemented grid digging, pump attack, enemy inflation/pop, rocks, Fygar fire, round progression
+  - Included GAME_OVER_SCORE postMessage leaderboard submission compatibility
+- PIXEL-NET/games.json:
+  - Registered DIG DUG DELVE entry (slug/path/tags/aliases)
+- PIXEL-NET/assets/dig-dug-delve_thumb.png:
+  - Added thumbnail sourced from provided digdug_nes_2 archive screenshot
+- Bumped PIXEL-NET/version.json to 0.0.35
+
 Entry - 2026-04-21 (Tower Rush full DK-style rewrite)
 - Completely rewrote PIXEL-NET/games/orbit-siege/game.html:
   - Drew gorilla at summit with animated throw arm + red glowing eyes

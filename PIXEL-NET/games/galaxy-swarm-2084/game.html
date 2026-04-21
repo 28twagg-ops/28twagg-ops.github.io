@@ -63,6 +63,8 @@ let dualShot = false, dualTimer = 0;
 let shielded = false, shieldTimer = 0;
 let waveIntro = 0;
 let waveGrace = 0; // no enemy fire/dives during intro grace
+let swarmShotTimer = 0; // global Galaga-style formation fire cadence
+let swarmDiveTimer = 0; // global Galaga-style dive cadence
 let last = 0;
 let keys = {};
 
@@ -145,6 +147,8 @@ function resetGame() {
   fireCooldown = 0; shakeT = 0; dualShot = false; dualTimer = 0;
   shielded = false; shieldTimer = 0;
   waveGrace = 0;
+  swarmShotTimer = 0;
+  swarmDiveTimer = 0;
   formDx = 0; formDir = 1;
   bullets = []; eBullets = []; particles = []; floats = [];
   P.x = W/2; P.y = H - 64; P.flash = 0;
@@ -185,6 +189,8 @@ function buildWave() {
   formSpd = 0.24 + wave * 0.085;   // softer early movement
   maxEBullets = Math.min(1 + Math.floor(wave/2), 6); // wave 1: 1 bullet max
   const isBoss = wave % 5 === 0;
+  swarmShotTimer = Math.max(900, 2600 - wave * 110);
+  swarmDiveTimer = Math.max(1500, 5200 - wave * 220);
   if (isBoss) {
     // Boss wave — one large boss + escort drones
     const t = ETYPE.BOSS;
@@ -243,6 +249,28 @@ function buildWave() {
       });
     }
   }
+}
+
+function pickBottomShooter() {
+  // Galaga/Space-Invaders style: only the lowest enemy in each column can fire.
+  const cols = new Map();
+  for (const e of enemies) {
+    if (e.type === "BOSS" || e.diving) continue;
+    const colKey = Math.round(e.baseX / 24);
+    const prev = cols.get(colKey);
+    if (!prev || e.baseY > prev.baseY) cols.set(colKey, e);
+  }
+  const candidates = [...cols.values()];
+  if (!candidates.length) return null;
+  return candidates[(Math.random() * candidates.length) | 0];
+}
+
+function launchDiveEnemy() {
+  // Prefer upper-row enemies for dives so it feels like classic Galaga sorties.
+  const candidates = enemies.filter(e => e.type !== "BOSS" && !e.diving && e.baseY < H * 0.35);
+  if (!candidates.length) return;
+  const e = candidates[(Math.random() * candidates.length) | 0];
+  e.diving = true;
 }
 
 /* ══════════════════════════════════════════════════
@@ -574,6 +602,34 @@ function update(dt) {
   // Player flash
   if (P.flash > 0) P.flash -= ms;
 
+  // Galaga-style global formation attacks
+  if (waveGrace <= 0 && enemies.some(e => e.type !== "BOSS")) {
+    swarmShotTimer -= ms;
+    if (swarmShotTimer <= 0 && eBullets.length < maxEBullets) {
+      const s = pickBottomShooter();
+      if (s) {
+        const bspd = 1.9 + wave * 0.18;
+        if (s.type === "GUNSHIP" && wave >= 5) {
+          for (let a = -0.18; a <= 0.19; a += 0.18) {
+            eBullets.push({ x:s.x, y:s.y+s.r, vx:Math.sin(a)*1.5, vy:bspd, col:"#ff8c00" });
+          }
+        } else if (s.type === "ELITE" && wave >= 6) {
+          const dx = P.x - s.x, dy = P.y - s.y, d = Math.hypot(dx, dy) || 1;
+          eBullets.push({ x:s.x, y:s.y+s.r, vx:(dx/d)*bspd*0.25, vy:bspd, col:"#aa66ff" });
+        } else {
+          eBullets.push({ x:s.x, y:s.y+s.r, vx:0, vy:bspd, col:s.type === "ELITE" ? "#aa66ff" : "#ff4466" });
+        }
+      }
+      swarmShotTimer = Math.max(700, 2400 - wave * 95) + Math.random() * 450;
+    }
+
+    swarmDiveTimer -= ms;
+    if (swarmDiveTimer <= 0) {
+      launchDiveEnemy();
+      swarmDiveTimer = Math.max(1200, 5000 - wave * 200) + Math.random() * 700;
+    }
+  }
+
   /* ── Player movement ── */
   if (keys["arrowleft"] || keys["a"]) P.x -= P.speed;
   if (keys["arrowright"] || keys["d"]) P.x += P.speed;
@@ -643,45 +699,25 @@ function update(dt) {
       const dspd = (3.1 + wave*0.15) * (ms/16);
       e.x += (dx/dist)*dspd;
       e.y += (dy/dist)*dspd;
-      if (e.y > P.y + 30 || dist < 20) {
+      if (e.y > H + 30 || dist < 18) {
         e.diving = false;
-        // Snap baseX to current x so it re-joins formation smoothly
-        e.baseX = e.x - formDx;
-        e.baseY = Math.min(e.baseY, e.y);
+        // Return to formation lane (Galaga-style regroup)
+        e.x = e.baseX + formDx;
+        e.y = e.baseY;
       }
     } else {
       // Follow shared formation offset
       e.x = e.baseX + formDx;
       // Gentle individual bob (small, keeps grid feel)
       e.y = e.baseY + Math.sin(Date.now()*0.002 + e.phase) * 5;
-      // Dive trigger — much rarer on early waves
-      // Wave 1: ~0.00006/frame per enemy (nearly none), wave 5: ~0.00025, wave 10+: ~0.0005
-      const diveChance = 0.00002 * (1 + wave * 0.45);
-      if (waveGrace <= 0 && !e.diving && e.type !== "BOSS" && Math.random() < diveChance && e.y < H*0.52) {
-        e.diving = true;
-      }
     }
 
     // Enemy fire
-    e.fireTick -= ms;
-    if (e.fireTick <= 0) {
-      e.fireTick = e.fireRate + Math.random() * (e.fireRate * 0.5);
-      if (waveGrace > 0) continue;
-
-      // ── Front-row-only fire rule (Space Invaders authentic) ──
-      // An enemy can only fire if no other enemy is directly below it in the same column
-      const isColumnFront = !enemies.some(other =>
-        other !== e &&
-        other.type !== "BOSS" &&
-        Math.abs(other.baseX - e.baseX) < 30 &&  // same column (roughly)
-        other.baseY > e.baseY                      // other is lower on screen
-      );
-
-      // Bullet cap — wave 1 max 2 enemy bullets at once
-      const bulletCap = eBullets.length < maxEBullets;
-
-      if (e.type === "BOSS") {
-        // Boss ignores column rule
+    if (e.type === "BOSS") {
+      e.fireTick -= ms;
+      if (e.fireTick <= 0) {
+        e.fireTick = e.fireRate + Math.random() * (e.fireRate * 0.5);
+        if (waveGrace > 0) continue;
         const bspd = 3.0 + wave * 0.15;
         for (let a = -0.26; a <= 0.27; a += 0.26) {
           eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*3.5, vy:bspd, col:"#00ff88" });
@@ -689,30 +725,6 @@ function update(dt) {
         if (e.phase2) {
           const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, sp=4+wave*0.1;
           eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*sp*0.5, vy:(dy/d)*sp, col:"#00ffee" });
-        }
-      } else if (isColumnFront && bulletCap) {
-        // Bullet speed scales with wave — slow and readable early, faster later
-        const bspd = 1.9 + wave * 0.18;
-        if (e.type === "GUNSHIP") {
-          // Only spread on wave 3+, single shot before that
-          if (wave >= 5) {
-            for (let a = -0.18; a <= 0.19; a += 0.18) {
-              eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*1.5, vy:bspd, col:"#ff8c00" });
-            }
-          } else {
-            eBullets.push({ x:e.x, y:e.y+e.r, vx:0, vy:bspd, col:"#ff8c00" });
-          }
-        } else if (e.type === "ELITE") {
-          // Aimed only on wave 4+, straight drop before that
-          if (wave >= 6) {
-            const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1;
-            eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*bspd*0.25, vy:bspd, col:"#aa66ff" });
-          } else {
-            eBullets.push({ x:e.x, y:e.y+e.r, vx:0, vy:bspd, col:"#aa66ff" });
-          }
-        } else {
-          // Drone — straight drop always
-          eBullets.push({ x:e.x, y:e.y+e.r, vx:0, vy:bspd, col:"#ff4466" });
         }
       }
     }

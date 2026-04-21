@@ -33,7 +33,7 @@ canvas{display:block;width:100%;height:100%}
     <p>← → / A D  Move &nbsp; ↑ W / Space  Jump</p>
     <p>↑ W  near ladder = Climb Up &nbsp; ↓ S = Climb Down</p>
     <p>Jump OVER barrels for bonus points</p>
-    <p>Grab HAMMERS to smash barrels and fireballs</p>
+    <p>Grab HAMMERS to smash barrels (fireballs unlock on later stages)</p>
     <button id="btn">START CLIMB</button>
   </div>
 </div>
@@ -173,7 +173,7 @@ function playerReset() {
 /* ══ BARREL ══ */
 function makeBarrel() {
   const top = PLATS[4];
-  const blue = Math.random() < Math.min(0.38, 0.08 + stage * 0.03);
+  const blue = stage >= 2 && Math.random() < Math.min(0.35, 0.05 + stage * 0.025);
   const spd = (1.8 + stage * 0.22) * (blue ? 1.28 : 1);
   const r   = Math.max(11, Math.floor(W * 0.019));
   const sx  = KONG.x + KONG.w * 0.78;
@@ -181,7 +181,7 @@ function makeBarrel() {
   return {
     x: sx, y: sy, vx: spd * top.dir, vy: 0,
     r, rot: 0, onPlat: top, blue,
-    ladderChance: 0.22 + stage * 0.03,
+    ladderChance: Math.min(0.46, 0.10 + stage * 0.04),
     takingLadder: null, ladderDir: 0
   };
 }
@@ -330,7 +330,7 @@ function update(dt) {
 
   /* ── Fireball spawn (oil drum) ── */
   fireSpawn -= MS;
-  if (fireSpawn <= 0 && !stageClearing) {
+  if (stage >= 2 && fireSpawn <= 0 && !stageClearing) {
     fireSpawn = Math.max(1000, 2600 - stage * 160);
     fireballs.push(makeFireball());
   }

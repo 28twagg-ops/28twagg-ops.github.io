@@ -109,6 +109,16 @@
     "aliases": ["stack drop", "block stacker"]
   },
   {
+    "name": "DIG DUG DELVE",
+    "type": "iframe",
+    "slug": "dig-dug-delve",
+    "path": "games/dig-dug-delve/wrapper-v2.html",
+    "thumb": "assets/dig-dug-delve_thumb.png",
+    "description": "Tunnel-digging arcade action with pump combat, falling rocks, and fire-breathing enemies.",
+    "tags": ["digging", "maze action", "pump attack", "retro arcade", "underground"],
+    "aliases": ["dig dug", "digdug", "tunnel game"]
+  },
+  {
     "name": "TOWER RUSH",
     "type": "iframe",
     "slug": "orbit-siege",

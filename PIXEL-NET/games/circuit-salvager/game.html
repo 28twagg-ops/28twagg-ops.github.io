@@ -24,7 +24,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   <div class="panel">
     <h1>STACK DROP DX</h1>
     <p>← → / A D — Move &nbsp; ↑ W — Rotate CW &nbsp; Z — Rotate CCW</p>
-    <p>↓ S — Soft drop &nbsp; Space — Hard drop</p>
+    <p>↓ S — Soft drop (classic gravity profile)</p>
     <p>C — Hold piece &nbsp; Ghost shows landing spot</p>
     <hr>
     <p>TETRIS = 4 lines at once for massive bonus</p>
@@ -73,9 +73,16 @@ const KICKS_I = [
   [[0,0],[1,0],[-2,0],[1,2],[-2,-1]],
 ];
 
-/* ══ SCORING ══ */
-const LINE_PTS  = [0, 100, 300, 500, 800];
+/* ══ SCORING / CLASSIC PHYSICS PROFILE ══ */
+// NES-like line scoring (scaled by current level index starting at 1).
+const LINE_PTS  = [0, 40, 100, 300, 1200];
 const COMBO_ADD = [0,  50, 100, 150, 200, 250, 300];
+// NES gravity table in frames per row (60fps timing).
+const NES_GRAVITY_FRAMES = [48,43,38,33,28,23,18,13,8,6,5,5,5,4,4,4,3,3,3,2,2,2,2,2,2,2,2,2,2];
+function gravityMsForLevel(levelNow) {
+  const idx = Math.max(0, Math.min(NES_GRAVITY_FRAMES.length - 1, levelNow - 1));
+  return Math.max(16, Math.round((1000/60) * NES_GRAVITY_FRAMES[idx]));
+}
 
 /* ══ LAYOUT VARS ══ (recalculated on resize) */
 let W = 800, H = 600;
@@ -89,7 +96,8 @@ let score  = 0, lines = 0, level = 1, combo = 0;
 let b2b    = false;   // back-to-back TETRIS/T-spin tracker
 let tSpin  = false;   // T-spin flag for current piece
 let lastAction = ""; // last rotation direction for T-spin check
-let dropTimer = 0, lockTimer = 500, lockMoves = 0;
+let dropTimer = 0, lockTimer = 0, lockMoves = 0;
+let softDropHeld = false;
 let running = false, posted = false, last = 0;
 let clearAnim = null;
 let floats = [], particles = [];
@@ -216,7 +224,7 @@ function checkTSpin(prevX, prevY) {
 }
 
 /* ══ LOCK DELAY ══ */
-function resetLock() { lockTimer=500; lockMoves=Math.min(lockMoves+1,15); }
+function resetLock() { lockTimer=0; lockMoves=Math.min(lockMoves+1,15); }
 
 /* ══ GHOST ══ */
 function ghostY() {
@@ -350,7 +358,7 @@ function resetGame() {
   bag=[]; bag2=[]; fillBags();
   held=null; canHold=true;
   score=0; lines=0; level=1; combo=0; b2b=false; tSpin=false;
-  dropTimer=0; lockTimer=500; lockMoves=0;
+  dropTimer=0; lockTimer=0; lockMoves=0;
   posted=false; running=true; last=0;
   clearAnim=null; floats=[]; particles=[]; flashT=0;
   garbageCountdown=GARBAGE_INTERVAL;
@@ -556,7 +564,7 @@ function render() {
   ctx.fillStyle="rgba(140,180,200,.3)";
   ctx.font="9px ui-monospace,monospace"; ctx.textAlign="center";
   const hy=oy+ROWS*cell-cell*0.5;
-  ctx.fillText("C=HOLD  SPC=DROP",lp+pw/2,hy);
+  ctx.fillText("C=HOLD  ↓=SOFT",lp+pw/2,hy);
   ctx.fillText("Z=ROT CCW",lp+pw/2,hy+13);
 
   // Garbage warning (level 5+)
@@ -605,18 +613,21 @@ function update(dt) {
     if(garbageCountdown<=0) { garbageCountdown=GARBAGE_INTERVAL; addGarbageRow(); }
   }
 
-  // Drop speed
-  const interval=Math.max(40, Math.round(1000*Math.pow(0.8, level-1)));
+  // Drop speed (classic profile)
+  const baseInterval = gravityMsForLevel(level);
+  // Classic-like soft drop: force faster descent but still row-by-row.
+  const interval = softDropHeld ? Math.min(baseInterval, 33) : baseInterval;
   dropTimer+=ms;
-  const onGround=collides(piece.x,piece.y+1,piece.m);
-
-  if(dropTimer>=interval) {
-    dropTimer=0;
-    if(!onGround) { piece.y++; if(lockMoves>0) lockTimer=500; }
-    else { lockTimer-=interval; if(lockTimer<=0) lockPiece(); }
-  } else if(onGround) {
-    lockTimer-=ms;
-    if(lockTimer<=0) lockPiece();
+  // Process potentially multiple gravity steps if frame stalls.
+  while(dropTimer>=interval) {
+    dropTimer-=interval;
+    if(!collides(piece.x,piece.y+1,piece.m)) {
+      piece.y++;
+    } else {
+      // Classic instant lock when touching down.
+      lockPiece();
+      break;
+    }
   }
 
   // Particles
@@ -654,24 +665,19 @@ addEventListener("keydown",e=>{
     startDAS("l",()=>{if(piece&&!collides(piece.x-1,piece.y,piece.m)){piece.x--;resetLock();}});
   if(k==="arrowright"||k==="d")
     startDAS("r",()=>{if(piece&&!collides(piece.x+1,piece.y,piece.m)){piece.x++;resetLock();}});
-  if(k==="arrowdown"||k==="s")
-    startDAS("sd",()=>{if(piece&&!collides(piece.x,piece.y+1,piece.m)){piece.y++;score++;dropTimer=0;}else lockPiece();});
+  if(k==="arrowdown"||k==="s") {
+    softDropHeld = true;
+  }
   if(k==="arrowup"||k==="w") tryRotate(true);
   if(k==="z") tryRotate(false);
   if(k==="c") holdPiece();
-  if(e.key===" ") {
-    if(!piece) return;
-    let dropped=0;
-    while(!collides(piece.x,piece.y+1,piece.m)){piece.y++;dropped++;}
-    score+=dropped*2;
-    lockPiece();
-  }
+  // No hard drop in classic profile.
 });
 addEventListener("keyup",e=>{
   const k=e.key.toLowerCase();
   if(k==="arrowleft"||k==="a") stopDAS("l");
   if(k==="arrowright"||k==="d") stopDAS("r");
-  if(k==="arrowdown"||k==="s") stopDAS("sd");
+  if(k==="arrowdown"||k==="s") softDropHeld = false;
 });
 
 btn.addEventListener("click",resetGame);
