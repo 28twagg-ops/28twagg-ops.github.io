@@ -447,7 +447,7 @@
         .slice(0, 5);
       takeoverEl.innerHTML = takeovers.length
         ? takeovers.map(r => `<div class="takeover-row">${r.takeoverText}</div>`).join("")
-        : `<div class="takeover-row">No live dethrone events yet — current leaders are still defending.</div>`;
+        : items.slice(0,3).map(r => `<div class="takeover-row">${r.initials} currently holds ${r.gameName} (${r.score})</div>`).join("");
     }
 
     async function loadTopPixels(games){

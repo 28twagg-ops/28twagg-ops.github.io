@@ -122,3 +122,15 @@ Entry - 2026-04-21 (Top Pixels + Spyder listing + visual instruction pass)
   - `PIXEL-NET/wrapper/shell.css` now includes styles for instruction cards, keycaps, and arrow-pad visualization.
 - Validation:
   - Lints/diagnostics for `index.html`, `shell.js`, `shell.css`, and `games.json`: no errors reported.
+
+Entry - 2026-04-21 (Follow-up fixes for visibility and honor-board population)
+- Updated `PIXEL-NET/games.json`:
+  - Marked `SPYDER CASINO` as `"featured": true` to guarantee high visibility on homepage.
+- Updated `PIXEL-NET/index.html`:
+  - `Takeover Honor Board` fallback now shows current holders when no dethrone events exist, e.g.:
+    - `AAA currently holds GAME (score)`.
+  - This ensures the board is populated instead of appearing empty.
+- Updated `PIXEL-NET/games/spyder-casino/wrapper-v2.html`:
+  - Refined instructions to be control-first and more visually parseable by the new wrapper instruction-card renderer.
+- Validation:
+  - Lints/diagnostics checked for `index.html`, `games.json`, and Spyder wrapper: no errors reported.
