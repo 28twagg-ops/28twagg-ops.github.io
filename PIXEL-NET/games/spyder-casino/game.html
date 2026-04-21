@@ -1988,10 +1988,11 @@ function heRenderTerminalView(){
 
   // ── Community cards (5 × 7-line big art, centered) ──
   out.push(ctr('COMMUNITY CARDS'));
+  // Community cards use same 3-line art as bots/player (matches Python spyder_holdem)
   const cArts=[];
-  for(let i=0;i<5;i++) cArts.push(bjAsciiCard(i<heCommunity.length?heCommunity[i]:null, i>=heCommunity.length));
-  // 5 cards × 12 wide + 4 × 2 space separators = 68 chars total
-  const commPad=' '.repeat(Math.max(0,Math.floor((W-68)/2)));
+  for(let i=0;i<5;i++) cArts.push(heSmallCard(i<heCommunity.length?heCommunity[i]:null, i>=heCommunity.length));
+  // 5 cards × 5 wide + 4 × 2-space separators = 33 chars total
+  const commPad=' '.repeat(Math.max(0,Math.floor((W-33)/2)));
   cArts[0].forEach((_,li)=>out.push(commPad+cArts.map(a=>a[li]).join('  ')));
   out.push('-'.repeat(W));
 
