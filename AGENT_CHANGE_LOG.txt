@@ -323,3 +323,21 @@ Entry - 2026-04-21 (Galaxy Swarm slug/path identity fix)
     - `path`: `games/galaxy-swarm-2084/wrapper-v2.html`
 - Result:
   - Catalog identity, wrapper slug, and thumbnail naming now align for Galaxy Swarm 2084.
+
+
+Entry - 2026-04-21 (Tower Rush full DK-style rewrite)
+- Completely rewrote PIXEL-NET/games/orbit-siege/game.html:
+  - Drew gorilla at summit with animated throw arm + red glowing eyes
+  - Drew rescue-target figure at goal with animated waving arms
+  - Sloped steel girder platforms with rivets, gradient sheen and highlight edge
+  - Ladders with two rails and rungs, full climb-up/down support
+  - Oil drum with animated flame at base
+  - Barrels follow girder slopes, bounce off edges, fall between levels
+  - Jump-over-barrel bonus: +100 pts each, floating text feedback
+  - Countdown bonus timer bar at bottom (faster climb = more stage bonus)
+  - Player drawn as full pixel-art character: cap, overalls, mustache, gloves
+  - Invulnerability blink on hit, explosion particles on death
+  - Stage progression: gorilla speeds up, spawn rate increases, slope steepens
+  - Preserved GAME_OVER_SCORE postMessage leaderboard contract
+- Updated PIXEL-NET/games/orbit-siege/wrapper-v2.html theme + instructions
+- Bumped PIXEL-NET/version.json to 0.0.16

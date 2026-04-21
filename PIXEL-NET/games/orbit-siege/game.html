@@ -5,154 +5,728 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tower Rush</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:transparent}
-body{font-family:ui-monospace,Consolas,monospace;overflow:hidden;color:#e9edff}
-canvas{position:absolute;inset:0;width:100%;height:100%}
-#hud{position:absolute;top:0;left:0;right:0;padding:8px 10px;display:flex;justify-content:space-between;font-weight:700;text-shadow:0 0 8px #000}
-#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,8,18,.86)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;top:0;left:0;right:0;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;font-family:ui-monospace,Consolas,monospace;font-weight:700;font-size:13px;color:#fff;text-shadow:0 0 6px #000;pointer-events:none;background:rgba(0,0,0,.45)}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82)}
 #overlay.hidden{display:none}
-.box{background:rgba(14,14,31,.95);border:1px solid #9f7bff;padding:18px;border-radius:12px;text-align:center}
-h1{margin:0 0 8px;font-size:26px;color:#9f7bff}
-p{margin:6px 0;color:#cfbeff;font-size:13px}
-button{margin-top:10px;padding:10px 16px;background:#130f2f;border:1px solid #9f7bff;color:#d7c6ff;cursor:pointer}
+.box{background:rgba(10,8,20,.96);border:2px solid #f8a22a;padding:22px 28px;border-radius:10px;text-align:center;max-width:400px;font-family:ui-monospace,Consolas,monospace}
+.box h1{margin:0 0 8px;color:#f8a22a;font-size:28px;letter-spacing:3px}
+.box p{margin:4px 0;color:#ffdba0;font-size:13px}
+.box button{margin-top:14px;padding:11px 20px;border:2px solid #f8a22a;background:#1a0e00;color:#f8a22a;cursor:pointer;font-family:inherit;font-weight:700;font-size:14px;border-radius:4px}
+.box button:hover{background:#2e1900}
 </style>
 </head>
 <body>
-<canvas id="c" width="800" height="600"></canvas>
-<div id="hud"><div id="score">SCORE 0</div><div id="wave">STAGE 1</div><div id="hp">LIVES 3</div></div>
-<div id="overlay"><div class="box"><h1>TOWER RUSH</h1><p>Climb girders, jump barrels, reach the relay.</p><p>Classic ramp-dodge pressure, original world.</p><button id="btn">START CLIMB</button></div></div>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="hud-score">SCORE 0</div>
+  <div id="hud-stage">STAGE 1</div>
+  <div id="hud-lives">LIVES ♥♥♥</div>
+</div>
+<div id="overlay">
+  <div class="box">
+    <h1>TOWER RUSH</h1>
+    <p>Climb the girders. Reach the summit.</p>
+    <p>Jump barrels — earn bonus points.</p>
+    <p>↑/W/Space = Jump &nbsp; ←→ / A D = Move</p>
+    <p>↑ or W on a ladder = Climb Up</p>
+    <button id="btn">START CLIMB</button>
+  </div>
+</div>
 <script>
 (() => {
-  const c=document.getElementById("c"),x=c.getContext("2d"),overlay=document.getElementById("overlay"),btn=document.getElementById("btn");
-  const scoreEl=document.getElementById("score"),waveEl=document.getElementById("wave"),hpEl=document.getElementById("hp");
-  let w=800,h=600,score=0,lives=3,stage=1,posted=false,running=false,last=0,spawn=0,invuln=0;
-  let keys={},player={x:60,y:540,vx:0,vy:0,onGround:false,w:18,h:24},barrels=[],platforms=[],ladders=[],goal={x:0,y:0,w:22,h:22};
-  function resize(){const b=c.getBoundingClientRect();w=Math.max(640,Math.floor(b.width));h=Math.max(480,Math.floor(b.height));c.width=w;c.height=h;}
-  function yOnPlatform(p, px){ return p.y + (px - p.x) * (p.slope || 0); }
-  function nearLadder(){ return ladders.find(l => Math.abs((l.x+l.width/2)-player.x)<16 && player.y+player.h>l.yTop && player.y<l.yBottom+4); }
-  function buildStage(){
-    const left = 46, right = w - 46, span = right - left, topY = 74, step = 82;
-    platforms = [
-      {x:left,         y:h-64,       w:span,       h:12, slope:  0.04},
-      {x:left+70,      y:h-64-step,  w:span-120,   h:12, slope: -0.045},
-      {x:left+20,      y:h-64-step*2,w:span-40,    h:12, slope:  0.05},
-      {x:left+95,      y:h-64-step*3,w:span-150,   h:12, slope: -0.05},
-      {x:left+35,      y:h-64-step*4,w:span-60,    h:12, slope:  0.04},
-      {x:left+120,     y:topY,       w:span-180,   h:12, slope: -0.03}
-    ];
-    ladders = [];
-    for (let i=0;i<platforms.length-1;i++){
-      const a=platforms[i];
-      const b=platforms[i+1];
-      const lx = (i%2===0) ? a.x + a.w - 70 : a.x + 50;
-      ladders.push({x:lx,yTop:b.y+10,yBottom:a.y,width:18});
+"use strict";
+
+/* ── canvas ── */
+const cv = document.getElementById("c");
+const cx = cv.getContext("2d");
+const overlay = document.getElementById("overlay");
+const btn = document.getElementById("btn");
+const hudScore = document.getElementById("hud-score");
+const hudStage = document.getElementById("hud-stage");
+const hudLives = document.getElementById("hud-lives");
+
+let W = 800, H = 600;
+
+/* ── state ── */
+let running = false, posted = false;
+let score = 0, lives = 3, stage = 1;
+let keys = {};
+let barrels = [], particles = [], sparks = [];
+let spawnTimer = 0, bonusTimer = 5000;
+let last = 0, raf = 0;
+
+/* ── layout constants (recalculated on resize) ── */
+let PL, PR, GH, FLOOR, platforms, ladders, goal, gorilla, oilDrum;
+
+/* ── player ── */
+const P = { x:0, y:0, vx:0, vy:0, w:16, h:24, onGround:false, onLadder:false, dir:1, jumpBonusGiven:false, invuln:0, state:"idle" };
+
+function resize() {
+  const r = cv.getBoundingClientRect();
+  W = Math.max(480, Math.floor(r.width));
+  H = Math.max(360, Math.floor(r.height));
+  cv.width = W; cv.height = H;
+  buildLevel();
+}
+
+function buildLevel() {
+  PL = Math.floor(W * 0.05);
+  PR = Math.floor(W * 0.95);
+  GH = Math.floor(H * 0.10); // girder height band
+  FLOOR = H - Math.floor(H * 0.07);
+
+  const span = PR - PL;
+  const levels = 5;
+  const stepY = Math.floor((FLOOR - GH*3) / levels);
+
+  platforms = [];
+  for (let i = 0; i < levels; i++) {
+    const y = FLOOR - i * stepY;
+    const slopeDir = (i % 2 === 0) ? 1 : -1;
+    const slope = slopeDir * (0.04 + stage * 0.006);
+    const indent = (i % 2 === 0) ? 0 : Math.floor(span * 0.06);
+    platforms.push({ x: PL + indent, y, w: span - indent*2, h: 10, slope, idx: i });
+  }
+
+  ladders = [];
+  for (let i = 0; i < levels - 1; i++) {
+    const a = platforms[i], b = platforms[i+1];
+    const lx = (i % 2 === 0)
+      ? a.x + a.w - Math.floor(span * 0.15)
+      : a.x + Math.floor(span * 0.12);
+    const lw = Math.floor(W * 0.028);
+    ladders.push({ x: lx, w: lw, yTop: b.y - 2, yBot: a.y });
+  }
+
+  const topPlat = platforms[levels-1];
+  goal = {
+    x: (topPlat.slope > 0) ? topPlat.x + 30 : topPlat.x + topPlat.w - 52,
+    y: topPlat.y - 52, w: 28, h: 40
+  };
+
+  gorilla = {
+    x: (topPlat.slope > 0) ? topPlat.x + topPlat.w - 72 : topPlat.x + 20,
+    y: topPlat.y - 74, w: 52, h: 56
+  };
+
+  const bot = platforms[0];
+  oilDrum = { x: PL + 12, y: bot.y - 32, w: 22, h: 32 };
+}
+
+function platY(p, px) { return p.y + (px - p.x) * (p.slope || 0); }
+
+/* ── reset ── */
+function resetGame() {
+  score = 0; lives = 3; stage = 1; posted = false;
+  newStage();
+  overlay.classList.add("hidden");
+  running = true;
+  btn.textContent = "RESTART";
+}
+
+function newStage() {
+  buildLevel();
+  barrels = []; particles = []; sparks = [];
+  spawnTimer = 0; bonusTimer = 5000; last = 0;
+  const fp = platforms[0];
+  P.x = fp.x + 40; P.y = fp.y - P.h;
+  P.vx = 0; P.vy = 0; P.onGround = false; P.onLadder = false;
+  P.invuln = 0; P.dir = 1; P.jumpBonusGiven = false;
+}
+
+/* ── score submit ── */
+function submit() {
+  if (posted) return; posted = true;
+  try { window.parent.postMessage({ type: "GAME_OVER_SCORE", score: Number(score) || 0 }, "*"); } catch(_) {}
+}
+
+function gameOver() {
+  running = false; submit();
+  overlay.classList.remove("hidden");
+  btn.textContent = "TRY AGAIN";
+}
+
+function loseLife() {
+  if (P.invuln > 0) return;
+  lives--;
+  P.invuln = 1800;
+  spawnExplosion(P.x, P.y, "#ff6a2a", 20);
+  if (lives <= 0) { gameOver(); return; }
+  const fp = platforms[0];
+  P.x = fp.x + 40; P.y = fp.y - P.h;
+  P.vx = 0; P.vy = 0; P.onGround = false; P.onLadder = false;
+}
+
+/* ── particles ── */
+function spawnExplosion(px, py, col, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = 1 + Math.random() * 5;
+    particles.push({ x:px, y:py, vx:Math.cos(a)*s, vy:Math.sin(a)*s-2, life:1, col });
+  }
+}
+
+function spawnJumpBonus(px, py) {
+  sparks.push({ x:px, y:py, text:"+100", life:1.0, vy:-1.8 });
+}
+
+/* ── draw helpers ── */
+
+function drawBackground() {
+  // Sky gradient
+  const sg = cx.createLinearGradient(0, 0, 0, H);
+  sg.addColorStop(0, "#0a0612");
+  sg.addColorStop(1, "#1c1008");
+  cx.fillStyle = sg;
+  cx.fillRect(0, 0, W, H);
+
+  // Construction scaffolding BG lines
+  cx.strokeStyle = "rgba(80,50,20,.18)";
+  cx.lineWidth = 1;
+  for (let x = PL; x < PR; x += Math.floor(W*0.065)) {
+    cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, H); cx.stroke();
+  }
+}
+
+function drawGirder(p) {
+  const x1 = p.x, y1 = platY(p, p.x);
+  const x2 = p.x + p.w, y2 = platY(p, p.x + p.w);
+
+  // Shadow
+  cx.strokeStyle = "rgba(0,0,0,.5)";
+  cx.lineWidth = 14;
+  cx.beginPath(); cx.moveTo(x1+2, y1+4); cx.lineTo(x2+2, y2+4); cx.stroke();
+
+  // Main beam — warm steel
+  const grad = cx.createLinearGradient(0, y1-6, 0, y1+10);
+  grad.addColorStop(0, "#c8832a");
+  grad.addColorStop(0.4, "#f8a22a");
+  grad.addColorStop(1, "#7a4210");
+  cx.strokeStyle = grad;
+  cx.lineWidth = 12;
+  cx.beginPath(); cx.moveTo(x1, y1); cx.lineTo(x2, y2); cx.stroke();
+
+  // Highlight edge
+  cx.strokeStyle = "rgba(255,220,140,.55)";
+  cx.lineWidth = 2;
+  cx.beginPath(); cx.moveTo(x1, y1-4); cx.lineTo(x2, y2-4); cx.stroke();
+
+  // Rivets
+  cx.fillStyle = "#5a2e06";
+  const rv = Math.floor(p.w / Math.floor(W*0.065));
+  for (let i = 1; i <= rv; i++) {
+    const rx = p.x + (p.w / (rv+1)) * i;
+    const ry = platY(p, rx);
+    cx.beginPath(); cx.arc(rx, ry, 3, 0, 6.28); cx.fill();
+    cx.beginPath(); cx.arc(rx, ry, 1.5, 0, 6.28);
+    cx.fillStyle = "#c8832a"; cx.fill();
+    cx.fillStyle = "#5a2e06";
+  }
+}
+
+function drawLadder(l) {
+  const steps = Math.floor((l.yBot - l.yTop) / 11);
+  // Rails
+  cx.strokeStyle = "#b8d4e8";
+  cx.lineWidth = 3;
+  cx.beginPath(); cx.moveTo(l.x, l.yTop); cx.lineTo(l.x, l.yBot); cx.stroke();
+  cx.beginPath(); cx.moveTo(l.x + l.w, l.yTop); cx.lineTo(l.x + l.w, l.yBot); cx.stroke();
+  // Rungs
+  cx.strokeStyle = "#8ab4cc";
+  cx.lineWidth = 2;
+  for (let i = 0; i <= steps; i++) {
+    const ry = l.yTop + i * 11;
+    cx.beginPath(); cx.moveTo(l.x, ry); cx.lineTo(l.x + l.w, ry); cx.stroke();
+  }
+}
+
+function drawOilDrum() {
+  const { x, y, w, h } = oilDrum;
+  // Drum body
+  cx.fillStyle = "#1a1a1a";
+  cx.fillRect(x, y, w, h);
+  cx.strokeStyle = "#555";
+  cx.lineWidth = 2;
+  cx.strokeRect(x, y, w, h);
+  // Bands
+  cx.strokeStyle = "#888";
+  cx.lineWidth = 1.5;
+  for (let i = 1; i < 3; i++) {
+    cx.beginPath();
+    cx.moveTo(x, y + h * (i/3));
+    cx.lineTo(x+w, y + h * (i/3));
+    cx.stroke();
+  }
+  // Flame
+  const ft = Date.now() * 0.004;
+  cx.shadowBlur = 18; cx.shadowColor = "#ff6a00";
+  cx.fillStyle = "#ff6a00";
+  cx.beginPath();
+  cx.moveTo(x+w/2, y-18);
+  cx.bezierCurveTo(x+w+6, y-8+Math.sin(ft)*4, x+w+4, y-2, x+w/2+4, y+2);
+  cx.bezierCurveTo(x+w/2+2, y-6, x+w/2, y-4, x+w/2, y);
+  cx.bezierCurveTo(x+w/2-2, y-4, x-4, y-2, x-6, y-8+Math.sin(ft+1)*4);
+  cx.closePath(); cx.fill();
+  cx.fillStyle = "#ffd000";
+  cx.beginPath();
+  cx.moveTo(x+w/2, y-12);
+  cx.bezierCurveTo(x+w/2+6, y-4, x+w/2+3, y, x+w/2, y);
+  cx.bezierCurveTo(x+w/2-3, y, x+w/2-6, y-4, x+w/2, y-12);
+  cx.fill();
+  cx.shadowBlur = 0;
+}
+
+function drawGorilla() {
+  const { x, y, w, h } = gorilla;
+  const t = Date.now() * 0.003;
+  const armSwing = Math.sin(t) * 6;
+
+  // Body
+  cx.fillStyle = "#2a1a0a";
+  cx.beginPath();
+  cx.ellipse(x+w/2, y+h*0.6, w*0.36, h*0.34, 0, 0, Math.PI*2);
+  cx.fill();
+
+  // Chest patch
+  cx.fillStyle = "#5a3a1a";
+  cx.beginPath();
+  cx.ellipse(x+w/2, y+h*0.56, w*0.18, h*0.18, 0, 0, Math.PI*2);
+  cx.fill();
+
+  // Head
+  cx.fillStyle = "#2a1a0a";
+  cx.beginPath();
+  cx.ellipse(x+w/2, y+h*0.28, w*0.28, h*0.26, 0, 0, Math.PI*2);
+  cx.fill();
+
+  // Brow ridge
+  cx.fillStyle = "#1a0e04";
+  cx.beginPath();
+  cx.ellipse(x+w/2, y+h*0.18, w*0.24, h*0.08, 0, 0, Math.PI*2);
+  cx.fill();
+
+  // Eyes — red glow
+  cx.shadowBlur = 10; cx.shadowColor = "#ff2200";
+  cx.fillStyle = "#ff4400";
+  cx.beginPath(); cx.arc(x+w/2-7, y+h*0.24, 3.5, 0, Math.PI*2); cx.fill();
+  cx.beginPath(); cx.arc(x+w/2+7, y+h*0.24, 3.5, 0, Math.PI*2); cx.fill();
+  cx.shadowBlur = 0;
+
+  // Nostrils
+  cx.fillStyle = "#0a0604";
+  cx.beginPath(); cx.arc(x+w/2-4, y+h*0.32, 2, 0, Math.PI*2); cx.fill();
+  cx.beginPath(); cx.arc(x+w/2+4, y+h*0.32, 2, 0, Math.PI*2); cx.fill();
+
+  // Left arm
+  cx.strokeStyle = "#2a1a0a"; cx.lineWidth = 8;
+  cx.lineCap = "round";
+  cx.beginPath();
+  cx.moveTo(x+w*0.18, y+h*0.46);
+  cx.quadraticCurveTo(x+2, y+h*0.7 + armSwing, x + w*0.06, y+h*0.85);
+  cx.stroke();
+
+  // Right arm — throwing arm
+  cx.beginPath();
+  cx.moveTo(x+w*0.82, y+h*0.46);
+  cx.quadraticCurveTo(x+w, y+h*0.5 - armSwing, x+w*0.94, y+h*0.3 - armSwing*0.5);
+  cx.stroke();
+
+  // Legs
+  cx.beginPath();
+  cx.moveTo(x+w*0.38, y+h*0.86);
+  cx.lineTo(x+w*0.32, y+h);
+  cx.moveTo(x+w*0.62, y+h*0.86);
+  cx.lineTo(x+w*0.68, y+h);
+  cx.stroke();
+  cx.lineCap = "butt";
+}
+
+function drawGoal() {
+  const { x, y, w, h } = goal;
+  const t = Date.now() * 0.005;
+  // Glow
+  cx.shadowBlur = 24; cx.shadowColor = "#ffe066";
+
+  // Figure (rescue target — simple pixel person)
+  cx.fillStyle = "#ffe8c0";
+  cx.beginPath(); cx.arc(x+w/2, y+h*0.18, h*0.15, 0, Math.PI*2); cx.fill(); // head
+
+  cx.fillStyle = "#ff4466";
+  cx.fillRect(x+w/2-6, y+h*0.32, 12, h*0.36); // torso
+
+  cx.fillStyle = "#ffe8c0";
+  // arms wave
+  cx.save(); cx.translate(x+w/2-6, y+h*0.38);
+  cx.rotate(Math.sin(t)*0.4); cx.fillRect(-10,0,10,4); cx.restore();
+  cx.save(); cx.translate(x+w/2+6, y+h*0.38);
+  cx.rotate(-Math.sin(t)*0.4); cx.fillRect(0,0,10,4); cx.restore();
+
+  cx.fillStyle = "#3355cc";
+  cx.fillRect(x+w/2-6, y+h*0.68, 5, h*0.28); // legs
+  cx.fillRect(x+w/2+1, y+h*0.68, 5, h*0.28);
+
+  // Star sparkle above
+  cx.fillStyle = "#ffe066";
+  cx.font = "bold 16px monospace";
+  cx.textAlign = "center";
+  cx.fillText("★", x+w/2, y - 8 + Math.sin(t*1.5)*4);
+  cx.shadowBlur = 0;
+}
+
+function drawBarrel(b) {
+  cx.save(); cx.translate(b.x, b.y);
+  cx.rotate(b.rot || 0);
+
+  cx.shadowBlur = 8; cx.shadowColor = "#ff8800";
+
+  // Body
+  cx.fillStyle = "#8a3a0a";
+  cx.beginPath(); cx.arc(0, 0, b.r, 0, Math.PI*2); cx.fill();
+
+  // Bands
+  cx.strokeStyle = "#d4620a";
+  cx.lineWidth = 2.5;
+  cx.beginPath(); cx.arc(0, 0, b.r, 0, Math.PI*2); cx.stroke();
+
+  cx.strokeStyle = "#4a1e04";
+  cx.lineWidth = 1.5;
+  cx.beginPath();
+  cx.moveTo(-b.r*0.6, -b.r*0.55);
+  cx.lineTo( b.r*0.6, -b.r*0.55);
+  cx.moveTo(-b.r*0.65, b.r*0.55);
+  cx.lineTo( b.r*0.65, b.r*0.55);
+  cx.stroke();
+
+  // Wood grain lines
+  cx.strokeStyle = "rgba(255,160,60,.25)";
+  cx.lineWidth = 1;
+  cx.beginPath();
+  cx.moveTo(-b.r*0.5, -b.r*0.3);
+  cx.lineTo(-b.r*0.4, b.r*0.4);
+  cx.moveTo(0.5, -b.r*0.8);
+  cx.lineTo(0.2, b.r*0.8);
+  cx.stroke();
+
+  cx.shadowBlur = 0;
+  cx.restore();
+
+  // Rolling sparks
+  if (b.onGround && Math.abs(b.vx) > 0.5) {
+    if (Math.random() < 0.25) {
+      sparks.push({ x:b.x + (Math.random()-0.5)*b.r, y:b.y+b.r, text:"", vy:-1-Math.random(), vx:(Math.random()-0.5)*2, life:0.5, spark:true });
     }
-    goal = {x: platforms[platforms.length-1].x + platforms[platforms.length-1].w - 38, y: platforms[platforms.length-1].y - 24, w:22, h:22};
-    barrels = [];
-    player.x = left + 18; player.y = h-90; player.vx=0; player.vy=0; player.onGround=false;
-    spawn = 0;
   }
-  function reset(){score=0;lives=3;stage=1;posted=false;running=true;invuln=0;buildStage();overlay.classList.add("hidden");btn.textContent="RESTART CLIMB";}
-  function submit(){if(posted)return;posted=true;try{window.parent.postMessage({type:"GAME_OVER_SCORE",score:Number(score)||0},"*");}catch(_){ }}
-  function end(){running=false;submit();overlay.classList.remove("hidden");btn.textContent="RESTART CLIMB";}
-  function loseLife(){
-    if(invuln>0) return;
-    lives--;
-    if(lives<=0){ end(); return; }
-    invuln=1200;
-    player.x=64; player.y=h-90; player.vx=0; player.vy=0; player.onGround=false;
+}
+
+function drawPlayer() {
+  const { x, y, w, h, invuln, dir, onLadder } = P;
+  if (invuln > 0 && Math.floor(invuln / 140) % 2 === 0) return;
+
+  cx.save(); cx.translate(x, y);
+  if (dir < 0) { cx.scale(-1, 1); }
+
+  const t = Date.now() * 0.01;
+  const legSwing = P.onGround ? Math.sin(t) * 5 : 0;
+
+  // Shadow
+  cx.fillStyle = "rgba(0,0,0,.3)";
+  cx.beginPath(); cx.ellipse(0, h+2, w/2, 4, 0, 0, Math.PI*2); cx.fill();
+
+  // Legs
+  cx.fillStyle = "#2255cc";
+  cx.fillRect(-w/2+2, h*0.55, w/2-1, h*0.45); // left leg
+  cx.fillRect(2, h*0.55 + legSwing, w/2-1, h*0.45); // right leg
+
+  // Boots
+  cx.fillStyle = "#553300";
+  cx.fillRect(-w/2+1, h*0.86, w/2, h*0.14+2);
+  cx.fillRect(1, h*0.86 + legSwing, w/2, h*0.14+2);
+
+  // Body / overalls
+  cx.fillStyle = "#cc3311";
+  cx.fillRect(-w/2+1, h*0.28, w-2, h*0.4);
+
+  // Arms
+  cx.fillStyle = "#cc3311";
+  const armAnim = onLadder ? Math.sin(t)*8 : 0;
+  cx.fillRect(-w/2-6, h*0.28+armAnim, 7, h*0.24); // left arm
+  cx.fillRect( w/2,   h*0.28-armAnim, 7, h*0.24); // right arm
+
+  // Gloves
+  cx.fillStyle = "#fff";
+  cx.fillRect(-w/2-8, h*0.46+armAnim, 9, 8);
+  cx.fillRect( w/2-1, h*0.46-armAnim, 9, 8);
+
+  // Head
+  cx.fillStyle = "#f5b87a";
+  cx.fillRect(-w/2+3, h*0.04, w-6, h*0.28);
+
+  // Cap
+  cx.fillStyle = "#cc3311";
+  cx.fillRect(-w/2+2, 0, w-4, h*0.12);
+  cx.fillRect(-w/2-2, h*0.04, w+4, h*0.09);
+  // Cap brim
+  cx.fillStyle = "#aa2200";
+  cx.fillRect(w/2-1, h*0.04, 6, h*0.06);
+
+  // Eye
+  cx.fillStyle = "#111";
+  cx.fillRect(w/2-8, h*0.1, 4, 4);
+
+  // Mustache
+  cx.fillStyle = "#5a2e00";
+  cx.fillRect(w/2-12, h*0.22, 12, 4);
+
+  cx.restore();
+}
+
+/* ── update logic ── */
+function update(dt) {
+  const MS = Math.min(dt, 34);
+
+  // ── Player movement ──
+  P.onLadder = false;
+  const nearLadder = ladders.find(l =>
+    Math.abs((l.x + l.w/2) - P.x) < l.w + 6 &&
+    P.y + P.h > l.yTop - 4 && P.y < l.yBot + 4
+  );
+
+  // Horizontal
+  P.vx = 0;
+  if (keys["arrowleft"] || keys["a"]) { P.vx = -(3.4 + stage*0.08); P.dir = -1; }
+  if (keys["arrowright"] || keys["d"]) { P.vx = (3.4 + stage*0.08); P.dir = 1; }
+
+  // Ladder climbing
+  if (nearLadder) {
+    if (keys["arrowup"] || keys["w"]) { P.vy = -2.8; P.onLadder = true; }
+    else if (keys["arrowdown"] || keys["s"]) { P.vy = 2.8; P.onLadder = true; }
   }
-  addEventListener("keydown",e=>{
-    keys[e.key.toLowerCase()] = true;
-    if((e.key===" "||e.key==="Enter")&&!running) reset();
-    if((e.key===" "||e.key==="arrowup"||e.key.toLowerCase()==="w")&&running&&player.onGround){ player.vy=-9.2; player.onGround=false; }
-  });
-  addEventListener("keyup",e=>{ keys[e.key.toLowerCase()] = false; });
-  btn.addEventListener("click",reset);
-  function loop(ts){
-    if(!last)last=ts; const dt=Math.min(34,ts-last); last=ts;
-    x.fillStyle="#0a0a14";x.fillRect(0,0,w,h);
-    x.fillStyle="#2a1322"; x.fillRect(0,0,w,46);
-    const grad = x.createLinearGradient(0,h*0.25,0,h);
-    grad.addColorStop(0,"#4b1b2f"); grad.addColorStop(1,"#f89f43");
-    x.fillStyle=grad; x.globalAlpha=0.22; x.fillRect(0,46,w,h-46); x.globalAlpha=1;
-    if(running){
-      if(invuln>0) invuln-=dt;
-      player.vx = 0;
-      if(keys["arrowleft"]||keys["a"]) player.vx = -4.1;
-      if(keys["arrowright"]||keys["d"]) player.vx = 4.1;
-      const ladder = nearLadder();
-      if(ladder && (keys["arrowup"]||keys["w"])) { player.vy = -3.1; player.onGround=false; }
-      else if(ladder && (keys["arrowdown"]||keys["s"])) { player.vy = 3.1; player.onGround=false; }
-      player.x += player.vx;
-      if(!ladder || !(keys["arrowup"]||keys["w"]||keys["arrowdown"]||keys["s"])) player.vy += 0.48;
-      player.y += player.vy;
-      player.onGround = false;
-      for(const p of platforms){
-        const py = yOnPlatform(p, player.x);
-        if(player.x+player.w/2 > p.x && player.x-player.w/2 < p.x+p.w && player.y+player.h >= py && player.y+player.h <= py + p.h + Math.max(1,player.vy)){
-          player.y = py-player.h; player.vy = 0; player.onGround = true;
+
+  // Gravity
+  if (!P.onLadder) P.vy += 0.52 * (MS / 16);
+  else P.vy *= 0.6;
+
+  P.x += P.vx;
+  P.y += P.vy;
+
+  // Platform collision
+  P.onGround = false;
+  for (const p of platforms) {
+    const py = platY(p, P.x);
+    if (P.x + P.w/2 > p.x && P.x - P.w/2 < p.x + p.w &&
+        P.y + P.h >= py - 1 && P.y + P.h <= py + 14 + Math.max(0, P.vy)) {
+      if (P.vy >= 0) {
+        // Check barrel jump bonus
+        if (!P.jumpBonusGiven && P.vy < -0.5) {
+          // just landed check handled below
+        }
+        P.y = py - P.h;
+        P.vy = 0;
+        P.onGround = true;
+        P.jumpBonusGiven = false;
+      }
+    }
+  }
+
+  // Boundary
+  P.x = Math.max(PL + P.w/2, Math.min(PR - P.w/2, P.x));
+  if (P.y > H + 40) loseLife();
+  if (P.invuln > 0) P.invuln -= MS;
+
+  // ── Barrel spawn ──
+  spawnTimer -= MS;
+  if (spawnTimer <= 0) {
+    spawnTimer = Math.max(1100, 2800 - stage * 160);
+    const gx = gorilla.x + gorilla.w * 0.82;
+    const topPlat = platforms[platforms.length-1];
+    const gy = platY(topPlat, gx) - 10;
+    barrels.push({
+      x: gx, y: gy,
+      vx: -(1.6 + stage * 0.18 + Math.random() * 0.4),
+      vy: 0, r: Math.floor(W * 0.022),
+      rot: 0, rotV: -(0.08 + Math.random()*0.06),
+      onGround: false
+    });
+  }
+
+  // ── Barrel update ──
+  for (let i = barrels.length - 1; i >= 0; i--) {
+    const b = barrels[i];
+    b.vy += 0.50 * (MS / 16);
+    b.x += b.vx;
+    b.y += b.vy;
+    b.rot = (b.rot || 0) + b.rotV * (MS / 16) * Math.abs(b.vx);
+    b.onGround = false;
+
+    // Platform collision
+    for (const p of platforms) {
+      const py = platY(p, b.x);
+      if (b.x > p.x - b.r && b.x < p.x + p.w + b.r &&
+          b.y + b.r >= py - 1 && b.y + b.r <= py + 16 + Math.max(0, b.vy)) {
+        b.y = py - b.r;
+        b.vy = -(b.vy * 0.18); // small bounce
+        // Follow slope
+        b.vx = b.vx < 0
+          ? -(Math.abs(b.vx) + p.slope * 0.4)
+          : (Math.abs(b.vx) + p.slope * 0.4);
+        b.onGround = true;
+
+        // Roll off platform edge
+        if (b.vx < 0 && b.x < p.x + b.r) {
+          b.vy = 1.5;
+        }
+        if (b.vx > 0 && b.x > p.x + p.w - b.r) {
+          b.vy = 1.5;
         }
       }
-      if(player.y > h+20) loseLife();
-      player.x = Math.max(12, Math.min(w-12, player.x));
-      spawn += dt;
-      if(spawn > Math.max(460, 1320 - stage*90)){
-        spawn = 0;
-        const top = platforms[platforms.length-1];
-        barrels.push({x:top.x + top.w - 26, y:yOnPlatform(top, top.x + top.w - 26) - 10, vx:-(2.25+stage*0.16), vy:0, r:10, bounce:0});
+    }
+
+    // Barrel-player collision → jump bonus if player above
+    if (P.invuln <= 0) {
+      const dx = Math.abs(P.x - b.x);
+      const dy = P.y + P.h - b.y;
+      if (dx < b.r + P.w/2 - 2 && Math.abs(dy) < b.r + P.h - 4) {
+        // If player is jumping over the barrel
+        if (P.vy < -0.2 && P.y + P.h < b.y + b.r * 0.5 && !P.jumpBonusGiven) {
+          score += 100;
+          P.jumpBonusGiven = true;
+          spawnJumpBonus(P.x, P.y - 12);
+        } else {
+          loseLife();
+        }
       }
-      for(const b of barrels){
-        b.x += b.vx;
-        const currentPlat = platforms.find(p => b.x > p.x && b.x < p.x + p.w && Math.abs((b.y + b.r) - yOnPlatform(p,b.x)) < 8);
-        if(currentPlat){
-          b.y = yOnPlatform(currentPlat, b.x) - b.r;
-          if((b.vx < 0 && b.x < currentPlat.x + 7) || (b.vx > 0 && b.x > currentPlat.x + currentPlat.w - 7)){
-            b.vx *= -1;
-            b.bounce = 18;
-            b.y += 44;
-          }
-        } else b.y += 1.2 + Math.min(2.2, stage*0.08);
-        if(b.bounce>0) b.bounce--;
-        if(Math.hypot(b.x-player.x,(b.y+2)-player.y)<22) loseLife();
-      }
-      barrels = barrels.filter(b => b.y < h+42);
-      if(player.x > goal.x && player.x < goal.x + goal.w && player.y + player.h > goal.y && player.y < goal.y + goal.h){
-        score += 700 + stage * 90;
-        stage++;
-        buildStage();
-      }
-      score += Math.max(0, Math.floor((h - player.y) * 0.002));
     }
-    for(const p of platforms){
-      x.strokeStyle="#59264a"; x.lineWidth=10; x.beginPath();
-      x.moveTo(p.x, yOnPlatform(p,p.x)); x.lineTo(p.x+p.w, yOnPlatform(p,p.x+p.w)); x.stroke();
-      x.lineWidth=2; x.strokeStyle="#ff8b42"; x.beginPath();
-      x.moveTo(p.x, yOnPlatform(p,p.x)-4); x.lineTo(p.x+p.w, yOnPlatform(p,p.x+p.w)-4); x.stroke();
+
+    // Remove if fallen off bottom or too old
+    if (b.y > H + 60 || b.x < PL - 80 || b.x > PR + 80) {
+      barrels.splice(i, 1);
     }
-    for(const l of ladders){
-      x.strokeStyle="#8ca0aa"; x.lineWidth=2;
-      x.beginPath(); x.moveTo(l.x,l.yTop); x.lineTo(l.x,l.yBottom); x.moveTo(l.x+l.width,l.yTop); x.lineTo(l.x+l.width,l.yBottom); x.stroke();
-      for(let y0=l.yTop+6; y0<l.yBottom; y0+=9){ x.beginPath(); x.moveTo(l.x,y0); x.lineTo(l.x+l.width,y0); x.stroke(); }
-    }
-    x.fillStyle="#ffd766"; x.fillRect(goal.x,goal.y,goal.w,goal.h);
-    x.strokeStyle="#ff8b42"; x.strokeRect(goal.x-2,goal.y-2,goal.w+4,goal.h+4);
-    for(const b of barrels){
-      x.fillStyle="#7e3d31"; x.beginPath(); x.arc(b.x,b.y,b.r,0,6.28); x.fill();
-      x.strokeStyle="#d77a55"; x.lineWidth=2; x.beginPath(); x.arc(b.x,b.y,b.r-3,0,6.28); x.stroke();
-      x.fillStyle="#2b1513"; x.fillRect(b.x-3,b.y-2,6,4);
-    }
-    if(!(invuln>0 && Math.floor(invuln/120)%2===0)){
-      x.fillStyle="#1f273f"; x.fillRect(player.x-player.w/2,player.y-player.h,player.w,player.h);
-      x.fillStyle="#ffd5a0"; x.beginPath(); x.arc(player.x,player.y-player.h+6,5,0,6.28); x.fill();
-    }
-    scoreEl.textContent="SCORE "+score; waveEl.textContent="STAGE "+stage; hpEl.textContent="LIVES "+lives;
-    requestAnimationFrame(loop);
   }
-  addEventListener("resize",()=>{ resize(); if(!running) buildStage(); });
-  resize();
-  buildStage();
+
+  // ── Check goal reached ──
+  if (P.x + P.w/2 > goal.x && P.x - P.w/2 < goal.x + goal.w &&
+      P.y < goal.y + goal.h && P.y + P.h > goal.y) {
+    score += 1000 + Math.floor(bonusTimer * 0.08);
+    stage++;
+    spawnExplosion(goal.x + goal.w/2, goal.y, "#ffe066", 30);
+    setTimeout(newStage, 500);
+  }
+
+  // ── Bonus timer countdown ──
+  bonusTimer = Math.max(0, bonusTimer - MS);
+
+  // ── Particles ──
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.life -= 0.028;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.x += s.vx || 0; s.y += s.vy; s.life -= 0.022;
+    if (s.life <= 0) sparks.splice(i, 1);
+  }
+
+  // ── HUD ──
+  hudScore.textContent = "SCORE " + score;
+  hudStage.textContent = "STAGE " + stage;
+  hudLives.textContent = "LIVES " + "♥".repeat(Math.max(0, lives)) + "♡".repeat(Math.max(0, 3-lives));
+}
+
+/* ── render ── */
+function draw() {
+  drawBackground();
+
+  // Floor shadow band
+  cx.fillStyle = "rgba(0,0,0,.4)";
+  cx.fillRect(PL, FLOOR + 4, PR - PL, H - FLOOR);
+
+  // Platforms (draw bottom to top)
+  for (const p of platforms) drawGirder(p);
+  for (const l of ladders) drawLadder(l);
+
+  drawOilDrum();
+  drawGorilla();
+  drawGoal();
+
+  // Barrels
+  for (const b of barrels) drawBarrel(b);
+
+  // Particles
+  for (const p of particles) {
+    cx.fillStyle = p.col;
+    cx.globalAlpha = Math.max(0, p.life);
+    cx.fillRect(p.x - 2, p.y - 2, 4, 4);
+  }
+  cx.globalAlpha = 1;
+
+  // Sparks & floating text
+  for (const s of sparks) {
+    cx.globalAlpha = Math.max(0, s.life * 2);
+    if (s.spark) {
+      cx.fillStyle = "#ff9900";
+      cx.beginPath(); cx.arc(s.x, s.y, 2, 0, Math.PI*2); cx.fill();
+    } else {
+      cx.fillStyle = "#ffe066";
+      cx.font = "bold 14px ui-monospace,monospace";
+      cx.textAlign = "center";
+      cx.fillText(s.text, s.x, s.y);
+    }
+    cx.globalAlpha = 1;
+  }
+
+  drawPlayer();
+
+  // Bonus timer bar
+  if (running) {
+    const bw = Math.floor((PR - PL) * 0.28);
+    const bh = 5;
+    const bx = PL + Math.floor((PR-PL-bw)/2);
+    const by = H - 12;
+    const frac = Math.max(0, bonusTimer / 5000);
+    cx.fillStyle = "rgba(0,0,0,.4)";
+    cx.fillRect(bx, by, bw, bh);
+    cx.fillStyle = frac > 0.5 ? "#22ff88" : frac > 0.25 ? "#ffcc00" : "#ff3322";
+    cx.fillRect(bx, by, Math.floor(bw * frac), bh);
+    cx.strokeStyle = "rgba(255,255,255,.2)";
+    cx.lineWidth = 1;
+    cx.strokeRect(bx, by, bw, bh);
+
+    cx.fillStyle = "rgba(255,255,255,.4)";
+    cx.font = "9px ui-monospace,monospace";
+    cx.textAlign = "center";
+    cx.fillText("BONUS", bx + bw/2, by - 2);
+  }
+}
+
+/* ── main loop ── */
+function loop(ts) {
+  if (!last) last = ts;
+  const dt = ts - last; last = ts;
+  if (running) update(dt);
+  draw();
   requestAnimationFrame(loop);
+}
+
+/* ── input ── */
+addEventListener("keydown", e => {
+  keys[e.key.toLowerCase()] = true;
+  if (!running && (e.key === "Enter" || e.key === " ")) resetGame();
+  if (running && (e.key === " " || e.key === "ArrowUp" || e.key.toLowerCase() === "w") && P.onGround) {
+    P.vy = -(8.2 + stage * 0.1);
+    P.onGround = false;
+    P.jumpBonusGiven = false;
+    e.preventDefault();
+  }
+});
+addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+btn.addEventListener("click", resetGame);
+addEventListener("resize", () => { resize(); if (!running) newStage(); });
+
+resize();
+requestAnimationFrame(loop);
 })();
 </script>
 </body>
