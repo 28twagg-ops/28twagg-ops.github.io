@@ -145,3 +145,19 @@ Entry - 2026-04-21 (Spyder Casino visual parity + single-toggle cleanup)
   - Removed now-obsolete instruction line referencing CLASSIC/POLISHED toggle.
 - Validation:
   - Lints/diagnostics for Spyder Casino files: no errors reported.
+
+Entry - 2026-04-21 (Library-wide instruction copy polish)
+- Updated wrapper instruction copy (all active Arcade Floor games) to improve scanability with the upgraded instruction-card UI:
+  - `PIXEL-NET/games/astrotype-v2/wrapper-v2.html`
+  - `PIXEL-NET/games/caked-up-cats/wrapper-v2.html`
+  - `PIXEL-NET/games/creek-crosser__embedA/wrapper-v2.html`
+  - `PIXEL-NET/games/knight-flight-v2/wrapper-v2.html`
+  - `PIXEL-NET/games/logic-bomb-v2/wrapper-v2.html`
+  - `PIXEL-NET/games/millipede-chaos-v3/wrapper-v2.html`
+  - `PIXEL-NET/games/neon-chase-v2/wrapper-v2.html`
+  - `PIXEL-NET/games/robo-arena-v2/wrapper-v2.html`
+  - `PIXEL-NET/games/retro-kombat-v2/wrapper-v2.html`
+  - `PIXEL-NET/games/spyder-casino/wrapper-v2.html`
+- Copy pattern now consistently uses short action labels (`Move:`, `Objective:`, `Scoring:` etc.) that render as clearer cards.
+- Validation:
+  - Lints/diagnostics run on all edited wrappers: no errors reported.
