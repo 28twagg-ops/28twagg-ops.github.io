@@ -1791,7 +1791,7 @@ function heCalcEquity(heroHand,commCards,activeOpps){
     const cmp=hCmp(hs,bOpp);
     if(cmp>0)wins++;else if(cmp===0)ties++;
   }
-  return`Win Prob: ${((wins+ties/2)/HE_SIMS*100).toFixed(1)}%`;
+  return`Win Probability: ${((wins+ties/2)/HE_SIMS*100).toFixed(1)}%`;
 }
 
 // ── IMPROVED BOT AI ───────────────────────────────────────────
@@ -2131,11 +2131,12 @@ function heRenderTerminalView(){
       ucl.forEach(l=>out.push(cp+l));
       const[,rn]=hBest(user.hand,heCommunity);
       if(rn&&rn!=='Waiting...') out.push(ctr(`(${rn})`));
-      if(heMode==='ANALYSIS'&&!heTerminalResult){
-        const ao=hePlayers.filter(p=>p.name!=='YOU'&&p.status!=='FOLDED').length;
-        out.push('');
-        out.push(ctr(`[ ANALYST: ${heCalcEquity(user.hand,heCommunity,ao)} ]`));
-      }
+    }
+    if(heMode==='ANALYSIS'&&!heTerminalResult){
+      const ao=hePlayers.filter(p=>p.name!=='YOU'&&p.status!=='FOLDED').length;
+      const equity=(user.hand&&user.hand.length>=2)?heCalcEquity(user.hand,heCommunity,ao):'Win Probability: ...';
+      out.push('');
+      out.push(ctr(`[ ANALYST: ${equity} ]`));
     }
     out.push('');
   }
