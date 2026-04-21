@@ -74,14 +74,18 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const isSpyderCasino = (CFG.slug || '').toLowerCase() === 'spyder-casino';
   const desktopBoardHTML = isSpyderCasino
     ? `<div style="display:grid;grid-template-columns:1fr;gap:10px">
-         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack ${globalBadge}</h3><div class="boardStack" id="boardDesktopBj"></div></div>
-         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Hold'em ${globalBadge}</h3><div class="boardStack" id="boardDesktopHe"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack · Standard ${globalBadge}</h3><div class="boardStack" id="boardDesktopBjStd"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack · Analysis ${globalBadge}</h3><div class="boardStack" id="boardDesktopBjAn"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Hold'em · Standard ${globalBadge}</h3><div class="boardStack" id="boardDesktopHeStd"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Hold'em · Analysis ${globalBadge}</h3><div class="boardStack" id="boardDesktopHeAn"></div></div>
        </div>`
     : `<div class="boardStack" id="boardDesktop"></div>`;
   const mobileBoardHTML = isSpyderCasino
     ? `<div style="display:grid;grid-template-columns:1fr;gap:10px">
-         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack ${globalBadge}</h3><div class="boardStack" id="boardMobileBj"></div></div>
-         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Hold'em ${globalBadge}</h3><div class="boardStack" id="boardMobileHe"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack · Standard ${globalBadge}</h3><div class="boardStack" id="boardMobileBjStd"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack · Analysis ${globalBadge}</h3><div class="boardStack" id="boardMobileBjAn"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Hold'em · Standard ${globalBadge}</h3><div class="boardStack" id="boardMobileHeStd"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Hold'em · Analysis ${globalBadge}</h3><div class="boardStack" id="boardMobileHeAn"></div></div>
        </div>`
     : `<div class="boardStack" id="boardMobile"></div>`;
 
@@ -336,14 +340,25 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
   // Refresh both desktop + mobile boards.
   // If Firebase is configured, shows global scores; otherwise falls back to local.
+  const isAnalysisMode = r => String((r && r.mode) || '').toUpperCase().startsWith('A');
+  const modeSplit = rows => ({
+    std: rows.filter(r => !isAnalysisMode(r)).slice(0, 10),
+    an:  rows.filter(r =>  isAnalysisMode(r)).slice(0, 10),
+  });
   const refreshBoards = async () => {
     if (isSpyderCasino) {
       const bjRows = ((await fbFetch('spyder-blackjack')) || []).slice(0, 10);
       const heRows = ((await fbFetch('spyder-holdem')) || []).slice(0, 10);
-      renderBoard('boardDesktopBj', bjRows);
-      renderBoard('boardDesktopHe', heRows);
-      renderBoard('boardMobileBj', bjRows);
-      renderBoard('boardMobileHe', heRows);
+      const bj = modeSplit(bjRows);
+      const he = modeSplit(heRows);
+      renderBoard('boardDesktopBjStd', bj.std);
+      renderBoard('boardDesktopBjAn',  bj.an);
+      renderBoard('boardDesktopHeStd', he.std);
+      renderBoard('boardDesktopHeAn',  he.an);
+      renderBoard('boardMobileBjStd', bj.std);
+      renderBoard('boardMobileBjAn',  bj.an);
+      renderBoard('boardMobileHeStd', he.std);
+      renderBoard('boardMobileHeAn',  he.an);
       return;
     }
     const cloud = await fbFetch();
