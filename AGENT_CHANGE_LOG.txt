@@ -170,3 +170,15 @@ Entry - 2026-04-21 (Spyder Casino final terminal-parity pass)
   - Casino mode remains the upgraded visual treatment.
 - Validation:
   - Lints/diagnostics for updated Spyder Casino file: no errors reported.
+
+Entry - 2026-04-21 (Terminal parity refinement + bad score cleanup confirmation)
+- Updated `PIXEL-NET/games/spyder-casino/game.html`:
+  - Terminal-mode lobby now includes command-line style prompt strip (`[ ENTER ]`, `[ 1 ]`, `[ Q ]`) for closer Poker Project feel.
+  - Terminal-mode card rendering upgraded:
+    - Blackjack/default now uses large 7-line ASCII cards with SPYDER-style hidden backs.
+    - Hold'em compact views still use small 3-line cards for table readability.
+  - Increased terminal-mode card row spacing for readability with larger ASCII cards.
+- Leaderboard backend confirmation:
+  - Verified incorrect blackjack score entry (`21000`) is removed from Firebase path `lb/spyder-blackjack` (currently empty/null).
+- Validation:
+  - Lints/diagnostics for updated Spyder Casino file: no errors reported.

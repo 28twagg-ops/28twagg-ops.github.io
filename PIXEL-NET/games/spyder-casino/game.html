@@ -148,6 +148,11 @@ body.casino .lb-row{border-color:rgba(212,168,67,.15);background:rgba(212,168,67
 .tc{font-family:inherit;font-size:11px;white-space:pre;line-height:1.2;color:var(--g);display:inline-block;}
 .tc.red{color:#ff5555;}
 .tc.hid{color:var(--g2);opacity:.5;}
+body:not(.casino) .tc{
+  font-family:'Courier New',Courier,monospace;
+  font-size:11px;
+  line-height:1.15;
+}
 /* casino */
 .cc{width:46px;height:66px;border-radius:5px;border:1.5px solid rgba(255,255,255,.3);
   background:var(--ivory);display:flex;flex-direction:column;align-items:flex-start;
@@ -161,6 +166,7 @@ body.casino .lb-row{border-color:rgba(212,168,67,.15);background:rgba(212,168,67
 .cc.sm{width:34px;height:50px;font-size:10px;}.cc.sm .sc{font-size:14px;}
 .cc.xs{width:26px;height:38px;font-size:8px;}.cc.xs .sc{font-size:11px;}
 .cards-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:4px 0;}
+body:not(.casino) .cards-row{gap:10px;}
 .cc-empty{width:46px;height:66px;border-radius:5px;border:1px dashed rgba(255,255,255,.14);background:rgba(0,0,0,.2);}
 body:not(.casino) .cc,
 body:not(.casino) .cc-empty{
@@ -336,6 +342,7 @@ body:not(.casino) .res-box{
     <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:1px;margin-bottom:6px;opacity:.8">
       ================= TERMINAL LOBBY =================
     </div>
+    <pre style="font-size:10px;color:var(--g2);text-align:center;line-height:1.35;margin:0 0 8px 0;">[ ENTER ] Play hand  |  [ 1 ] Rules  |  [ Q ] Back</pre>
     <div class="p-div"></div>
 
     <!-- BLACKJACK CARD -->
@@ -610,13 +617,20 @@ function buildDeck() {
 }
 function cardEl(card, hidden=false, size='') {
   if (visualStyle === 'casino') return casinoCard(card, hidden, size);
-  return termCard(card, hidden);
+  return termCard(card, hidden, size);
 }
-function termCard(card, hidden) {
-  if (hidden || !card) return `<div class="tc hid">┌───┐\n│░░░│\n└───┘</div>`;
+function termCard(card, hidden, size='') {
+  if (size === 'xs' || size === 'sm') {
+    if (hidden || !card) return `<div class="tc hid">┌───┐\n│░░░│\n└───┘</div>`;
+    const r=card.rank, sym=SUIT_SYM[card.suit], rc=RED_S.has(card.suit)?'red':'';
+    const ct = r.length===2 ? `${r}${sym}` : `${r} ${sym}`;
+    return `<div class="tc ${rc}">┌───┐\n│${ct}│\n└───┘</div>`;
+  }
+  if (hidden || !card) return `<div class="tc hid">┌──────────┐\n│░░░░░░░░░░│\n│░░░░░░░░░░│\n│░░SPYDER░░│\n│░░░░░░░░░░│\n│░░░░░░░░░░│\n└──────────┘</div>`;
   const r=card.rank, sym=SUIT_SYM[card.suit], rc=RED_S.has(card.suit)?'red':'';
-  const ct = r.length===2 ? `${r}${sym}` : `${r} ${sym}`;
-  return `<div class="tc ${rc}">┌───┐\n│${ct}│\n└───┘</div>`;
+  const top = r.length===2 ? `${r}` : `${r} `;
+  const btm = r.length===2 ? `${r}` : ` ${r}`;
+  return `<div class="tc ${rc}">┌──────────┐\n│ ${top}       │\n│          │\n│    ${sym}     │\n│          │\n│       ${btm} │\n└──────────┘</div>`;
 }
 function casinoCard(card, hidden, size='') {
   const sc = size==='sm'?' sm':size==='xs'?' xs':'';
