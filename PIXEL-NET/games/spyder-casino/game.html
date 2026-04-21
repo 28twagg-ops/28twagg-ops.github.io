@@ -1484,6 +1484,13 @@ function bjRenderTerminalView(){
   }
 
   el.textContent=out.join('\n');
+  // Keep the visible focus on cards/status after each command (especially hit + enter).
+  // Without this, browser focus on the command input can leave the screen scrolled low.
+  const termScreen = document.getElementById('bjTermScreen');
+  const bjScreen = document.getElementById('bjScreen');
+  if (termScreen) termScreen.scrollTop = 0;
+  if (bjScreen) bjScreen.scrollTop = 0;
+  el.scrollTop = 0;
   const cmd=document.getElementById('bjTermCmdInp');
   if(cmd) setTimeout(()=>cmd.focus(),0);
 }
