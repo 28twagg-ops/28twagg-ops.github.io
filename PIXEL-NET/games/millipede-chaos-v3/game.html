@@ -159,6 +159,8 @@ var ctx=canvas.getContext("2d");
   var score=0;
   var level=0;
   var scoreSubmitted=false;
+  var lastShotAt=0;
+  let audioCtx = null;
 
   var g={
     player:{x:10,y:30},
@@ -178,6 +180,38 @@ var ctx=canvas.getContext("2d");
     gameOver:false,
     level:0
   };
+
+  function ensureAudioCtx(){
+    if(!audioCtx){
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return null;
+      audioCtx = new Ctx();
+    }
+    if(audioCtx.state === "suspended"){
+      audioCtx.resume().catch(function(){});
+    }
+    return audioCtx;
+  }
+
+  function playShootSfx(){
+    var ctxA = ensureAudioCtx();
+    if(!ctxA) return;
+    var now = Date.now();
+    if(now - lastShotAt < 55) return;
+    lastShotAt = now;
+    var t = ctxA.currentTime;
+    var osc = ctxA.createOscillator();
+    var gain = ctxA.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(950, t);
+    osc.frequency.exponentialRampToValueAtTime(380, t + 0.06);
+    gain.gain.setValueAtTime(0.045, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    osc.connect(gain);
+    gain.connect(ctxA.destination);
+    osc.start(t);
+    osc.stop(t + 0.075);
+  }
 
   function initGame(nextLevel){
     nextLevel = Number(nextLevel)||0;
@@ -257,6 +291,7 @@ var ctx=canvas.getContext("2d");
       if(now-g.lastFire>120){
         g.bullets.push({x:g.player.x+0.5, y:g.player.y});
         g.lastFire=now;
+        playShootSfx();
       }
     }
 
@@ -576,6 +611,7 @@ var ctx=canvas.getContext("2d");
   function hideOverlay(){ overlay.classList.add("hidden"); }
   btn.addEventListener("click", function(){
     if(state==="TITLE" || state==="GAMEOVER"){
+      ensureAudioCtx();
       hideOverlay();
       initGame(0);
       state="PLAYING";

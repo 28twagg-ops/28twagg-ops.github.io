@@ -126,6 +126,43 @@
     .search-bar::placeholder{color:rgba(255,255,255,.4);}
 
     .games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:25px;margin-bottom:60px;}
+    .top-pixels{
+      margin:30px 0 10px;
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(0,245,255,.35);
+      border-radius:14px;
+      padding:20px;
+      box-shadow:0 0 20px rgba(0,245,255,.12) inset;
+    }
+    .top-pixels h4{
+      font-family:'Orbitron',sans-serif;
+      font-size:1.1rem;
+      letter-spacing:2px;
+      color:var(--neon-cyan);
+      margin-bottom:12px;
+      text-transform:uppercase;
+    }
+    .top-pixels .meta{
+      font-size:.9rem;
+      color:rgba(255,255,255,.6);
+      margin-bottom:12px;
+    }
+    .top-pixels-list{display:flex;flex-direction:column;gap:8px;}
+    .pixel-row{
+      display:grid;
+      grid-template-columns:34px 72px 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:8px 10px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:10px;
+      background:rgba(255,255,255,.03);
+      font-size:.95rem;
+    }
+    .pixel-rank{font-family:'Orbitron',sans-serif;color:var(--neon-yellow);}
+    .pixel-name{font-family:'Orbitron',sans-serif;color:#fff;}
+    .pixel-game{color:rgba(255,255,255,.72);}
+    .pixel-score{color:var(--neon-cyan);font-weight:700;}
     .game-card{
       background:rgba(0,0,0,.4);border:2px solid transparent;border-radius:15px;overflow:hidden;cursor:pointer;
       transition:all .4s cubic-bezier(.175,.885,.32,1.275);position:relative;
@@ -237,9 +274,16 @@
         <div class="featured-info">
           <h2 id="featuredTitle">Loading…</h2>
           <p id="featuredDescription">Loading…</p>
+          <p style="font-size:.85rem;opacity:.8;margin:-15px 0 22px;" id="featuredMeta"></p>
           <button class="btn-play" id="featuredPlayBtn">Play Featured</button>
         </div>
       </div>
+    </section>
+
+    <section class="top-pixels">
+      <h4>Top Pixels</h4>
+      <div class="meta" id="topPixelsMeta">Loading competitive board…</div>
+      <div class="top-pixels-list" id="topPixelsList"></div>
     </section>
 
     <div class="section-header">
@@ -257,7 +301,7 @@
       <div class="footer-links">
         <a href="./">PIXEL-NET</a>
         <a href="https://github.com/28twagg-ops/28twagg-ops.github.io">GitHub</a>
-        <a href="#" onclick="localStorage.removeItem('playerInitials'); location.reload(); return false;">Reset Initials</a>
+        <a href="#" onclick="localStorage.removeItem('playerInitials'); localStorage.removeItem('PIXELNET_INITIALS'); sessionStorage.removeItem('playerInitials'); location.reload(); return false;">Reset Initials</a>
       </div>
     </footer>
   </div>
@@ -265,6 +309,7 @@
   <script>
     let allGames = [];
     let featuredGame = null;
+    const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
     // Robust base URL (fixes GH Pages /PIXEL-NET vs /PIXEL-NET/ issues)
     const __basePath = (() => {
@@ -287,19 +332,110 @@
       if(!res.ok) throw new Error("Failed to load games.json: " + res.status);
       const data = await res.json();
       allGames = Array.isArray(data) ? data : [];
-      featuredGame = allGames.find(g => g.featured) || allGames[0] || null;
+      featuredGame = selectFeaturedGame(allGames);
       renderFeatured();
       renderGrid(allGames);
+      loadTopPixels(allGames);
+    }
+
+    function selectFeaturedGame(games){
+      if(!Array.isArray(games) || !games.length) return null;
+      // Deterministic strategy: explicit `featured` wins; otherwise newest = last item in games.json.
+      return games.find(g => g.featured) || games[games.length - 1];
     }
 
     function renderFeatured(){
       if(!featuredGame) return;
       document.getElementById("featuredTitle").textContent = featuredGame.name || "Featured";
       document.getElementById("featuredDescription").textContent = featuredGame.description || "";
+      document.getElementById("featuredMeta").textContent = featuredGame.featured
+        ? "Featured by config in games.json"
+        : "Featured by latest upload order (last item in games.json)";
       document.getElementById("featuredImage").style.backgroundImage = `url('${normalizePath(featuredGame.thumb)}')`;
       document.getElementById("featuredPlayBtn").onclick = () => {
         if(featuredGame.path) window.location.href = normalizePath(featuredGame.path);
       };
+    }
+
+    function gameSearchText(g){
+      const tags = Array.isArray(g.tags) ? g.tags : [];
+      const aliases = Array.isArray(g.aliases) ? g.aliases : [];
+      return [
+        (g.name || ""),
+        (g.description || ""),
+        tags.join(" "),
+        aliases.join(" ")
+      ].join(" ").toLowerCase();
+    }
+
+    function getSlugFromPath(path){
+      const p = (path || "").replace(/\\/g, "/");
+      const m = p.match(/games\/([^\/]+)\//i);
+      return m ? m[1] : "";
+    }
+
+    function formatHeldDuration(ms){
+      const mins = Math.floor(ms / 60000);
+      if (mins < 1) return "just now";
+      if (mins < 60) return `${mins}m`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ${mins % 60}m`;
+      const days = Math.floor(hrs / 24);
+      return `${days}d ${hrs % 24}h`;
+    }
+
+    async function fetchLeaderboardForSlug(slug){
+      if(!slug || !FIREBASE_DB_URL) return null;
+      try{
+        const r = await fetch(`${FIREBASE_DB_URL}/lb/${slug}.json`, { cache: "no-store" });
+        if(!r.ok) return null;
+        const data = await r.json();
+        if(!data || typeof data !== "object") return [];
+        return Object.values(data).filter(x => x && typeof x.score === "number");
+      } catch(_) {
+        return null;
+      }
+    }
+
+    function renderTopPixels(items, sourceLabel){
+      const meta = document.getElementById("topPixelsMeta");
+      const list = document.getElementById("topPixelsList");
+      if(!items.length){
+        meta.textContent = "No leaderboard scores yet. Finish a run to claim first place.";
+        list.innerHTML = "";
+        return;
+      }
+      meta.textContent = `Live ${sourceLabel}. Hold time is based on leaderboard timestamps.`;
+      list.innerHTML = items.slice(0, 5).map((row, i) => `
+        <div class="pixel-row">
+          <div class="pixel-rank">#${i+1}</div>
+          <div class="pixel-name">${row.initials}</div>
+          <div class="pixel-game">${row.gameName} · held ${formatHeldDuration(Date.now() - row.t)}</div>
+          <div class="pixel-score">${row.score}</div>
+        </div>
+      `).join("");
+    }
+
+    async function loadTopPixels(games){
+      const scored = [];
+      const withSlug = games.map(g => ({ ...g, slug: getSlugFromPath(g.path) })).filter(g => g.slug);
+      const pulls = withSlug.map(async g => {
+        const rows = await fetchLeaderboardForSlug(g.slug);
+        if(rows === null) return;
+        rows.sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
+        const top = rows[0];
+        if(top){
+          scored.push({
+            initials: (top.initials || top.name || "???").toString().toUpperCase().slice(0,3),
+            score: Number(top.score) || 0,
+            t: Number(top.t) || Date.now(),
+            gameName: g.name || g.slug
+          });
+        }
+      });
+      await Promise.all(pulls);
+      scored.sort((a,b) => (b.score - a.score) || (a.t - b.t));
+      renderTopPixels(scored, "cross-game podium");
     }
 
     function renderGrid(list){
@@ -395,7 +531,7 @@ try{
     // Search filter
     document.getElementById("searchBar").addEventListener("input", (e)=>{
       const q = (e.target.value || "").toLowerCase().trim();
-      const filtered = !q ? allGames : allGames.filter(g => (g.name||"").toLowerCase().includes(q));
+      const filtered = !q ? allGames : allGames.filter(g => gameSearchText(g).includes(q));
       renderGrid(filtered);
     });
 

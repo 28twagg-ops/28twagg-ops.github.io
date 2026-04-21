@@ -389,6 +389,7 @@ Purpose: AI implementation for themes
         let gameState = 'MENU';
         let level = 1;
         let score = 0;
+        let __pnScorePosted = false;
         let highScore = localStorage.getItem('cakedUpHighScore') || 0;
         let mapData = [];
         let particles = [];
@@ -417,6 +418,13 @@ Purpose: AI implementation for themes
             tank:   { color: '#888888', baseSpeed: 0.13, boostMult: 1.6, drain: 0.04 } 
         };
         let selectedCatType = 'ginger';
+        const heldKeys = [];
+        const keyToDir = {
+            ArrowUp: {x: 0, y: -1}, w: {x: 0, y: -1},
+            ArrowDown: {x: 0, y: 1}, s: {x: 0, y: 1},
+            ArrowLeft: {x: -1, y: 0}, a: {x: -1, y: 0},
+            ArrowRight: {x: 1, y: 0}, d: {x: 1, y: 0}
+        };
 
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
@@ -1057,6 +1065,7 @@ Purpose: AI implementation for themes
         function triggerRetry() {
             screenGameOver.style.display = 'none';
             score = 0;
+            __pnScorePosted = false;
             level = 1;
             updateCharSelect();
             startLevel();
@@ -1074,6 +1083,7 @@ Purpose: AI implementation for themes
         }
 
         function startLevel() {
+            heldKeys.length = 0;
             let size = 13 + (level * 3); 
             if (size > 51) size = 51;
             
@@ -1249,6 +1259,7 @@ Purpose: AI implementation for themes
         function update() {
             if (gameState !== 'PLAYING') return;
             frameCount++;
+            refreshBufferedDirection();
 
             hazards.forEach(h => {
                 if (h.type === 'sprinkler') {
@@ -1375,6 +1386,17 @@ Purpose: AI implementation for themes
             if (player.energy < 30) uiEnergy.style.background = '#ff4444';
             else if (player.boostTimer > 0) uiEnergy.style.background = '#ffff00'; 
             else uiEnergy.style.background = 'linear-gradient(90deg, #ffaa00, #ffcc00)';
+        }
+
+        function refreshBufferedDirection() {
+            // Keep intended direction "sticky" while keys are held, reducing corner misses.
+            for (let i = heldKeys.length - 1; i >= 0; i--) {
+                const key = heldKeys[i];
+                if (keyToDir[key]) {
+                    player.nextDir = { ...keyToDir[key] };
+                    return;
+                }
+            }
         }
 
         function drawHedges() {
@@ -1555,6 +1577,12 @@ Purpose: AI implementation for themes
                 updateCharSelect();
                 screenLevelUp.style.display = 'flex';
             } else {
+                if (!__pnScorePosted) {
+                    __pnScorePosted = true;
+                    try {
+                        window.parent.postMessage({ type: 'GAME_OVER_SCORE', score: Number(score) || 0 }, '*');
+                    } catch (_) {}
+                }
                 if (score > highScore) {
                     highScore = score;
                     localStorage.setItem('cakedUpHighScore', highScore);
@@ -1650,11 +1678,20 @@ Purpose: AI implementation for themes
             }
 
             if (gameState !== 'PLAYING') return;
-            switch(e.key) {
-                case 'ArrowUp': case 'w': player.nextDir = {x: 0, y: -1}; break;
-                case 'ArrowDown': case 's': player.nextDir = {x: 0, y: 1}; break;
-                case 'ArrowLeft': case 'a': player.nextDir = {x: -1, y: 0}; break;
-                case 'ArrowRight': case 'd': player.nextDir = {x: 1, y: 0}; break;
+            const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+            if (!keyToDir[key]) return;
+            const oldIdx = heldKeys.indexOf(key);
+            if (oldIdx !== -1) heldKeys.splice(oldIdx, 1);
+            heldKeys.push(key);
+            player.nextDir = {...keyToDir[key]};
+        });
+        window.addEventListener('keyup', (e) => {
+            const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+            const idx = heldKeys.indexOf(key);
+            if (idx !== -1) heldKeys.splice(idx, 1);
+            if (gameState === 'PLAYING' && heldKeys.length > 0) {
+                const fallback = heldKeys[heldKeys.length - 1];
+                if (keyToDir[fallback]) player.nextDir = {...keyToDir[fallback]};
             }
         });
 

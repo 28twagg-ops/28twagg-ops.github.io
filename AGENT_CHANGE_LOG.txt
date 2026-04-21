@@ -1,0 +1,67 @@
+Arcade Agent Change Log
+Maintainer: Codex (this chat)
+
+Purpose:
+- Persistent handoff log so another AI (or human) can see exactly what was changed.
+- This file will be updated after each meaningful change I make from now on.
+
+Entry - 2026-04-21
+- Verified GitHub remote configuration:
+  - origin -> https://github.com/28twagg-ops/28twagg-ops.github.io.git
+  - current branch -> main
+- Verified GitHub access/auth is working with remote head lookup.
+- No code files edited yet in this chat.
+- Existing pre-chat repo state observed:
+  - Modified: PIXEL-NET/games.json
+  - Untracked: Problems to be fixed.txt
+- Updated `PIXEL-NET/index.html`:
+  - Added deterministic featured-game selection:
+    - Uses explicit `featured` flag when present.
+    - Otherwise uses latest-upload order fallback (last item in `games.json`), documented in UI/meta text.
+  - Added `Top Pixels` module:
+    - Pulls top score per game from Firebase leaderboard paths (`/lb/<slug>.json`).
+    - Renders a cross-game podium (top 5) with hold-time text derived from score timestamps.
+    - Includes clean no-data fallback text.
+  - Improved home search:
+    - Now searches across game `name`, `description`, `tags`, and optional `aliases`.
+  - Hardened home `Reset Initials` action:
+    - Clears `playerInitials`, `PIXELNET_INITIALS`, and session `playerInitials` for wrapper compatibility.
+- Updated `PIXEL-NET/games/caked-up-cats/game.html`:
+  - Added `refreshBufferedDirection()` during active updates so held-key intent is continuously reapplied until a legal turn opens.
+  - Adjusted keydown handling to move repeated keys to the end of the held-key stack (latest-held intent wins), reducing corner-stick feel.
+  - Preserved single-fire game-over score post (`GAME_OVER_SCORE`) and score scaling.
+- Updated `PIXEL-NET/games/caked-up-cats/wrapper-v2.html`:
+  - Readability pass: converted how-to text to short, scannable instruction lines.
+- Updated `PIXEL-NET/games/millipede-chaos-v3/game.html`:
+  - Added retro arcade-style shooting SFX using Web Audio (square-wave zap).
+  - Added safe audio gating:
+    - Audio context is created/resumed on user-initiated start.
+    - Shot SFX is rate-limited to avoid mobile audio spam.
+  - Gameplay logic and difficulty were left unchanged.
+- Updated wrapper instruction readability:
+  - `PIXEL-NET/games/millipede-chaos-v3/wrapper-v2.html`
+  - `PIXEL-NET/games/knight-flight-v2/wrapper-v2.html`
+  - `PIXEL-NET/games/logic-bomb-v2/wrapper-v2.html`
+  - All changed to concise/scannable bullet phrases with no wrapper-contract changes.
+- Validation pass completed:
+  - Lint/diagnostics run on all edited files: no linter errors reported.
+  - Smoke-checked major paths:
+    - `PIXEL-NET/index.html`
+    - `games/knight-flight-v2/{wrapper-v2.html,game.html}`
+    - `games/caked-up-cats/{wrapper-v2.html,game.html}`
+    - `games/millipede-chaos-v3/{wrapper-v2.html,game.html}`
+    - `games/logic-bomb-v2/wrapper-v2.html`
+  - Verified leaderboard message contract compatibility:
+    - Games emit `{ type: 'GAME_OVER_SCORE', score: Number(...) }`
+    - Wrapper listener accepts `GAME_OVER_SCORE`.
+- Known follow-up:
+  - `Top Pixels` currently renders a clean cross-game MVP podium from Firebase top-per-game rows.
+    Full "record history / takeover honor feed" would require additional persistent event logging schema.
+
+Entry - 2026-04-21 (Poker Project alignment pass)
+- Updated `PIXEL-NET/games/spyder-casino/game.html` to align lobby tone/style with Poker Project ("Chips talk. Mistakes cost.") while preserving existing web game logic.
+- Updated Blackjack/Hold'em lobby descriptions to match original table-rule style language from Poker Project.
+- Expanded Hold'em catchphrases and bot replacement names to feel more like live-table banter.
+- Kept adaptive AI behavior in place and extended adaptive chatter lines for passive/aggressive/bluffy pattern reads.
+- Updated `PIXEL-NET/games/spyder-casino/wrapper-v2.html` instructions to a cleaner, scannable format matching requested style.
+- Confirmed no linter errors in edited Spyder Casino files.
