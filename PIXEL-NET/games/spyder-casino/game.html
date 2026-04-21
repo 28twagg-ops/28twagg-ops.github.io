@@ -1208,7 +1208,7 @@ function bjRenderTerminalView(){
     : '';
   const out = [
     '================================================================================',
-    'SPYDER BLACKJACK',
+    '★ SPYDER BLACKJACK ★',
     '================================================================================',
     `Bankroll: $${bjBank.toFixed(2)}   Mode: ${bjMode}`,
     '',
@@ -1217,9 +1217,9 @@ function bjRenderTerminalView(){
     '--------------------------------------------------------------------------------',
     ...(bjHands.length?bjHands.map((h,i)=>bjTermHandLine(h,i)).join('\n\n').split('\n'):['No hand dealt yet.']),
     '--------------------------------------------------------------------------------',
-    bjPhase==='bet' ? "Enter Bet (example: bet 25). Use 'q' to cash out." :
-      bjPhase==='play' ? 'Action: h(hit) s(stay) d(double) p(split)' :
-      'Round complete: n(next hand) or q(cash out)'
+    bjPhase==='bet' ? "Enter Bet (Min $5 or 'q' to cash out):" :
+      bjPhase==='play' ? 'Action Hand 1 (h/s/d/p):' :
+      'Press n for next hand, or q to cash out.'
   ].join('\n');
   el.textContent=out;
 }
@@ -2045,6 +2045,13 @@ window.addEventListener('keydown', (e) => {
     if (key === '4') { startHE('ANALYSIS'); return; }
   }
   if (bjOn) {
+    if (visualStyle === 'terminal') {
+      if (key === 'q') { bjCashOut(); return; }
+      if (key === 'n' && bjPhase === 'done') { bjNextHand(); return; }
+      if ((key === 'h' || key === 's' || key === 'd' || key === 'p') && bjPhase === 'play') { bjRunTerminalCommand(key); return; }
+      if (/^\d$/.test(key) && bjPhase === 'bet') { bjRunTerminalCommand(key); return; }
+      return;
+    }
     if (bjPhase === 'bet') {
       if (key === '1') bjAddBet(5);
       if (key === '2') bjAddBet(10);
@@ -2061,6 +2068,11 @@ window.addEventListener('keydown', (e) => {
       if (key === 'n' || e.key === 'Enter') bjNextHand();
       if (key === 'c') bjCashOut();
     }
+  }
+  if (heOn && visualStyle === 'terminal') {
+    if (key === 'q') { heQuit(); return; }
+    if (key === 'c' || key === 'k' || key === 'f') { heRunTerminalCommand(key); return; }
+    return;
   }
   if (heOn && heKeyActions) {
     if (key === 'c') heKeyActions.call && heKeyActions.call();
