@@ -2471,13 +2471,7 @@ window.addEventListener('keydown', (e) => {
   const endOn = document.getElementById('endScreen').classList.contains('active');
   const ae = document.activeElement;
   const typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
-  if (typing) {
-    const allowDoneAdvance = e.key === 'Enter' && (
-      (bjOn && visualStyle === 'terminal' && bjPhase === 'done') ||
-      (heOn && visualStyle === 'terminal' && !!heTerminalResult)
-    );
-    if (!allowDoneAdvance) return;
-  }
+  if (typing) return;
   if (key === 'escape' && (bjOn || heOn || endOn)) { goLobby(); return; }
   if (lobby) {
     if (visualStyle === 'terminal') {
@@ -2573,11 +2567,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bjPhase === 'done') {
           bjNextHand();
           bjCmd.value = '';
+          e.stopPropagation();
           e.preventDefault();
           return;
         }
         bjRunTerminalCommand(bjCmd.value);
         bjCmd.value = '';
+        e.stopPropagation();
         e.preventDefault();
       }
     });
@@ -2589,11 +2585,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (heTerminalResult) {
           heNextHand();
           heCmd.value = '';
+          e.stopPropagation();
           e.preventDefault();
           return;
         }
         heRunTerminalCommand(heCmd.value);
         heCmd.value = '';
+        e.stopPropagation();
         e.preventDefault();
       }
     });
