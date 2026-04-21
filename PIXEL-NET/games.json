@@ -87,5 +87,35 @@
     "description": "Blackjack + Texas Hold'em hub with classic/polished UI and adaptive bots.",
     "tags": ["casino", "blackjack", "holdem", "poker", "cards"],
     "featured": true
+  },
+  {
+    "name": "NEON DRIFTLINE",
+    "type": "iframe",
+    "slug": "neon-driftline",
+    "path": "games/neon-driftline/wrapper-v2.html",
+    "thumb": "assets/neon-driftline_thumb.svg",
+    "description": "Lane-drift survival racer with escalating speed and shard pickups.",
+    "tags": ["racing", "dodger", "traffic", "lane runner", "endless"],
+    "aliases": ["driftline", "neon racer"]
+  },
+  {
+    "name": "CIRCUIT SALVAGER",
+    "type": "iframe",
+    "slug": "circuit-salvager",
+    "path": "games/circuit-salvager/wrapper-v2.html",
+    "thumb": "assets/circuit-salvager_thumb.svg",
+    "description": "Grid salvage run: collect all cores while evading hunter drones.",
+    "tags": ["maze", "collector", "survival", "drones", "grid"],
+    "aliases": ["salvager", "circuit run"]
+  },
+  {
+    "name": "ORBIT SIEGE",
+    "type": "iframe",
+    "slug": "orbit-siege",
+    "path": "games/orbit-siege/wrapper-v2.html",
+    "thumb": "assets/orbit-siege_thumb.svg",
+    "description": "Defend a central core by rotating and firing an orbital cannon.",
+    "tags": ["defense", "arena", "turret", "space", "shooter"],
+    "aliases": ["orbital defense", "siege cannon"]
   }
 ]

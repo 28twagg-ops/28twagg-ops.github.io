@@ -208,3 +208,20 @@ Entry - 2026-04-21 (Terminal key-play behavior + semver style version)
   - Switched from date-style versioning to requested semver-style display: `0.0.3`.
 - Validation:
   - Lints/diagnostics for updated files: no errors reported.
+
+Entry - 2026-04-21 (New games initiative batch: 3 originals)
+- Added new game folders and wrappers:
+  - `PIXEL-NET/games/neon-driftline/{game.html,wrapper-v2.html}`
+  - `PIXEL-NET/games/circuit-salvager/{game.html,wrapper-v2.html}`
+  - `PIXEL-NET/games/orbit-siege/{game.html,wrapper-v2.html}`
+- Added new thumbnail assets:
+  - `PIXEL-NET/assets/neon-driftline_thumb.svg`
+  - `PIXEL-NET/assets/circuit-salvager_thumb.svg`
+  - `PIXEL-NET/assets/orbit-siege_thumb.svg`
+- Updated `PIXEL-NET/games.json`:
+  - Added production entries with `slug`, `path`, `thumb`, `description`, `tags`, and `aliases` for all 3 new games.
+- Contract compliance in all 3 games:
+  - Game-over score submit uses one-time guarded:
+    `{ type: 'GAME_OVER_SCORE', score: Number(...) }`.
+- Updated `PIXEL-NET/version.json` for this push cycle:
+  - `v2026.04.21-03`
