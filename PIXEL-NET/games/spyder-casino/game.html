@@ -22,6 +22,11 @@ body.casino{
 html,body{width:100%;height:100%;overflow:hidden;background:#000;
   font-family:'Courier New',Courier,monospace;color:var(--g);}
 body.casino{background:radial-gradient(ellipse at 50% 0%,#1e7040 0%,var(--felt) 55%,var(--felt2) 100%);}
+/* terminal mode intentionally mirrors the original Python/EXE feel */
+body:not(.casino){
+  background:#000;
+  color:#00ff41;
+}
 
 /* ═══════════════════════════════════════
    SCREENS
@@ -64,6 +69,12 @@ body.casino{background:radial-gradient(ellipse at 50% 0%,#1e7040 0%,var(--felt) 
   font-size:12px;line-height:1.5;
   box-shadow:0 0 30px rgba(0,255,65,.12);
 }
+body:not(.casino) .panel{
+  border-radius:0;
+  border:1px solid #00ff41;
+  box-shadow:none;
+  background:#000;
+}
 body.casino .panel{background:rgba(6,20,10,.95);border-color:var(--gold);}
 .p-title{text-align:center;font-size:16px;font-weight:bold;letter-spacing:3px;margin-bottom:6px;text-shadow:0 0 12px var(--g);}
 .p-div{border-top:1px solid var(--g2);margin:8px 0;opacity:.35;}
@@ -101,6 +112,11 @@ body.casino .lobby-card:hover{
   font-family:inherit;font-size:12px;background:transparent;color:var(--g);
   border:1px solid var(--g2);border-radius:3px;padding:7px 16px;cursor:pointer;
   letter-spacing:1px;transition:all .12s;min-width:70px;text-align:center;
+}
+body:not(.casino) .btn{
+  border-radius:0;
+  border-color:#00cc33;
+  background:#000;
 }
 .btn:hover{background:rgba(0,255,65,.1);border-color:var(--g);}
 .btn.pri{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.15);}
@@ -146,6 +162,10 @@ body.casino .lb-row{border-color:rgba(212,168,67,.15);background:rgba(212,168,67
 .cc.xs{width:26px;height:38px;font-size:8px;}.cc.xs .sc{font-size:11px;}
 .cards-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:4px 0;}
 .cc-empty{width:46px;height:66px;border-radius:5px;border:1px dashed rgba(255,255,255,.14);background:rgba(0,0,0,.2);}
+body:not(.casino) .cc,
+body:not(.casino) .cc-empty{
+  display:none;
+}
 
 /* ═══════════════════════════════════════
    ── BLACKJACK GAME ──
@@ -219,6 +239,13 @@ body.casino .bot-panel{border-color:rgba(212,168,67,.2);background:rgba(0,0,0,.5
   font-size:8px;color:var(--g2);opacity:.9;font-style:italic;min-height:12px;
   text-align:center;
 }
+body:not(.casino) .chatter{
+  border:none;
+  background:transparent;
+  max-width:none;
+  min-height:12px;
+  padding:0;
+}
 body.casino .chatter{
   min-height:26px;
   border-color:rgba(212,168,67,.22);
@@ -250,6 +277,12 @@ body.casino .player-area-he{border-top-color:rgba(212,168,67,.2);}
   padding:18px 22px;max-width:420px;width:92%;
   box-shadow:0 0 40px rgba(0,255,65,.18);}
 body.casino .res-box{border-color:var(--gold);}
+body:not(.casino) .res-box{
+  border-radius:0;
+  box-shadow:none;
+  border-color:#00ff41;
+  background:#000;
+}
 .res-ttl{font-size:19px;font-weight:bold;letter-spacing:3px;text-align:center;margin-bottom:8px;}
 .res-ttl.win{color:#00ff88;text-shadow:0 0 14px rgba(0,255,136,.4);}
 .res-ttl.lose{color:var(--red);}
@@ -299,6 +332,9 @@ body.casino .res-box{border-color:var(--gold);}
     <div class="p-title" style="font-size:20px;letter-spacing:6px">★ SPYDER CASINO ★</div>
     <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:2px;margin-bottom:6px">
       Chips talk. Mistakes cost.
+    </div>
+    <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:1px;margin-bottom:6px;opacity:.8">
+      ================= TERMINAL LOBBY =================
     </div>
     <div class="p-div"></div>
 

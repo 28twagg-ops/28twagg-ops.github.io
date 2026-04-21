@@ -161,3 +161,12 @@ Entry - 2026-04-21 (Library-wide instruction copy polish)
 - Copy pattern now consistently uses short action labels (`Move:`, `Objective:`, `Scoring:` etc.) that render as clearer cards.
 - Validation:
   - Lints/diagnostics run on all edited wrappers: no errors reported.
+
+Entry - 2026-04-21 (Spyder Casino final terminal-parity pass)
+- Updated `PIXEL-NET/games/spyder-casino/game.html` for closer terminal parity with original Poker Project feel:
+  - Terminal mode now uses flatter monochrome panel/button styling (square edges, no glossy shadows).
+  - Terminal mode keeps plain text chatter and removes ornamental card-panel visuals where possible.
+  - Added explicit terminal-lobby divider line styling cue.
+  - Casino mode remains the upgraded visual treatment.
+- Validation:
+  - Lints/diagnostics for updated Spyder Casino file: no errors reported.
