@@ -59,16 +59,17 @@ let running = false, posted = false;
 let score = 0, wave = 1, lives = 3, combo = 0, comboTimer = 0;
 let fireCooldown = 0, shakeT = 0, shakeAmt = 0;
 let dualShot = false, dualTimer = 0;
-let shielded = false, shieldTimer = 0; // shield power-up
+let shielded = false, shieldTimer = 0;
 let waveIntro = 0;
 let last = 0;
 let keys = {};
 
 /* ── Formation state (shared by all non-diving enemies) ── */
-let formDx  = 0;      // current x-offset from base positions
-let formDir = 1;      // +1 right / -1 left
-let formSpd = 1.0;    // pixels per frame (increases with wave)
-let formStepY = 14;   // how far down formation steps on wall hit
+let formDx     = 0;    // current x-offset from base positions
+let formDir    = 1;    // +1 right / -1 left
+let formSpd    = 0.5;  // pixels per frame — starts slow, scales with wave + enemy count
+let formStepY  = 16;   // how far down formation steps on wall hit
+let maxEBullets = 2;   // max enemy bullets on screen at once (scales with wave)
 
 /* ── entity pools ── */
 let stars = [], nebula = [];
@@ -174,7 +175,10 @@ function buildWave() {
   enemies = [];
   waveIntro = 1400;
 
-  formDx = 0; formDir = 1; formSpd = 0.85 + wave * 0.12;
+  // Formation starts slow on wave 1, ramps up with wave number
+  formDx = 0; formDir = 1;
+  formSpd = 0.30 + wave * 0.10;   // wave 1: 0.40, wave 5: 0.80, wave 10: 1.30
+  maxEBullets = Math.min(2 + Math.floor(wave/2), 8); // wave 1: 2 bullets max, grows slowly
   const isBoss = wave % 5 === 0;
   if (isBoss) {
     // Boss wave — one large boss + escort drones
@@ -209,10 +213,10 @@ function buildWave() {
   const startX = W/2 - (cols-1)*xSep/2;
   const startY = 52;
 
-  // Reset formation state for new wave
-  formDx  = 0;
-  formDir = 1;
-  formSpd = 0.85 + wave * 0.12;
+  // Formation state already reset above
+  // Wave 1: fire rate very slow (every 4-6s per enemy), grows with wave
+  // Wave 5+: every ~1.5s per eligible enemy, still capped by maxEBullets
+  const fireRateBase = Math.max(800, 4500 - wave * 380);
 
   for (let r = 0; r < rows; r++) {
     for (let col = 0; col < cols; col++) {
@@ -225,11 +229,13 @@ function buildWave() {
       enemies.push({
         ...t,
         x: ex, y: ey, baseX: ex, baseY: ey,
-        phase: col * 0.4 + r * 0.9,  // stagger fire timing
-        type: typeKey, col: r, row: r,
+        phase: col * 0.4 + r * 0.9,
+        type: typeKey,
+        formCol: col, formRow: r,   // grid position for "front row only" fire rule
         diving: false, diveTarget: null,
-        fireTick: Math.random() * 1000 + col * 80,
-        fireRate: Math.max(500, 1400 - wave*55)
+        // Large initial fireTick — nobody shoots in the first few seconds
+        fireTick: 3500 + Math.random() * 2000 + col * 180,
+        fireRate: fireRateBase
       });
     }
   }
@@ -586,22 +592,28 @@ function update(dt) {
   eBullets = eBullets.filter(b => b.y < H+20 && b.x > -20 && b.x < W+20);
 
   /* ── Formation march (shared offset for all non-diving non-boss enemies) ── */
-  const formEnemies = enemies.filter(e => !e.diving && e.type !== "BOSS");
+  const allFormEnemies = enemies.filter(e => e.type !== "BOSS");
+  const formEnemies = allFormEnemies.filter(e => !e.diving);
   if (formEnemies.length > 0) {
-    formDx += formSpd * formDir * (ms/16);
-    // Find formation extent
+    // Classic Space Invaders escalation: speed multiplies as enemy count drops
+    // Full grid (12–30 enemies) = base speed. Last few enemies = up to 4× faster
+    const startCount = (Math.min(5, 2+Math.floor(wave/2))) * (Math.min(10, 6+Math.floor(wave/3)));
+    const countRatio = formEnemies.length / Math.max(1, startCount);
+    const countBoost = 1 + (1 - countRatio) * 3.5; // 1× at full, up to 4.5× at last enemy
+    const effectiveSpd = formSpd * countBoost;
+
+    formDx += effectiveSpd * formDir * (ms/16);
     const minX = Math.min(...formEnemies.map(e => e.baseX + formDx));
     const maxX = Math.max(...formEnemies.map(e => e.baseX + formDx));
     if (minX < 22 || maxX > W - 22) {
       formDir *= -1;
-      formDx  += formDir * 2; // nudge away from wall immediately
-      // Step formation down — classic Space Invaders
+      formDx  += formDir * 3;
       for (const e of formEnemies) {
         e.baseY += formStepY;
         if (e.baseY > H * 0.60) { gameOver(); return; }
       }
-      // Speed up a little each step (classic escalation)
-      formSpd = Math.min(formSpd + 0.08, 5.5);
+      // Slight base speed bump each wall bounce
+      formSpd = Math.min(formSpd + 0.04, 3.0);
     }
   }
 
@@ -638,8 +650,10 @@ function update(dt) {
       e.x = e.baseX + formDx;
       // Gentle individual bob (small, keeps grid feel)
       e.y = e.baseY + Math.sin(Date.now()*0.002 + e.phase) * 5;
-      // Random dive trigger
-      if (e.type !== "BOSS" && Math.random() < 0.00025 * (1 + wave*0.35) && e.y < H*0.52) {
+      // Dive trigger — much rarer on early waves
+      // Wave 1: ~0.00006/frame per enemy (nearly none), wave 5: ~0.00025, wave 10+: ~0.0005
+      const diveChance = 0.00004 * (1 + wave * 0.55);
+      if (!e.diving && e.type !== "BOSS" && Math.random() < diveChance && e.y < H*0.52) {
         e.diving = true;
       }
     }
@@ -647,30 +661,54 @@ function update(dt) {
     // Enemy fire
     e.fireTick -= ms;
     if (e.fireTick <= 0) {
-      e.fireTick = e.fireRate + Math.random()*400;
+      e.fireTick = e.fireRate + Math.random() * (e.fireRate * 0.5);
+
+      // ── Front-row-only fire rule (Space Invaders authentic) ──
+      // An enemy can only fire if no other enemy is directly below it in the same column
+      const isColumnFront = !enemies.some(other =>
+        other !== e &&
+        other.type !== "BOSS" &&
+        Math.abs(other.baseX - e.baseX) < 30 &&  // same column (roughly)
+        other.baseY > e.baseY                      // other is lower on screen
+      );
+
+      // Bullet cap — wave 1 max 2 enemy bullets at once
+      const bulletCap = eBullets.length < maxEBullets;
+
       if (e.type === "BOSS") {
-        // Triple spread + aimed shot at phase 2
+        // Boss ignores column rule
+        const bspd = 3.5 + wave * 0.18;
         for (let a = -0.35; a <= 0.36; a += 0.175) {
-          eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*4, vy:4.5+wave*0.2, col:"#00ff88" });
+          eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*3.5, vy:bspd, col:"#00ff88" });
         }
         if (e.phase2) {
-          // Aimed at player too
-          const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, sp=5+wave*0.1;
+          const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, sp=4+wave*0.1;
           eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*sp*0.5, vy:(dy/d)*sp, col:"#00ffee" });
         }
-      } else if (e.type === "GUNSHIP") {
-        // 3-way spread
-        for (let a = -0.2; a <= 0.21; a += 0.2) {
-          eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*2.5, vy:4+wave*0.16, col:"#ff8c00" });
+      } else if (isColumnFront && bulletCap) {
+        // Bullet speed scales with wave — slow and readable early, faster later
+        const bspd = 2.2 + wave * 0.22;  // wave 1: 2.44, wave 5: 3.3, wave 10: 4.4
+        if (e.type === "GUNSHIP") {
+          // Only spread on wave 3+, single shot before that
+          if (wave >= 3) {
+            for (let a = -0.18; a <= 0.19; a += 0.18) {
+              eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*2, vy:bspd, col:"#ff8c00" });
+            }
+          } else {
+            eBullets.push({ x:e.x, y:e.y+e.r, vx:0, vy:bspd, col:"#ff8c00" });
+          }
+        } else if (e.type === "ELITE") {
+          // Aimed only on wave 4+, straight drop before that
+          if (wave >= 4) {
+            const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1;
+            eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*bspd*0.35, vy:bspd, col:"#aa66ff" });
+          } else {
+            eBullets.push({ x:e.x, y:e.y+e.r, vx:0, vy:bspd, col:"#aa66ff" });
+          }
+        } else {
+          // Drone — straight drop always
+          eBullets.push({ x:e.x, y:e.y+e.r, vx:0, vy:bspd, col:"#ff4466" });
         }
-      } else if (e.type === "ELITE") {
-        // Aimed at player
-        const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, sp=4.2+wave*0.15;
-        eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*sp*0.45, vy:sp, col:"#aa66ff" });
-      } else {
-        // Basic aimed drop
-        const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, sp=3.5+wave*0.12;
-        eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*sp*0.3, vy:sp, col:"#ff4466" });
       }
     }
   }
