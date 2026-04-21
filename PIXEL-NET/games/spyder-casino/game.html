@@ -54,11 +54,6 @@ body.casino{background:radial-gradient(ellipse at 50% 0%,#1e7040 0%,var(--felt) 
 .toggle-wrap input:checked+.slider-track+.slider-knob{background:var(--gold);}
 /* easier: use JS to move knob */
 #knob{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--g);transition:transform .2s,background .2s;}
-#uiToggleBar{
-  position:fixed;top:34px;right:10px;z-index:200;
-  display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:1px;
-}
-#uiToggleBar span{opacity:.65;}
 
 /* ═══════════════════════════════════════
    TERMINAL PANEL
@@ -76,34 +71,24 @@ body.casino .panel{background:rgba(6,20,10,.95);border-color:var(--gold);}
 .mut{color:var(--g2);opacity:.7;}
 .lobby-card{
   border:1px solid rgba(0,255,65,.25);
-  border-radius:8px;
+  border-radius:6px;
   padding:12px 14px;
   background:rgba(0,255,65,.03);
-  box-shadow:0 0 0 rgba(0,0,0,0);
-  transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
-}
-body:not(.polished) .lobby-card{
-  border:1px solid rgba(0,255,65,.25);
-  border-radius:6px;
   box-shadow:none;
   transform:none;
-  background:rgba(0,255,65,.03);
+  transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
 }
-body:not(.polished) .lobby-card:hover{
+.lobby-card:hover{
   transform:none;
   box-shadow:none;
   border-color:rgba(0,255,65,.25);
-}
-.lobby-card:hover{
-  transform:translateY(-1px);
-  box-shadow:0 8px 20px rgba(0,0,0,.25);
-  border-color:rgba(0,255,65,.5);
 }
 body.casino .lobby-card{
   border-color:rgba(212,168,67,.25);
   background:linear-gradient(180deg,rgba(212,168,67,.07),rgba(0,0,0,.28));
 }
 body.casino .lobby-card:hover{
+  transform:translateY(-1px);
   border-color:rgba(255,224,102,.6);
   box-shadow:0 10px 24px rgba(0,0,0,.35),0 0 20px rgba(212,168,67,.15);
 }
@@ -231,20 +216,17 @@ body.casino .bot-panel{border-color:rgba(212,168,67,.2);background:rgba(0,0,0,.5
 .pot-disp{font-size:13px;color:var(--amb);font-weight:bold;}
 .eq-bar{font-size:9px;color:var(--g2);text-align:center;min-height:12px;}
 .chatter{
-  font-size:8px;color:var(--g2);opacity:.9;font-style:italic;min-height:26px;
-  border:1px solid rgba(0,255,65,.18);border-radius:6px;padding:5px 8px;
-  background:rgba(0,0,0,.28);max-width:540px;text-align:center;
+  font-size:8px;color:var(--g2);opacity:.9;font-style:italic;min-height:12px;
+  text-align:center;
 }
 body.casino .chatter{
+  min-height:26px;
   border-color:rgba(212,168,67,.22);
+  border:1px solid rgba(212,168,67,.22);
+  border-radius:6px;
+  padding:5px 8px;
   background:rgba(0,0,0,.35);
-}
-body:not(.polished) .chatter{
-  border:none;
-  background:transparent;
-  padding:0;
-  min-height:12px;
-  max-width:none;
+  max-width:540px;
 }
 .player-area-he{border-top:1px solid rgba(0,255,65,.2);padding:6px 8px;background:var(--panel);flex-shrink:0;}
 body.casino .player-area-he{border-top-color:rgba(212,168,67,.2);}
@@ -307,14 +289,6 @@ body.casino .res-box{border-color:var(--gold);}
     <div id="knob"></div>
   </div>
   <span>CASINO</span>
-</div>
-<div id="uiToggleBar">
-  <span>CLASSIC</span>
-  <div class="toggle-wrap" onclick="toggleUiMode()" title="Switch UI polish">
-    <div class="slider-track"></div>
-    <div id="uiKnob"></div>
-  </div>
-  <span>POLISHED</span>
 </div>
 
 <!-- ════════════════════════════════════════
@@ -524,7 +498,6 @@ const SUIT_SYM = {Hearts:'♥',Diamonds:'♦',Clubs:'♣',Spades:'♠'};
 const RED_S = new Set(['Hearts','Diamonds']);
 
 let visualStyle = localStorage.getItem('SC_STYLE') || 'terminal'; // 'terminal'|'casino'
-let uiMode = localStorage.getItem('SC_UI_MODE') || 'polished'; // 'classic'|'polished'
 let userInitials = localStorage.getItem('PIXELNET_INITIALS') || '';
 let endGameSlug = '', endGameMode = '';
 
@@ -542,21 +515,7 @@ function toggleStyle() {
   if (document.getElementById('bjScreen').classList.contains('active')) bjRenderAll();
   if (document.getElementById('heScreen').classList.contains('active')) heRenderAll(false);
 }
-function applyUiMode() {
-  document.body.classList.toggle('polished', uiMode === 'polished');
-  const uiKnob = document.getElementById('uiKnob');
-  if (uiKnob) {
-    uiKnob.style.transform = uiMode === 'polished' ? 'translateX(20px)' : 'translateX(0)';
-    uiKnob.style.background = uiMode === 'polished' ? 'var(--gold)' : 'var(--g)';
-  }
-}
-function toggleUiMode() {
-  uiMode = uiMode === 'polished' ? 'classic' : 'polished';
-  localStorage.setItem('SC_UI_MODE', uiMode);
-  applyUiMode();
-}
 applyStyle();
-applyUiMode();
 
 // ── UTILS ─────────────────────────────────────────────────────
 function showScreen(id) {

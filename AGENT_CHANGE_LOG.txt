@@ -134,3 +134,14 @@ Entry - 2026-04-21 (Follow-up fixes for visibility and honor-board population)
   - Refined instructions to be control-first and more visually parseable by the new wrapper instruction-card renderer.
 - Validation:
   - Lints/diagnostics checked for `index.html`, `games.json`, and Spyder wrapper: no errors reported.
+
+Entry - 2026-04-21 (Spyder Casino visual parity + single-toggle cleanup)
+- Updated `PIXEL-NET/games/spyder-casino/game.html`:
+  - Removed the second `CLASSIC/POLISHED` toggle and related state (`SC_UI_MODE`) so only one style switch remains (`TERMINAL/CASINO`).
+  - Rebalanced style behavior to better match request:
+    - Terminal view stays closer to original Poker Project terminal feel (flatter, less glossy cards/chatter framing).
+    - Casino view keeps upgraded visual treatment (enhanced card/lobby hover and boxed chatter panel).
+- Updated `PIXEL-NET/games/spyder-casino/wrapper-v2.html`:
+  - Removed now-obsolete instruction line referencing CLASSIC/POLISHED toggle.
+- Validation:
+  - Lints/diagnostics for Spyder Casino files: no errors reported.
