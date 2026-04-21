@@ -1490,6 +1490,7 @@ function bjRenderTerminalView(){
 function bjRunTerminalCommand(raw){
   if(!bjIsTerminal()) return;
   const s=(raw||'').trim().toLowerCase();
+  if(bjPhase==='done' && (s===''||s==='n'||s==='next')) { return bjNextHand(); }
   if(!s) return;
   if(s==='q'){bjLog('You cash out.'); bjCashOut();return;}
   if(bjPhase==='bet'){
@@ -1509,7 +1510,6 @@ function bjRunTerminalCommand(raw){
     bjLog('Invalid action.');
     return;
   }
-  if(bjPhase==='done' && (s===''||s==='n'||s==='next')) { return bjNextHand(); }
 }
 function bjDeal() {
   if(bjBet<BJ_MIN||bjBet>bjBank) return;
