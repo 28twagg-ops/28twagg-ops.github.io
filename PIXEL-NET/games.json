@@ -61,12 +61,5 @@
     "path": "games/millipede-chaos-v3/wrapper-v2.html",
     "thumb": "assets/millipede_thumb.png",
     "description": "Millipede Chaos remake (v3)."
-  },
-  {
-    "name": "SPYDER CASINO",
-    "type": "iframe",
-    "path": "games/spyder-casino/wrapper-v2.html",
-    "thumb": "assets/spyder-casino_thumb.svg",
-    "description": "Spyder Blackjack & Texas Hold'em — with Terminal or Casino visual modes."
   }
 ]
