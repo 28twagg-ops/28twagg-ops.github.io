@@ -541,8 +541,9 @@ const SUIT_SYM = {Hearts:'♥',Diamonds:'♦',Clubs:'♣',Spades:'♠'};
 const RED_S = new Set(['Hearts','Diamonds']);
 
 let visualStyle = localStorage.getItem('SC_STYLE') || 'terminal'; // 'terminal'|'casino'
-let userInitials = localStorage.getItem('PIXELNET_INITIALS') || '';
+let userInitials = localStorage.getItem('PIXELNET_INITIALS') || localStorage.getItem('playerInitials') || '';
 let endGameSlug = '', endGameMode = '';
+let heKeyActions = null;
 
 // ── STYLE TOGGLE ──────────────────────────────────────────────
 function applyStyle() {
@@ -569,6 +570,7 @@ function goLobby() {
   showScreen('lobbyScreen');
   fbFetch(BJ_SLUG, 5).then(r => renderLb(r, 'bjLobbyLb', 'bj'));
   fbFetch(HE_SLUG, 5).then(r => renderLb(r, 'heLobbyLb', 'he'));
+  heKeyActions = null;
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function shuffle(arr) {
@@ -1205,6 +1207,19 @@ function heUserTurn(p){
     const fb=document.createElement('button');fb.className='btn red';fb.textContent='FOLD';
     fb.onclick=()=>{heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heWaitResolve=null;heRenderAll(false);res();};
     az.appendChild(fb);
+    // Keyboard actions for terminal-style play
+    heKeyActions = {
+      call: () => (toCall<=0||canCall) ? (heHideRaise(), heActCall(p,res)) : null,
+      raise: () => {
+        const oppAllInNow=hePlayers.filter(x=>x!==p&&x.status!=='FOLDED').every(x=>x.chips===0);
+        if(!oppAllInNow) heShowRaise(p,res);
+      },
+      fold: () => { heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heWaitResolve=null;heRenderAll(false);res(); },
+      confirmRaise: () => {
+        const rz = document.getElementById('heRaiseZ');
+        if (rz.classList.contains('show')) heConfirmRaise();
+      }
+    };
   });
 }
 function heActCall(p,res){
@@ -1331,11 +1346,14 @@ function showEndScreen(game,score,subtitle,slug){
   document.getElementById('endSubtitle').textContent=subtitle;
   document.getElementById('endMsg').textContent='';
   document.getElementById('endIni').value=userInitials;
+  if (userInitials && userInitials.length >= 3) {
+    document.getElementById('endMsg').textContent=`Using saved initials: ${userInitials.slice(0,3)}`;
+  }
   endGameSlug=slug;
   fbFetch(slug,5).then(r=>renderLb(r,'endLb',slug===BJ_SLUG?'bj':'he'));
 }
 async function endSubmit(){
-  let ini=document.getElementById('endIni').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+  let ini=(document.getElementById('endIni').value||userInitials||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
   if(!ini){document.getElementById('endMsg').textContent='Please enter initials.';return;}
   userInitials=ini;localStorage.setItem('PIXELNET_INITIALS',ini);localStorage.setItem('playerInitials',ini);
   document.getElementById('endMsg').textContent='Submitting...';
@@ -1363,6 +1381,45 @@ window.addEventListener('message',e=>{
     userInitials=d.initials.toUpperCase().slice(0,3);
     localStorage.setItem('PIXELNET_INITIALS',userInitials);
   }
+});
+window.addEventListener('keydown', (e) => {
+  const key = (e.key || '').toLowerCase();
+  const lobby = document.getElementById('lobbyScreen').classList.contains('active');
+  const bjOn = document.getElementById('bjScreen').classList.contains('active');
+  const heOn = document.getElementById('heScreen').classList.contains('active');
+  const endOn = document.getElementById('endScreen').classList.contains('active');
+  if (key === 'escape' && (bjOn || heOn || endOn)) { goLobby(); return; }
+  if (lobby) {
+    if (key === '1' || e.key === 'Enter') { startBJ('STANDARD'); return; }
+    if (key === '2') { startBJ('ANALYSIS'); return; }
+    if (key === '3') { startHE('STANDARD'); return; }
+    if (key === '4') { startHE('ANALYSIS'); return; }
+  }
+  if (bjOn) {
+    if (bjPhase === 'bet') {
+      if (key === '1') bjAddBet(5);
+      if (key === '2') bjAddBet(10);
+      if (key === '3') bjAddBet(25);
+      if (key === '4') bjAddBet(50);
+      if (key === '5') bjAddBet(100);
+      if (e.key === 'Enter') bjDeal();
+    } else if (bjPhase === 'play') {
+      if (key === 'h') bjHit();
+      if (key === 's') bjStay();
+      if (key === 'd') bjDouble();
+      if (key === 'p') bjSplit();
+    } else if (bjPhase === 'done') {
+      if (key === 'n' || e.key === 'Enter') bjNextHand();
+      if (key === 'c') bjCashOut();
+    }
+  }
+  if (heOn && heKeyActions) {
+    if (key === 'c') heKeyActions.call && heKeyActions.call();
+    if (key === 'r') heKeyActions.raise && heKeyActions.raise();
+    if (key === 'f') heKeyActions.fold && heKeyActions.fold();
+    if (e.key === 'Enter') heKeyActions.confirmRaise && heKeyActions.confirmRaise();
+  }
+  if (endOn && e.key === 'Enter') endSubmit();
 });
 goLobby();
 </script>

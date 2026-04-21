@@ -194,3 +194,17 @@ Entry - 2026-04-21 (Instruction layout loosening + Spyder record holders)
   - Confirmed the prior incorrect 21000 row remains removed.
 - Bumped visible site version:
   - `PIXEL-NET/version.json` -> `v2026.04.21-02`
+
+Entry - 2026-04-21 (Terminal key-play behavior + semver style version)
+- Updated `PIXEL-NET/games/spyder-casino/game.html`:
+  - Initials persistence improved (falls back to both `PIXELNET_INITIALS` and `playerInitials`).
+  - End-screen submit no longer requires retyping initials if saved initials already exist.
+  - Added keyboard-first controls for terminal-like flow:
+    - Lobby: `1`/`Enter` blackjack standard, `2` blackjack analysis, `3` hold'em standard, `4` hold'em analysis.
+    - Blackjack: numeric chip hotkeys + `Enter` deal, `H/S/D/P` actions, `N` next hand, `C` cash out.
+    - Hold'em user turn: `C` call/check, `R` raise, `F` fold, `Enter` confirm raise.
+    - Global `Esc` returns to lobby.
+- Updated `PIXEL-NET/version.json`:
+  - Switched from date-style versioning to requested semver-style display: `0.0.3`.
+- Validation:
+  - Lints/diagnostics for updated files: no errors reported.
