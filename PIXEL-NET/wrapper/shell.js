@@ -66,7 +66,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   document.body.innerHTML = `
     <div class="topbar">
       <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a></div>
-      <div class="gameBadge" id="gameBadge">${title.toUpperCase()}</div>
+      <div class="gameBadge" id="gameBadge">${title.toUpperCase()}<span class="verTag" id="verTag">version: ...</span></div>
       <div class="playerBtn" id="playerBtn" role="button" aria-label="Set player initials">
         <span class="muted">PLAYER</span><strong id="initials">???</strong>
       </div>
@@ -126,6 +126,19 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       </div>
     </div>
   `;
+  async function loadVersionTag() {
+    const el = document.getElementById('verTag');
+    if (!el) return;
+    try {
+      const r = await fetch('../../version.json', { cache: 'no-store' });
+      if (!r.ok) throw new Error('version missing');
+      const d = await r.json();
+      el.textContent = `version: ${(d && d.version) ? d.version : 'unknown'}`;
+    } catch (_) {
+      el.textContent = 'version: n/a';
+    }
+  }
+  loadVersionTag();
 
   // --- Aspect ratio: prevent game canvas stretching ---
   // CSS aspect-ratio is unreliable on iframes (no intrinsic size).
