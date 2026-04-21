@@ -1254,7 +1254,7 @@ function bjDeal() {
   bjHole=bjPop();
   bjDealer=[d1,bjHole]; bjHands=[{cards:[c1,c2],bet:bjBet,finished:false,result:''}]; bjHandIdx=0;
   document.getElementById('bjBetZone').style.display='none';
-  document.getElementById('bjDealerSec').style.display='';
+  document.getElementById('bjDealerSec').style.display = bjIsTerminal() ? 'none' : '';
   bjPhase='play';
   if(bjHV(bjHands[0].cards)===21){
     bjCount(bjHole);
@@ -1339,6 +1339,7 @@ function bjEndGame() {
 
 // BJ RENDER
 function bjRenderDealer(hideHole) {
+  if (bjIsTerminal()) { bjRenderTerminalView(); return; }
   const row=document.getElementById('bjDealerCards');
   row.className='cards-row';row.innerHTML='';
   bjDealer.forEach((c,i)=>row.insertAdjacentHTML('beforeend',cardEl(c,hideHole&&i===1)));
@@ -1351,6 +1352,7 @@ function bjRenderDealer(hideHole) {
   bjRenderTerminalView();
 }
 function bjRenderPlayer(showRes) {
+  if (bjIsTerminal()) { bjRenderTerminalView(); return; }
   const c=document.getElementById('bjPlayerSecs');c.innerHTML='';
   bjHands.forEach((h,i)=>{
     const pv=bjHV(h.cards),isCur=i===bjHandIdx&&bjPhase==='play';
@@ -1372,6 +1374,11 @@ function bjRenderPlayer(showRes) {
   bjRenderTerminalView();
 }
 function bjRenderActions() {
+  if (bjIsTerminal()) {
+    document.getElementById('bjActionBtns').style.display='none';
+    bjRenderTerminalView();
+    return;
+  }
   const h=bjCurH();if(!h)return;
   const pv=bjHV(h.cards);
   document.getElementById('bjActionBtns').style.display='flex';
@@ -1382,16 +1389,10 @@ function bjRenderActions() {
   document.getElementById('bjDouble').disabled=!canD;
   document.getElementById('bjSplit').disabled=!canSp;
   bjApplyTerminalLayout();
-  if(bjIsTerminal()){
-    const line=document.getElementById('bjTermActLine');
-    const inp=document.getElementById('bjTermActInp');
-    const opts=['(H)it','(S)tay']; if(canD) opts.push('(D)ouble'); if(canSp) opts.push('S(p)lit');
-    if(line) line.textContent=`Action Hand ${bjHandIdx+1} [${opts.join(', ')}]:`;
-    if(inp) setTimeout(()=>inp.focus(), 0);
-  }
   bjRenderTerminalView();
 }
 function bjRunProb() {
+  if (bjIsTerminal()) { document.getElementById('bjProbSec').style.display='none'; return; }
   const sec=document.getElementById('bjProbSec');
   if(bjMode!=='ANALYSIS'){sec.style.display='none';return;}
   const h=bjCurH();if(!h||bjPhase!=='play'){sec.style.display='none';return;}
