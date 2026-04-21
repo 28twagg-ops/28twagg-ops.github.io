@@ -27,6 +27,10 @@ body:not(.casino){
   background:#000;
   color:#00ff41;
 }
+body:not(.casino) *{
+  text-shadow:none !important;
+  box-shadow:none !important;
+}
 
 /* ═══════════════════════════════════════
    SCREENS
@@ -75,7 +79,15 @@ body:not(.casino) .panel{
   box-shadow:none;
   background:#000;
 }
-body.casino .panel{background:rgba(6,20,10,.95);border-color:var(--gold);}
+body.casino .panel{
+  border-width:2px;
+  border-radius:12px;
+  border-color:var(--gold);
+  box-shadow:0 16px 44px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,224,102,.1);
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(255,224,102,.08), transparent 60%),
+    linear-gradient(180deg, rgba(16,45,24,.96), rgba(6,20,10,.94));
+}
 .p-title{text-align:center;font-size:16px;font-weight:bold;letter-spacing:3px;margin-bottom:6px;text-shadow:0 0 12px var(--g);}
 .p-div{border-top:1px solid var(--g2);margin:8px 0;opacity:.35;}
 .lbl{color:var(--amb);font-weight:bold;}
@@ -118,6 +130,37 @@ body:not(.casino) .btn{
   border-color:#00cc33;
   background:#000;
 }
+body:not(.casino) .lobby-card,
+body:not(.casino) .section,
+body:not(.casino) .bot-panel,
+body:not(.casino) .player-area-he,
+body:not(.casino) .res-box{
+  border-radius:0 !important;
+  background:#000 !important;
+}
+body:not(.casino) .lb-row,
+body:not(.casino) .mod-input,
+body:not(.casino) .raise-inp,
+body:not(.casino) .cc-empty{
+  border-radius:0 !important;
+  background:#000 !important;
+}
+body:not(.casino) .btn.pri,
+body:not(.casino) .bot-panel.active-t,
+body:not(.casino) .res-banner.win,
+body:not(.casino) .res-banner.lose,
+body:not(.casino) .res-banner.bj,
+body:not(.casino) .res-ttl.win{
+  box-shadow:none !important;
+  text-shadow:none !important;
+}
+body:not(.casino) .mode-hint{
+  color:#00ff41;
+  opacity:.9;
+}
+body:not(.casino) .chip{
+  border-radius:0;
+}
 .btn:hover{background:rgba(0,255,65,.1);border-color:var(--g);}
 .btn.pri{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.15);}
 .btn.red{color:var(--red);border-color:var(--red);}
@@ -127,6 +170,14 @@ body:not(.casino) .btn{
 .btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
 body.casino .btn{color:var(--gold);border-color:var(--g2);}
 body.casino .btn:hover{background:rgba(212,168,67,.1);}
+body.casino .btn{
+  border-radius:10px;
+  border-width:2px;
+  background:linear-gradient(180deg, rgba(255,224,102,.10), rgba(212,168,67,.06));
+}
+body.casino .btn.pri{
+  background:linear-gradient(180deg, rgba(255,224,102,.26), rgba(212,168,67,.12));
+}
 
 /* ═══════════════════════════════════════
    LEADERBOARD
@@ -167,6 +218,13 @@ body:not(.casino) .tc{
 .cc.xs{width:26px;height:38px;font-size:8px;}.cc.xs .sc{font-size:11px;}
 .cards-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:4px 0;}
 body:not(.casino) .cards-row{gap:10px;}
+.mode-hint{
+  font-size:9px;
+  letter-spacing:1px;
+  color:var(--g2);
+  text-align:center;
+  margin:5px 0 2px 0;
+}
 .cc-empty{width:46px;height:66px;border-radius:5px;border:1px dashed rgba(255,255,255,.14);background:rgba(0,0,0,.2);}
 body:not(.casino) .cc,
 body:not(.casino) .cc-empty{
@@ -335,14 +393,14 @@ body:not(.casino) .res-box{
 ════════════════════════════════════════ -->
 <div class="screen active" id="lobbyScreen">
   <div class="panel">
-    <div class="p-title" style="font-size:20px;letter-spacing:6px">★ SPYDER CASINO ★</div>
+    <div class="p-title" style="font-size:20px;letter-spacing:6px">SPYDER CASINO</div>
     <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:2px;margin-bottom:6px">
       Chips talk. Mistakes cost.
     </div>
     <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:1px;margin-bottom:6px;opacity:.8">
       ================= TERMINAL LOBBY =================
     </div>
-    <pre style="font-size:10px;color:var(--g2);text-align:center;line-height:1.35;margin:0 0 8px 0;">[ ENTER ] Play hand  |  [ 1 ] Rules  |  [ Q ] Back</pre>
+    <pre style="font-size:10px;color:var(--g2);text-align:center;line-height:1.35;margin:0 0 8px 0;">[ 1 ] BJ STD  [ 2 ] BJ ANL  [ 3 ] HE STD  [ 4 ] HE ANL  [ ESC ] LOBBY</pre>
     <div class="p-div"></div>
 
     <!-- BLACKJACK CARD -->
@@ -395,6 +453,7 @@ body:not(.casino) .res-box{
       <button class="btn" style="padding:3px 8px;font-size:9px" onclick="goLobby()">◀ LOBBY</button>
     </div>
   </div>
+  <div class="mode-hint">TERMINAL KEYS: BET [1-5] DEAL [ENTER] PLAY [H,S,D,P] NEXT [N] CASHOUT [C] LOBBY [ESC]</div>
   <div class="bj-container">
     <div class="section" id="bjDealerSec" style="display:none">
       <div class="sec-lbl" id="bjDealerLbl">DEALER</div>
@@ -452,6 +511,7 @@ body:not(.casino) .res-box{
       <button class="btn" style="padding:3px 8px;font-size:9px" onclick="goLobby()">◀ LOBBY</button>
     </div>
   </div>
+  <div class="mode-hint">TERMINAL KEYS: CALL/CHECK [C] RAISE [R] FOLD [F] CONFIRM [ENTER] LOBBY [ESC]</div>
   <div class="table-wrap">
     <div class="bots-row" id="heBotsRow">
       <div class="bot-panel" id="hb0"><div class="bot-nm" id="hb0n">THE ROCK</div><div id="hb0c_row"></div><div class="bot-ch" id="hb0ch">$200</div><div class="bot-rl" id="hb0rl"></div><div class="bot-ac" id="hb0ac"></div></div>
