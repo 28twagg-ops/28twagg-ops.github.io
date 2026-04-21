@@ -6,32 +6,33 @@
 <title>Tower Rush</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#000;overflow:hidden}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace}
 canvas{display:block;width:100%;height:100%}
-#hud{position:absolute;top:0;left:0;right:0;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;font-family:ui-monospace,Consolas,monospace;font-weight:700;font-size:13px;color:#fff;text-shadow:0 0 6px #000;pointer-events:none;background:rgba(0,0,0,.45)}
-#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82)}
+#hud{position:absolute;top:0;left:0;right:0;padding:5px 12px;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13px;color:#fff;text-shadow:0 0 6px #000;background:rgba(0,0,0,.55);pointer-events:none}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.84)}
 #overlay.hidden{display:none}
-.box{background:rgba(10,8,20,.96);border:2px solid #f8a22a;padding:22px 28px;border-radius:10px;text-align:center;max-width:400px;font-family:ui-monospace,Consolas,monospace}
+.box{background:rgba(10,8,20,.97);border:2px solid #f8a22a;padding:22px 28px;border-radius:10px;text-align:center;max-width:420px;color:#fff}
 .box h1{margin:0 0 8px;color:#f8a22a;font-size:28px;letter-spacing:3px}
-.box p{margin:4px 0;color:#ffdba0;font-size:13px}
-.box button{margin-top:14px;padding:11px 20px;border:2px solid #f8a22a;background:#1a0e00;color:#f8a22a;cursor:pointer;font-family:inherit;font-weight:700;font-size:14px;border-radius:4px}
+.box p{margin:5px 0;color:#ffdba0;font-size:13px}
+.box button{margin-top:14px;padding:11px 22px;border:2px solid #f8a22a;background:#1a0e00;color:#f8a22a;cursor:pointer;font-family:inherit;font-weight:700;font-size:14px;border-radius:4px}
 .box button:hover{background:#2e1900}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="hud">
-  <div id="hud-score">SCORE 0</div>
-  <div id="hud-stage">STAGE 1</div>
-  <div id="hud-lives">LIVES ♥♥♥</div>
+  <div id="h-score">SCORE  0</div>
+  <div id="h-bonus">BONUS 5000</div>
+  <div id="h-stage">STAGE 1</div>
+  <div id="h-lives">♥♥♥</div>
 </div>
 <div id="overlay">
   <div class="box">
     <h1>TOWER RUSH</h1>
-    <p>Climb the girders. Reach the summit.</p>
-    <p>Jump barrels — earn bonus points.</p>
-    <p>↑/W/Space = Jump &nbsp; ←→ / A D = Move</p>
-    <p>↑ or W on a ladder = Climb Up</p>
+    <p>Climb the girders and rescue the survivor at the top!</p>
+    <p>← → / A D  Move &nbsp; ↑ W / Space  Jump</p>
+    <p>↑ W  near ladder = Climb Up &nbsp; ↓ S = Climb Down</p>
+    <p>Jump OVER barrels for +100 bonus points</p>
     <button id="btn">START CLIMB</button>
   </div>
 </div>
@@ -39,693 +40,810 @@ canvas{display:block;width:100%;height:100%}
 (() => {
 "use strict";
 
-/* ── canvas ── */
-const cv = document.getElementById("c");
-const cx = cv.getContext("2d");
+/* ══ CANVAS ══ */
+const cv  = document.getElementById("c");
+const ctx = cv.getContext("2d");
 const overlay = document.getElementById("overlay");
 const btn = document.getElementById("btn");
-const hudScore = document.getElementById("hud-score");
-const hudStage = document.getElementById("hud-stage");
-const hudLives = document.getElementById("hud-lives");
+const hScore = document.getElementById("h-score");
+const hBonus = document.getElementById("h-bonus");
+const hStage = document.getElementById("h-stage");
+const hLives = document.getElementById("h-lives");
 
 let W = 800, H = 600;
 
-/* ── state ── */
+/* ══ GAME STATE ══ */
 let running = false, posted = false;
 let score = 0, lives = 3, stage = 1;
-let keys = {};
-let barrels = [], particles = [], sparks = [];
-let spawnTimer = 0, bonusTimer = 5000;
-let last = 0, raf = 0;
+let bonusTimer = 5000, spawnTimer = 0;
+let last = 0, keys = {};
+let barrels = [], particles = [], floats = [];
+let stageClearing = false;
 
-/* ── layout constants (recalculated on resize) ── */
-let PL, PR, GH, FLOOR, platforms, ladders, goal, gorilla, oilDrum;
+/* ══ LAYOUT ══ */
+// Recalculated on resize — these hold the computed values
+let PLATS, LADDERS, KONG, GOAL, SPAWN, DRUM;
 
-/* ── player ── */
-const P = { x:0, y:0, vx:0, vy:0, w:16, h:24, onGround:false, onLadder:false, dir:1, jumpBonusGiven:false, invuln:0, state:"idle" };
+/*
+  Classic DK-style platform layout:
+  ─────────────────────────────────
+  Level 4 (top)  [x1=PL ... x2=PR-side]  slope rightward  dir= 1  Kong LEFT, Goal RIGHT
+  Level 3        [x1=PL+side ... x2=PR]  slope leftward   dir=-1
+  Level 2        [x1=PL ... x2=PR-side]  slope rightward  dir= 1  Hammer here
+  Level 1        [x1=PL+side ... x2=PR]  slope leftward   dir=-1
+  Level 0 floor  [x1=PL ... x2=PR]       nearly flat      dir= 1  Player spawn LEFT
 
-function resize() {
-  const r = cv.getBoundingClientRect();
-  W = Math.max(480, Math.floor(r.width));
-  H = Math.max(360, Math.floor(r.height));
-  cv.width = W; cv.height = H;
-  buildLevel();
+  Ladders alternate sides so player and barrels have a natural path.
+  Barrel cascade: Kong throws → L4 rolls right → falls → L3 rolls left → falls → L2 right → … → floor
+*/
+function buildLayout() {
+  const PL   = Math.floor(W * 0.048);
+  const PR   = Math.floor(W * 0.952);
+  const side = Math.floor(W * 0.065); // platform indent (alternate side)
+  const lw   = Math.max(16, Math.floor(W * 0.030)); // ladder width
+
+  // Vertical spacing — leave room for HUD top and some breathing room
+  const topY  = Math.floor(H * 0.17);  // top platform y (base)
+  const botY  = Math.floor(H * 0.88);  // floor y
+  const gap   = Math.floor((botY - topY) / 4);
+
+  // Platform base y values (bottom of girder visual)
+  const pY = [botY, botY-gap, botY-gap*2, botY-gap*3, topY];
+  // dir: 1=barrel rolls right, -1=barrel rolls left (matches slope direction)
+  const slope = 0.006; // gentle — just enough for barrels to roll, not visual chaos
+  PLATS = [
+    { x1:PL,      x2:PR,       y:pY[0], slope: slope, dir: 1, idx:0 }, // floor
+    { x1:PL+side, x2:PR,       y:pY[1], slope:-slope, dir:-1, idx:1 }, // level 1
+    { x1:PL,      x2:PR-side,  y:pY[2], slope: slope, dir: 1, idx:2 }, // level 2
+    { x1:PL+side, x2:PR,       y:pY[3], slope:-slope, dir:-1, idx:3 }, // level 3
+    { x1:PL,      x2:PR-side,  y:pY[4], slope: slope, dir: 1, idx:4 }, // level 4 (top)
+  ];
+
+  // Helper: y on a platform at pixel x
+  // ladders — alternating sides, spanning adjacent platforms
+  // Barrel cascade falls: L4 right-edge → L3, L3 left-edge → L2, L2 right-edge → L1, L1 left-edge → floor
+  LADDERS = [
+    // main route ladders (player accessible, barrel descent route)
+    { x: PR-side-lw*1.5, w:lw, yTop:pY[4]-2,  yBot:pY[3]+2,  full:true  }, // 3→4 right
+    { x: PL+side+lw*0.5, w:lw, yTop:pY[3]-2,  yBot:pY[2]+2,  full:true  }, // 2→3 left
+    { x: PR-side-lw*1.5, w:lw, yTop:pY[2]-2,  yBot:pY[1]+2,  full:true  }, // 1→2 right
+    { x: PL+side+lw*0.5, w:lw, yTop:pY[1]-2,  yBot:pY[0]+2,  full:true  }, // 0→1 left
+    // extra mid-platform ladders (partial / broken — cosmetic or one-way)
+    { x: PL + Math.floor((PR-PL)*0.45), w:lw, yTop:pY[4]-2, yBot:pY[3]+Math.floor(gap*0.40), full:false, topOnly:true  },
+    { x: PL + Math.floor((PR-PL)*0.55), w:lw, yTop:pY[2]-Math.floor(gap*0.40), yBot:pY[1]+2, full:false, botOnly:true  },
+  ];
+
+  const topP  = PLATS[4];
+  const botP  = PLATS[0];
+
+  KONG = {
+    x: topP.x1 + lw,
+    y: platY(topP, topP.x1 + lw) - 68,
+    w: Math.floor(W*0.072), h: Math.floor(H*0.115)
+  };
+  GOAL = {
+    x: topP.x2 - Math.floor(W*0.072),
+    y: platY(topP, topP.x2 - Math.floor(W*0.072)) - 50,
+    w: Math.floor(W*0.038), h: 48
+  };
+  SPAWN = { x: botP.x1 + Math.floor(W*0.06), y: platY(botP, botP.x1 + Math.floor(W*0.06)) };
+  DRUM  = { x: botP.x2 - Math.floor(W*0.05), y: platY(botP, botP.x2 - Math.floor(W*0.05)) - 32, w:22, h:32 };
 }
 
-function buildLevel() {
-  PL = Math.floor(W * 0.05);
-  PR = Math.floor(W * 0.95);
-  GH = Math.floor(H * 0.10); // girder height band
-  FLOOR = H - Math.floor(H * 0.07);
-
-  const span = PR - PL;
-  const levels = 5;
-  const stepY = Math.floor((FLOOR - GH*3) / levels);
-
-  platforms = [];
-  for (let i = 0; i < levels; i++) {
-    const y = FLOOR - i * stepY;
-    const slopeDir = (i % 2 === 0) ? 1 : -1;
-    const slope = slopeDir * (0.04 + stage * 0.006);
-    const indent = (i % 2 === 0) ? 0 : Math.floor(span * 0.06);
-    platforms.push({ x: PL + indent, y, w: span - indent*2, h: 10, slope, idx: i });
-  }
-
-  ladders = [];
-  for (let i = 0; i < levels - 1; i++) {
-    const a = platforms[i], b = platforms[i+1];
-    const lx = (i % 2 === 0)
-      ? a.x + a.w - Math.floor(span * 0.15)
-      : a.x + Math.floor(span * 0.12);
-    const lw = Math.floor(W * 0.028);
-    ladders.push({ x: lx, w: lw, yTop: b.y - 2, yBot: a.y });
-  }
-
-  const topPlat = platforms[levels-1];
-  goal = {
-    x: (topPlat.slope > 0) ? topPlat.x + 30 : topPlat.x + topPlat.w - 52,
-    y: topPlat.y - 52, w: 28, h: 40
-  };
-
-  gorilla = {
-    x: (topPlat.slope > 0) ? topPlat.x + topPlat.w - 72 : topPlat.x + 20,
-    y: topPlat.y - 74, w: 52, h: 56
-  };
-
-  const bot = platforms[0];
-  oilDrum = { x: PL + 12, y: bot.y - 32, w: 22, h: 32 };
+function platY(p, px) {
+  // y at horizontal position px; centered-slope so middle of platform = p.y
+  const mid = (p.x1 + p.x2) / 2;
+  return p.y + (px - mid) * p.slope;
 }
 
-function platY(p, px) { return p.y + (px - p.x) * (p.slope || 0); }
+function platAt(px, py, r) {
+  // Return platform whose surface is at or just above (px, py-r).
+  for (let i = PLATS.length-1; i >= 0; i--) {
+    const p = PLATS[i];
+    if (px < p.x1 - r || px > p.x2 + r) continue;
+    const sy = platY(p, Math.max(p.x1, Math.min(p.x2, px)));
+    if (py + r >= sy - 2 && py + r <= sy + Math.max(14, r)) return { p, sy };
+  }
+  return null;
+}
 
-/* ── reset ── */
+/* ══ PLAYER ══ */
+const PW = 16, PH = 26;
+const P = {
+  x:0, y:0, vx:0, vy:0,
+  onGround:false, onLadder:false,
+  dir:1, invuln:0, jumpedOver:false,
+  walkT:0
+};
+
+function playerReset() {
+  P.x = SPAWN.x; P.y = SPAWN.y - PH;
+  P.vx=0; P.vy=0; P.onGround=false; P.onLadder=false;
+  P.invuln=0; P.dir=1; P.jumpedOver=false;
+}
+
+/* ══ BARREL ══ */
+function makeBarrel() {
+  const top = PLATS[4];
+  const spd = 1.8 + stage * 0.22;
+  const r   = Math.max(11, Math.floor(W * 0.019));
+  const sx  = KONG.x + KONG.w * 0.78;
+  const sy  = platY(top, sx) - r - 2;
+  return {
+    x: sx, y: sy, vx: spd * top.dir, vy: 0,
+    r, rot: 0, onPlat: top,
+    ladderChance: 0.22 + stage * 0.03,
+    takingLadder: null, ladderDir: 0
+  };
+}
+
+/* ══ RESET ══ */
 function resetGame() {
-  score = 0; lives = 3; stage = 1; posted = false;
-  newStage();
+  score=0; lives=3; stage=1; bonusTimer=5000; spawnTimer=0;
+  posted=false; stageClearing=false;
+  barrels=[]; particles=[]; floats=[];
+  buildLayout(); playerReset();
+  running=true;
   overlay.classList.add("hidden");
-  running = true;
-  btn.textContent = "RESTART";
+  btn.textContent="RESTART";
 }
 
-function newStage() {
-  buildLevel();
-  barrels = []; particles = []; sparks = [];
-  spawnTimer = 0; bonusTimer = 5000; last = 0;
-  const fp = platforms[0];
-  P.x = fp.x + 40; P.y = fp.y - P.h;
-  P.vx = 0; P.vy = 0; P.onGround = false; P.onLadder = false;
-  P.invuln = 0; P.dir = 1; P.jumpBonusGiven = false;
+function nextStage() {
+  stage++;
+  bonusTimer=5000; spawnTimer=0;
+  barrels=[]; particles=[];
+  stageClearing=false;
+  buildLayout(); playerReset();
 }
 
-/* ── score submit ── */
 function submit() {
-  if (posted) return; posted = true;
-  try { window.parent.postMessage({ type: "GAME_OVER_SCORE", score: Number(score) || 0 }, "*"); } catch(_) {}
+  if(posted)return; posted=true;
+  try{window.parent.postMessage({type:"GAME_OVER_SCORE",score:Number(score)||0},"*");}catch(_){}
 }
-
 function gameOver() {
-  running = false; submit();
+  running=false; submit();
   overlay.classList.remove("hidden");
-  btn.textContent = "TRY AGAIN";
+  btn.textContent="TRY AGAIN";
 }
-
 function loseLife() {
-  if (P.invuln > 0) return;
+  if(P.invuln>0) return;
   lives--;
-  P.invuln = 1800;
-  spawnExplosion(P.x, P.y, "#ff6a2a", 20);
-  if (lives <= 0) { gameOver(); return; }
-  const fp = platforms[0];
-  P.x = fp.x + 40; P.y = fp.y - P.h;
-  P.vx = 0; P.vy = 0; P.onGround = false; P.onLadder = false;
+  P.invuln=1600;
+  burst(P.x, P.y+PH/2, "#ff6a2a", 18);
+  if(lives<=0){ gameOver(); return; }
+  playerReset();
 }
 
-/* ── particles ── */
-function spawnExplosion(px, py, col, n) {
-  for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2, s = 1 + Math.random() * 5;
-    particles.push({ x:px, y:py, vx:Math.cos(a)*s, vy:Math.sin(a)*s-2, life:1, col });
+/* ══ PARTICLES ══ */
+function burst(px,py,col,n=12) {
+  for(let i=0;i<n;i++){
+    const a=Math.random()*6.28, s=1+Math.random()*5;
+    particles.push({x:px,y:py,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.5,col,life:1,decay:0.022+Math.random()*0.018});
   }
 }
-
-function spawnJumpBonus(px, py) {
-  sparks.push({ x:px, y:py, text:"+100", life:1.0, vy:-1.8 });
+function addFloat(px,py,text) {
+  floats.push({x:px,y:py,text,life:1.2,vy:-1.5});
 }
 
-/* ── draw helpers ── */
-
-function drawBackground() {
-  // Sky gradient
-  const sg = cx.createLinearGradient(0, 0, 0, H);
-  sg.addColorStop(0, "#0a0612");
-  sg.addColorStop(1, "#1c1008");
-  cx.fillStyle = sg;
-  cx.fillRect(0, 0, W, H);
-
-  // Construction scaffolding BG lines
-  cx.strokeStyle = "rgba(80,50,20,.18)";
-  cx.lineWidth = 1;
-  for (let x = PL; x < PR; x += Math.floor(W*0.065)) {
-    cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, H); cx.stroke();
-  }
-}
-
-function drawGirder(p) {
-  const x1 = p.x, y1 = platY(p, p.x);
-  const x2 = p.x + p.w, y2 = platY(p, p.x + p.w);
-
-  // Shadow
-  cx.strokeStyle = "rgba(0,0,0,.5)";
-  cx.lineWidth = 14;
-  cx.beginPath(); cx.moveTo(x1+2, y1+4); cx.lineTo(x2+2, y2+4); cx.stroke();
-
-  // Main beam — warm steel
-  const grad = cx.createLinearGradient(0, y1-6, 0, y1+10);
-  grad.addColorStop(0, "#c8832a");
-  grad.addColorStop(0.4, "#f8a22a");
-  grad.addColorStop(1, "#7a4210");
-  cx.strokeStyle = grad;
-  cx.lineWidth = 12;
-  cx.beginPath(); cx.moveTo(x1, y1); cx.lineTo(x2, y2); cx.stroke();
-
-  // Highlight edge
-  cx.strokeStyle = "rgba(255,220,140,.55)";
-  cx.lineWidth = 2;
-  cx.beginPath(); cx.moveTo(x1, y1-4); cx.lineTo(x2, y2-4); cx.stroke();
-
-  // Rivets
-  cx.fillStyle = "#5a2e06";
-  const rv = Math.floor(p.w / Math.floor(W*0.065));
-  for (let i = 1; i <= rv; i++) {
-    const rx = p.x + (p.w / (rv+1)) * i;
-    const ry = platY(p, rx);
-    cx.beginPath(); cx.arc(rx, ry, 3, 0, 6.28); cx.fill();
-    cx.beginPath(); cx.arc(rx, ry, 1.5, 0, 6.28);
-    cx.fillStyle = "#c8832a"; cx.fill();
-    cx.fillStyle = "#5a2e06";
-  }
-}
-
-function drawLadder(l) {
-  const steps = Math.floor((l.yBot - l.yTop) / 11);
-  // Rails
-  cx.strokeStyle = "#b8d4e8";
-  cx.lineWidth = 3;
-  cx.beginPath(); cx.moveTo(l.x, l.yTop); cx.lineTo(l.x, l.yBot); cx.stroke();
-  cx.beginPath(); cx.moveTo(l.x + l.w, l.yTop); cx.lineTo(l.x + l.w, l.yBot); cx.stroke();
-  // Rungs
-  cx.strokeStyle = "#8ab4cc";
-  cx.lineWidth = 2;
-  for (let i = 0; i <= steps; i++) {
-    const ry = l.yTop + i * 11;
-    cx.beginPath(); cx.moveTo(l.x, ry); cx.lineTo(l.x + l.w, ry); cx.stroke();
-  }
-}
-
-function drawOilDrum() {
-  const { x, y, w, h } = oilDrum;
-  // Drum body
-  cx.fillStyle = "#1a1a1a";
-  cx.fillRect(x, y, w, h);
-  cx.strokeStyle = "#555";
-  cx.lineWidth = 2;
-  cx.strokeRect(x, y, w, h);
-  // Bands
-  cx.strokeStyle = "#888";
-  cx.lineWidth = 1.5;
-  for (let i = 1; i < 3; i++) {
-    cx.beginPath();
-    cx.moveTo(x, y + h * (i/3));
-    cx.lineTo(x+w, y + h * (i/3));
-    cx.stroke();
-  }
-  // Flame
-  const ft = Date.now() * 0.004;
-  cx.shadowBlur = 18; cx.shadowColor = "#ff6a00";
-  cx.fillStyle = "#ff6a00";
-  cx.beginPath();
-  cx.moveTo(x+w/2, y-18);
-  cx.bezierCurveTo(x+w+6, y-8+Math.sin(ft)*4, x+w+4, y-2, x+w/2+4, y+2);
-  cx.bezierCurveTo(x+w/2+2, y-6, x+w/2, y-4, x+w/2, y);
-  cx.bezierCurveTo(x+w/2-2, y-4, x-4, y-2, x-6, y-8+Math.sin(ft+1)*4);
-  cx.closePath(); cx.fill();
-  cx.fillStyle = "#ffd000";
-  cx.beginPath();
-  cx.moveTo(x+w/2, y-12);
-  cx.bezierCurveTo(x+w/2+6, y-4, x+w/2+3, y, x+w/2, y);
-  cx.bezierCurveTo(x+w/2-3, y, x+w/2-6, y-4, x+w/2, y-12);
-  cx.fill();
-  cx.shadowBlur = 0;
-}
-
-function drawGorilla() {
-  const { x, y, w, h } = gorilla;
-  const t = Date.now() * 0.003;
-  const armSwing = Math.sin(t) * 6;
-
-  // Body
-  cx.fillStyle = "#2a1a0a";
-  cx.beginPath();
-  cx.ellipse(x+w/2, y+h*0.6, w*0.36, h*0.34, 0, 0, Math.PI*2);
-  cx.fill();
-
-  // Chest patch
-  cx.fillStyle = "#5a3a1a";
-  cx.beginPath();
-  cx.ellipse(x+w/2, y+h*0.56, w*0.18, h*0.18, 0, 0, Math.PI*2);
-  cx.fill();
-
-  // Head
-  cx.fillStyle = "#2a1a0a";
-  cx.beginPath();
-  cx.ellipse(x+w/2, y+h*0.28, w*0.28, h*0.26, 0, 0, Math.PI*2);
-  cx.fill();
-
-  // Brow ridge
-  cx.fillStyle = "#1a0e04";
-  cx.beginPath();
-  cx.ellipse(x+w/2, y+h*0.18, w*0.24, h*0.08, 0, 0, Math.PI*2);
-  cx.fill();
-
-  // Eyes — red glow
-  cx.shadowBlur = 10; cx.shadowColor = "#ff2200";
-  cx.fillStyle = "#ff4400";
-  cx.beginPath(); cx.arc(x+w/2-7, y+h*0.24, 3.5, 0, Math.PI*2); cx.fill();
-  cx.beginPath(); cx.arc(x+w/2+7, y+h*0.24, 3.5, 0, Math.PI*2); cx.fill();
-  cx.shadowBlur = 0;
-
-  // Nostrils
-  cx.fillStyle = "#0a0604";
-  cx.beginPath(); cx.arc(x+w/2-4, y+h*0.32, 2, 0, Math.PI*2); cx.fill();
-  cx.beginPath(); cx.arc(x+w/2+4, y+h*0.32, 2, 0, Math.PI*2); cx.fill();
-
-  // Left arm
-  cx.strokeStyle = "#2a1a0a"; cx.lineWidth = 8;
-  cx.lineCap = "round";
-  cx.beginPath();
-  cx.moveTo(x+w*0.18, y+h*0.46);
-  cx.quadraticCurveTo(x+2, y+h*0.7 + armSwing, x + w*0.06, y+h*0.85);
-  cx.stroke();
-
-  // Right arm — throwing arm
-  cx.beginPath();
-  cx.moveTo(x+w*0.82, y+h*0.46);
-  cx.quadraticCurveTo(x+w, y+h*0.5 - armSwing, x+w*0.94, y+h*0.3 - armSwing*0.5);
-  cx.stroke();
-
-  // Legs
-  cx.beginPath();
-  cx.moveTo(x+w*0.38, y+h*0.86);
-  cx.lineTo(x+w*0.32, y+h);
-  cx.moveTo(x+w*0.62, y+h*0.86);
-  cx.lineTo(x+w*0.68, y+h);
-  cx.stroke();
-  cx.lineCap = "butt";
-}
-
-function drawGoal() {
-  const { x, y, w, h } = goal;
-  const t = Date.now() * 0.005;
-  // Glow
-  cx.shadowBlur = 24; cx.shadowColor = "#ffe066";
-
-  // Figure (rescue target — simple pixel person)
-  cx.fillStyle = "#ffe8c0";
-  cx.beginPath(); cx.arc(x+w/2, y+h*0.18, h*0.15, 0, Math.PI*2); cx.fill(); // head
-
-  cx.fillStyle = "#ff4466";
-  cx.fillRect(x+w/2-6, y+h*0.32, 12, h*0.36); // torso
-
-  cx.fillStyle = "#ffe8c0";
-  // arms wave
-  cx.save(); cx.translate(x+w/2-6, y+h*0.38);
-  cx.rotate(Math.sin(t)*0.4); cx.fillRect(-10,0,10,4); cx.restore();
-  cx.save(); cx.translate(x+w/2+6, y+h*0.38);
-  cx.rotate(-Math.sin(t)*0.4); cx.fillRect(0,0,10,4); cx.restore();
-
-  cx.fillStyle = "#3355cc";
-  cx.fillRect(x+w/2-6, y+h*0.68, 5, h*0.28); // legs
-  cx.fillRect(x+w/2+1, y+h*0.68, 5, h*0.28);
-
-  // Star sparkle above
-  cx.fillStyle = "#ffe066";
-  cx.font = "bold 16px monospace";
-  cx.textAlign = "center";
-  cx.fillText("★", x+w/2, y - 8 + Math.sin(t*1.5)*4);
-  cx.shadowBlur = 0;
-}
-
-function drawBarrel(b) {
-  cx.save(); cx.translate(b.x, b.y);
-  cx.rotate(b.rot || 0);
-
-  cx.shadowBlur = 8; cx.shadowColor = "#ff8800";
-
-  // Body
-  cx.fillStyle = "#8a3a0a";
-  cx.beginPath(); cx.arc(0, 0, b.r, 0, Math.PI*2); cx.fill();
-
-  // Bands
-  cx.strokeStyle = "#d4620a";
-  cx.lineWidth = 2.5;
-  cx.beginPath(); cx.arc(0, 0, b.r, 0, Math.PI*2); cx.stroke();
-
-  cx.strokeStyle = "#4a1e04";
-  cx.lineWidth = 1.5;
-  cx.beginPath();
-  cx.moveTo(-b.r*0.6, -b.r*0.55);
-  cx.lineTo( b.r*0.6, -b.r*0.55);
-  cx.moveTo(-b.r*0.65, b.r*0.55);
-  cx.lineTo( b.r*0.65, b.r*0.55);
-  cx.stroke();
-
-  // Wood grain lines
-  cx.strokeStyle = "rgba(255,160,60,.25)";
-  cx.lineWidth = 1;
-  cx.beginPath();
-  cx.moveTo(-b.r*0.5, -b.r*0.3);
-  cx.lineTo(-b.r*0.4, b.r*0.4);
-  cx.moveTo(0.5, -b.r*0.8);
-  cx.lineTo(0.2, b.r*0.8);
-  cx.stroke();
-
-  cx.shadowBlur = 0;
-  cx.restore();
-
-  // Rolling sparks
-  if (b.onGround && Math.abs(b.vx) > 0.5) {
-    if (Math.random() < 0.25) {
-      sparks.push({ x:b.x + (Math.random()-0.5)*b.r, y:b.y+b.r, text:"", vy:-1-Math.random(), vx:(Math.random()-0.5)*2, life:0.5, spark:true });
-    }
-  }
-}
-
-function drawPlayer() {
-  const { x, y, w, h, invuln, dir, onLadder } = P;
-  if (invuln > 0 && Math.floor(invuln / 140) % 2 === 0) return;
-
-  cx.save(); cx.translate(x, y);
-  if (dir < 0) { cx.scale(-1, 1); }
-
-  const t = Date.now() * 0.01;
-  const legSwing = P.onGround ? Math.sin(t) * 5 : 0;
-
-  // Shadow
-  cx.fillStyle = "rgba(0,0,0,.3)";
-  cx.beginPath(); cx.ellipse(0, h+2, w/2, 4, 0, 0, Math.PI*2); cx.fill();
-
-  // Legs
-  cx.fillStyle = "#2255cc";
-  cx.fillRect(-w/2+2, h*0.55, w/2-1, h*0.45); // left leg
-  cx.fillRect(2, h*0.55 + legSwing, w/2-1, h*0.45); // right leg
-
-  // Boots
-  cx.fillStyle = "#553300";
-  cx.fillRect(-w/2+1, h*0.86, w/2, h*0.14+2);
-  cx.fillRect(1, h*0.86 + legSwing, w/2, h*0.14+2);
-
-  // Body / overalls
-  cx.fillStyle = "#cc3311";
-  cx.fillRect(-w/2+1, h*0.28, w-2, h*0.4);
-
-  // Arms
-  cx.fillStyle = "#cc3311";
-  const armAnim = onLadder ? Math.sin(t)*8 : 0;
-  cx.fillRect(-w/2-6, h*0.28+armAnim, 7, h*0.24); // left arm
-  cx.fillRect( w/2,   h*0.28-armAnim, 7, h*0.24); // right arm
-
-  // Gloves
-  cx.fillStyle = "#fff";
-  cx.fillRect(-w/2-8, h*0.46+armAnim, 9, 8);
-  cx.fillRect( w/2-1, h*0.46-armAnim, 9, 8);
-
-  // Head
-  cx.fillStyle = "#f5b87a";
-  cx.fillRect(-w/2+3, h*0.04, w-6, h*0.28);
-
-  // Cap
-  cx.fillStyle = "#cc3311";
-  cx.fillRect(-w/2+2, 0, w-4, h*0.12);
-  cx.fillRect(-w/2-2, h*0.04, w+4, h*0.09);
-  // Cap brim
-  cx.fillStyle = "#aa2200";
-  cx.fillRect(w/2-1, h*0.04, 6, h*0.06);
-
-  // Eye
-  cx.fillStyle = "#111";
-  cx.fillRect(w/2-8, h*0.1, 4, 4);
-
-  // Mustache
-  cx.fillStyle = "#5a2e00";
-  cx.fillRect(w/2-12, h*0.22, 12, 4);
-
-  cx.restore();
-}
-
-/* ── update logic ── */
+/* ══ UPDATE ══ */
 function update(dt) {
   const MS = Math.min(dt, 34);
+  if(bonusTimer>0) bonusTimer = Math.max(0, bonusTimer - MS);
 
-  // ── Player movement ──
+  /* ── Player ── */
   P.onLadder = false;
-  const nearLadder = ladders.find(l =>
-    Math.abs((l.x + l.w/2) - P.x) < l.w + 6 &&
-    P.y + P.h > l.yTop - 4 && P.y < l.yBot + 4
-  );
 
-  // Horizontal
+  // Find nearest full ladder player can grab
+  const nearLad = LADDERS.find(l => {
+    if(!l.full && !l.topOnly && !l.botOnly) return false;
+    const cx2 = l.x + l.w/2;
+    return Math.abs(cx2 - P.x) < l.w + 6 && P.y + PH > l.yTop - 4 && P.y < l.yBot + 4;
+  });
+
+  const spd = 2.9 + stage * 0.07;
   P.vx = 0;
-  if (keys["arrowleft"] || keys["a"]) { P.vx = -(3.4 + stage*0.08); P.dir = -1; }
-  if (keys["arrowright"] || keys["d"]) { P.vx = (3.4 + stage*0.08); P.dir = 1; }
+  if(keys["arrowleft"]||keys["a"]){ P.vx=-spd; P.dir=-1; }
+  if(keys["arrowright"]||keys["d"]){ P.vx= spd; P.dir= 1; }
 
-  // Ladder climbing
-  if (nearLadder) {
-    if (keys["arrowup"] || keys["w"]) { P.vy = -2.8; P.onLadder = true; }
-    else if (keys["arrowdown"] || keys["s"]) { P.vy = 2.8; P.onLadder = true; }
+  if(nearLad && !P.onGround) {
+    // On ladder — can climb
+    if(keys["arrowup"]||keys["w"])  { P.vy=-2.6; P.onLadder=true; }
+    if(keys["arrowdown"]||keys["s"]){ P.vy= 2.6; P.onLadder=true; }
+  } else if(nearLad && P.onGround) {
+    // At base of ladder — start climbing on up press
+    if(keys["arrowup"]||keys["w"])  { P.vy=-2.6; P.onLadder=true; P.onGround=false; }
+    if(keys["arrowdown"]||keys["s"]){ P.vy= 2.6; P.onLadder=true; P.onGround=false; }
   }
 
-  // Gravity
-  if (!P.onLadder) P.vy += 0.52 * (MS / 16);
-  else P.vy *= 0.6;
+  if(!P.onLadder) {
+    P.vy += 0.50 * (MS/16);
+  } else {
+    P.vy *= 0.65;
+    P.vx = 0; // no horizontal while climbing
+  }
 
-  P.x += P.vx;
-  P.y += P.vy;
+  P.x += P.vx * (MS/16);
+  P.y += P.vy * (MS/16);
 
-  // Platform collision
+  // Platform landing
   P.onGround = false;
-  for (const p of platforms) {
-    const py = platY(p, P.x);
-    if (P.x + P.w/2 > p.x && P.x - P.w/2 < p.x + p.w &&
-        P.y + P.h >= py - 1 && P.y + P.h <= py + 14 + Math.max(0, P.vy)) {
-      if (P.vy >= 0) {
-        // Check barrel jump bonus
-        if (!P.jumpBonusGiven && P.vy < -0.5) {
-          // just landed check handled below
-        }
-        P.y = py - P.h;
-        P.vy = 0;
-        P.onGround = true;
-        P.jumpBonusGiven = false;
-      }
+  for(const p of PLATS) {
+    if(P.x+PW/2 < p.x1 || P.x-PW/2 > p.x2) continue;
+    const sy = platY(p, Math.max(p.x1,Math.min(p.x2,P.x)));
+    if(P.y+PH >= sy-1 && P.y+PH <= sy+Math.max(12,P.vy+2) && P.vy>=0) {
+      P.y = sy - PH; P.vy=0; P.onGround=true;
+      P.jumpedOver=false;
+      break;
     }
   }
 
-  // Boundary
-  P.x = Math.max(PL + P.w/2, Math.min(PR - P.w/2, P.x));
-  if (P.y > H + 40) loseLife();
-  if (P.invuln > 0) P.invuln -= MS;
+  // Clamp X
+  P.x = Math.max(PLATS[0].x1+PW/2, Math.min(PLATS[0].x2-PW/2, P.x));
+  // Fall off bottom
+  if(P.y > H+40) loseLife();
+  if(P.invuln>0) P.invuln -= MS;
 
-  // ── Barrel spawn ──
+  // Walk animation
+  if(P.onGround && Math.abs(P.vx)>0.1) P.walkT += MS*0.012;
+
+  /* ── Barrel spawn ── */
   spawnTimer -= MS;
-  if (spawnTimer <= 0) {
-    spawnTimer = Math.max(1100, 2800 - stage * 160);
-    const gx = gorilla.x + gorilla.w * 0.82;
-    const topPlat = platforms[platforms.length-1];
-    const gy = platY(topPlat, gx) - 10;
-    barrels.push({
-      x: gx, y: gy,
-      vx: -(1.6 + stage * 0.18 + Math.random() * 0.4),
-      vy: 0, r: Math.floor(W * 0.022),
-      rot: 0, rotV: -(0.08 + Math.random()*0.06),
-      onGround: false
-    });
+  if(spawnTimer<=0 && !stageClearing) {
+    spawnTimer = Math.max(900, 2600 - stage*180);
+    barrels.push(makeBarrel());
   }
 
-  // ── Barrel update ──
-  for (let i = barrels.length - 1; i >= 0; i--) {
+  /* ── Barrel update ── */
+  const BSPD = 1.8 + stage * 0.22;
+  for(let i=barrels.length-1; i>=0; i--) {
     const b = barrels[i];
-    b.vy += 0.50 * (MS / 16);
-    b.x += b.vx;
-    b.y += b.vy;
-    b.rot = (b.rot || 0) + b.rotV * (MS / 16) * Math.abs(b.vx);
-    b.onGround = false;
 
-    // Platform collision
-    for (const p of platforms) {
-      const py = platY(p, b.x);
-      if (b.x > p.x - b.r && b.x < p.x + p.w + b.r &&
-          b.y + b.r >= py - 1 && b.y + b.r <= py + 16 + Math.max(0, b.vy)) {
-        b.y = py - b.r;
-        b.vy = -(b.vy * 0.18); // small bounce
-        // Follow slope
-        b.vx = b.vx < 0
-          ? -(Math.abs(b.vx) + p.slope * 0.4)
-          : (Math.abs(b.vx) + p.slope * 0.4);
-        b.onGround = true;
-
-        // Roll off platform edge
-        if (b.vx < 0 && b.x < p.x + b.r) {
-          b.vy = 1.5;
+    if(b.takingLadder) {
+      // Barrel sliding down a ladder
+      const l = b.takingLadder;
+      b.y += 2.2 * (MS/16);
+      b.x = l.x + l.w/2;
+      b.rot += 0.06 * (MS/16);
+      if(b.y + b.r >= l.yBot) {
+        // Land on the platform below this ladder
+        b.y = l.yBot - b.r;
+        const res = platAt(b.x, b.y + b.r, b.r);
+        if(res) {
+          b.onPlat = res.p;
+          b.vx = BSPD * res.p.dir;
+          b.vy = 0;
+          b.y  = res.sy - b.r;
         }
-        if (b.vx > 0 && b.x > p.x + p.w - b.r) {
-          b.vy = 1.5;
+        b.takingLadder = null;
+      }
+      continue;
+    }
+
+    if(b.onPlat) {
+      // Rolling along platform
+      const p = b.onPlat;
+      b.x += b.vx * (MS/16);
+      b.y  = platY(p, Math.max(p.x1,Math.min(p.x2,b.x))) - b.r;
+      b.rot += (b.vx > 0 ? 1 : -1) * 0.045 * (MS/16) * Math.abs(b.vx);
+
+      // Check for ladder descent opportunity
+      if(!b.takingLadder) {
+        for(const l of LADDERS) {
+          if(!l.full) continue;
+          const lc = l.x + l.w/2;
+          if(Math.abs(b.x - lc) < l.w + 4 && b.y + b.r > l.yTop && b.y + b.r < l.yBot) {
+            if(Math.random() < b.ladderChance * (MS/16)) {
+              b.takingLadder = l;
+              b.onPlat = null;
+              b.vx=0; b.vy=0;
+              break;
+            }
+          }
+        }
+        if(b.takingLadder) continue;
+      }
+
+      // Roll off left edge
+      if(b.vx<0 && b.x - b.r < p.x1) {
+        b.onPlat = null;
+        b.vy = 0.5;
+      }
+      // Roll off right edge
+      if(b.vx>0 && b.x + b.r > p.x2) {
+        b.onPlat = null;
+        b.vy = 0.5;
+      }
+    } else {
+      // Falling
+      b.vy += 0.55 * (MS/16);
+      b.x  += b.vx * (MS/16) * 0.35; // slight horizontal drift while falling
+      b.y  += b.vy * (MS/16);
+      b.rot += 0.04 * (MS/16);
+
+      // Land on platform?
+      for(const p of PLATS) {
+        if(b.x < p.x1 - b.r || b.x > p.x2 + b.r) continue;
+        const sy = platY(p, Math.max(p.x1,Math.min(p.x2,b.x)));
+        if(b.y + b.r >= sy - 1 && b.y + b.r <= sy + 18 && b.vy >= 0) {
+          b.y = sy - b.r;
+          b.vy = 0;
+          b.onPlat = p;
+          b.vx = BSPD * p.dir;
+          break;
         }
       }
     }
 
-    // Barrel-player collision → jump bonus if player above
-    if (P.invuln <= 0) {
+    // ── Barrel vs Player ──
+    if(P.invuln <= 0) {
       const dx = Math.abs(P.x - b.x);
-      const dy = P.y + P.h - b.y;
-      if (dx < b.r + P.w/2 - 2 && Math.abs(dy) < b.r + P.h - 4) {
-        // If player is jumping over the barrel
-        if (P.vy < -0.2 && P.y + P.h < b.y + b.r * 0.5 && !P.jumpBonusGiven) {
+      const dy = (P.y + PH*0.5) - b.y;
+      const dist = Math.hypot(dx, dy);
+
+      if(dist < b.r + 14) {
+        // Player jumping over barrel
+        if(P.vy < -0.5 && P.y + PH < b.y && !P.jumpedOver) {
+          P.jumpedOver = true;
           score += 100;
-          P.jumpBonusGiven = true;
-          spawnJumpBonus(P.x, P.y - 12);
-        } else {
+          addFloat(P.x, P.y-14, "+100 JUMP!");
+        } else if(P.y + PH*0.6 > b.y - b.r*0.8) {
           loseLife();
         }
       }
     }
 
-    // Remove if fallen off bottom or too old
-    if (b.y > H + 60 || b.x < PL - 80 || b.x > PR + 80) {
-      barrels.splice(i, 1);
+    // Remove if off screen
+    if(b.y > H+60 || b.x < -60 || b.x > W+60) barrels.splice(i,1);
+  }
+
+  /* ── Goal reached ── */
+  if(!stageClearing) {
+    const gx = GOAL.x + GOAL.w/2, gy = GOAL.y + GOAL.h/2;
+    if(Math.abs(P.x - gx) < GOAL.w && Math.abs((P.y+PH/2) - gy) < GOAL.h) {
+      stageClearing = true;
+      const bonus = Math.floor(bonusTimer * 0.08);
+      score += 1000 + bonus;
+      burst(gx, gy, "#ffe066", 36);
+      addFloat(gx, gy-24, "RESCUED! +"+(1000+bonus));
+      setTimeout(nextStage, 1200);
     }
   }
 
-  // ── Check goal reached ──
-  if (P.x + P.w/2 > goal.x && P.x - P.w/2 < goal.x + goal.w &&
-      P.y < goal.y + goal.h && P.y + P.h > goal.y) {
-    score += 1000 + Math.floor(bonusTimer * 0.08);
-    stage++;
-    spawnExplosion(goal.x + goal.w/2, goal.y, "#ffe066", 30);
-    setTimeout(newStage, 500);
+  /* ── Particles / Floats ── */
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*(MS/16); p.y+=p.vy*(MS/16); p.vy+=0.06*(MS/16);
+    p.life-=p.decay*(MS/16);
+    if(p.life<=0) particles.splice(i,1);
+  }
+  for(let i=floats.length-1;i>=0;i--){
+    floats[i].y+=floats[i].vy*(MS/16);
+    floats[i].life-=0.018*(MS/16);
+    if(floats[i].life<=0) floats.splice(i,1);
   }
 
-  // ── Bonus timer countdown ──
-  bonusTimer = Math.max(0, bonusTimer - MS);
-
-  // ── Particles ──
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.life -= 0.028;
-    if (p.life <= 0) particles.splice(i, 1);
-  }
-  for (let i = sparks.length - 1; i >= 0; i--) {
-    const s = sparks[i];
-    s.x += s.vx || 0; s.y += s.vy; s.life -= 0.022;
-    if (s.life <= 0) sparks.splice(i, 1);
-  }
-
-  // ── HUD ──
-  hudScore.textContent = "SCORE " + score;
-  hudStage.textContent = "STAGE " + stage;
-  hudLives.textContent = "LIVES " + "♥".repeat(Math.max(0, lives)) + "♡".repeat(Math.max(0, 3-lives));
+  /* ── HUD ── */
+  hScore.textContent = "SCORE " + score;
+  hBonus.textContent = "BONUS " + Math.floor(bonusTimer);
+  hStage.textContent = "STAGE " + stage;
+  hLives.textContent = "♥".repeat(Math.max(0,lives)) + "♡".repeat(Math.max(0,3-lives));
 }
 
-/* ── render ── */
-function draw() {
-  drawBackground();
+/* ══ DRAW FUNCTIONS ══ */
+function drawBG() {
+  // Night sky gradient
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,"#080510"); g.addColorStop(1,"#1a0e06");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
 
-  // Floor shadow band
-  cx.fillStyle = "rgba(0,0,0,.4)";
-  cx.fillRect(PL, FLOOR + 4, PR - PL, H - FLOOR);
+  // City skyline silhouette
+  ctx.fillStyle="rgba(30,15,5,.7)";
+  const bw=Math.floor(W/14);
+  for(let i=0;i<14;i++){
+    const bh=Math.floor(H*0.14)+Math.floor(Math.sin(i*2.4)*H*0.07);
+    ctx.fillRect(i*bw, H-bh, bw-2, bh);
+  }
+  // Window lights
+  ctx.fillStyle="rgba(255,220,80,.28)";
+  for(let i=0;i<14;i++){
+    const bh=Math.floor(H*0.14)+Math.floor(Math.sin(i*2.4)*H*0.07);
+    for(let wy=H-bh+6; wy<H-8; wy+=8){
+      for(let wx=i*bw+3; wx<(i+1)*bw-5; wx+=6){
+        if(Math.sin(wx*7.3+wy*3.1)>0.5) ctx.fillRect(wx,wy,3,4);
+      }
+    }
+  }
 
-  // Platforms (draw bottom to top)
-  for (const p of platforms) drawGirder(p);
-  for (const l of ladders) drawLadder(l);
+  // Moon
+  ctx.shadowBlur=20; ctx.shadowColor="#ffd070";
+  ctx.fillStyle="#ffd888";
+  ctx.beginPath(); ctx.arc(W*0.84, H*0.12, Math.floor(H*0.05), 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
 
-  drawOilDrum();
-  drawGorilla();
+  // Scaffolding verticals
+  ctx.strokeStyle="rgba(90,55,20,.22)"; ctx.lineWidth=2;
+  for(let x=Math.floor(W*0.12);x<W;x+=Math.floor(W*0.095)){
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+  }
+}
+
+function drawGirder(p) {
+  const x1=p.x1, y1=platY(p,p.x1), x2=p.x2, y2=platY(p,p.x2);
+  const thick=Math.max(9,Math.floor(H*0.017));
+
+  // Drop shadow
+  ctx.strokeStyle="rgba(0,0,0,.55)"; ctx.lineWidth=thick+4;
+  ctx.beginPath(); ctx.moveTo(x1+2,y1+5); ctx.lineTo(x2+2,y2+5); ctx.stroke();
+
+  // I-beam bottom flange
+  ctx.strokeStyle="#6a3808"; ctx.lineWidth=thick+6;
+  ctx.beginPath(); ctx.moveTo(x1,y1+4); ctx.lineTo(x2,y2+4); ctx.stroke();
+
+  // Web (main body)
+  const grd=ctx.createLinearGradient(0,y1-thick,0,y1+thick);
+  grd.addColorStop(0,"#e8901c"); grd.addColorStop(0.35,"#f8a22a"); grd.addColorStop(1,"#7a3f08");
+  ctx.strokeStyle=grd; ctx.lineWidth=thick;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+
+  // Top flange highlight
+  ctx.strokeStyle="rgba(255,200,100,.5)"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x1,y1-Math.floor(thick/2)); ctx.lineTo(x2,y2-Math.floor(thick/2)); ctx.stroke();
+
+  // Rivets
+  const rv = Math.floor((p.x2-p.x1) / Math.floor(W*0.075));
+  ctx.fillStyle="#5a2a05";
+  for(let i=1;i<=rv;i++){
+    const rx=p.x1+(p.x2-p.x1)/(rv+1)*i;
+    const ry=platY(p,rx);
+    ctx.beginPath(); ctx.arc(rx,ry,3.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#d4720e";
+    ctx.beginPath(); ctx.arc(rx-1,ry-1,1.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#5a2a05";
+  }
+}
+
+function drawLadder(l) {
+  const broken = !l.full;
+  const rungGap=9;
+  const railCol = broken ? "#7a7a60" : "#dce8a0";
+  const rungCol = broken ? "#666650" : "#c8d880";
+
+  // Top cap for broken-top ladders
+  const drawTop = !l.topOnly || !broken;
+  const drawBot = !l.botOnly || !broken;
+
+  ctx.strokeStyle=railCol; ctx.lineWidth=3;
+  ctx.setLineDash(broken ? [6,4] : []);
+  ctx.beginPath(); ctx.moveTo(l.x, l.yTop); ctx.lineTo(l.x, l.yBot); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(l.x+l.w, l.yTop); ctx.lineTo(l.x+l.w, l.yBot); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle=rungCol; ctx.lineWidth=2;
+  for(let ry=l.yTop+4;ry<l.yBot;ry+=rungGap){
+    ctx.beginPath(); ctx.moveTo(l.x,ry); ctx.lineTo(l.x+l.w,ry); ctx.stroke();
+  }
+}
+
+function drawDrum() {
+  const {x,y,w,h}=DRUM;
+  ctx.fillStyle="#1c1c1c"; ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle="#555"; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
+  for(let i=1;i<3;i++){
+    ctx.beginPath(); ctx.moveTo(x,y+h*(i/3)); ctx.lineTo(x+w,y+h*(i/3)); ctx.stroke();
+  }
+  const ft=Date.now()*0.005;
+  for(let fi=0;fi<2;fi++){
+    const off=fi*3;
+    const fc=fi===0?"#ff6a00":"#ffd000";
+    ctx.shadowBlur=14; ctx.shadowColor=fc;
+    ctx.fillStyle=fc;
+    ctx.beginPath();
+    ctx.moveTo(x+w/2+off, y-16+off);
+    ctx.bezierCurveTo(x+w+3, y-6+Math.sin(ft+fi)*5, x+w, y, x+w/2+4, y+2);
+    ctx.bezierCurveTo(x+w/2, y-5, x, y, x-3, y-6+Math.sin(ft+fi+1)*5);
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur=0;
+  }
+}
+
+function drawKong(throwing) {
+  const {x,y,w,h}=KONG;
+  const t=Date.now()*0.003;
+  const throwAnim = throwing ? Math.max(0,Math.sin(t*3)) : 0;
+
+  // Body
+  ctx.fillStyle="#231408";
+  ctx.beginPath(); ctx.ellipse(x+w/2,y+h*0.62,w*0.4,h*0.33,0,0,Math.PI*2); ctx.fill();
+
+  // Chest fur patch
+  ctx.fillStyle="#4e2c0a";
+  ctx.beginPath(); ctx.ellipse(x+w/2,y+h*0.58,w*0.22,h*0.2,0,0,Math.PI*2); ctx.fill();
+
+  // Head
+  ctx.fillStyle="#231408";
+  ctx.beginPath(); ctx.ellipse(x+w/2,y+h*0.3,w*0.3,h*0.27,0,0,Math.PI*2); ctx.fill();
+
+  // Brow
+  ctx.fillStyle="#160c04";
+  ctx.beginPath(); ctx.ellipse(x+w/2,y+h*0.19,w*0.26,h*0.09,0,0,Math.PI*2); ctx.fill();
+
+  // Eyes glow
+  ctx.shadowBlur=10; ctx.shadowColor="#cc2200";
+  ctx.fillStyle="#ee3300";
+  ctx.beginPath(); ctx.arc(x+w/2-7,y+h*0.25,4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+w/2+7,y+h*0.25,4,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+
+  // Nostrils
+  ctx.fillStyle="#0d0804";
+  ctx.beginPath(); ctx.arc(x+w/2-4,y+h*0.34,2.2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+w/2+4,y+h*0.34,2.2,0,Math.PI*2); ctx.fill();
+
+  // Teeth (angry grimace)
+  ctx.fillStyle="#fff";
+  ctx.fillRect(x+w/2-6,y+h*0.38,4,5);
+  ctx.fillRect(x+w/2+2,y+h*0.38,4,5);
+
+  ctx.strokeStyle="#231408"; ctx.lineWidth=9; ctx.lineCap="round";
+
+  // Left arm (idle beat down, or raise on throw)
+  const lArmSwing = Math.sin(t*1.4)*6;
+  ctx.beginPath();
+  ctx.moveTo(x+w*0.18, y+h*0.5);
+  ctx.quadraticCurveTo(x-6, y+h*0.72+lArmSwing, x+w*0.04, y+h*0.88);
+  ctx.stroke();
+
+  // Right arm — throwing arm raises toward right
+  const rArmUp = throwAnim * 28;
+  ctx.beginPath();
+  ctx.moveTo(x+w*0.82, y+h*0.5);
+  ctx.quadraticCurveTo(x+w+10, y+h*0.38-rArmUp, x+w+6, y+h*0.22-rArmUp);
+  ctx.stroke();
+  ctx.lineCap="butt";
+
+  // Legs
+  ctx.strokeStyle="#231408"; ctx.lineWidth=8; ctx.lineCap="round";
+  ctx.beginPath();
+  ctx.moveTo(x+w*0.35,y+h*0.9); ctx.lineTo(x+w*0.28,y+h);
+  ctx.moveTo(x+w*0.65,y+h*0.9); ctx.lineTo(x+w*0.72,y+h);
+  ctx.stroke(); ctx.lineCap="butt";
+
+  // Chest-beat visual (fists on chest)
+  if(!throwing && Math.sin(t*2.5)>0.6) {
+    ctx.fillStyle="#3a1a06";
+    ctx.beginPath(); ctx.arc(x+w*0.24,y+h*0.58,7,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+w*0.76,y+h*0.58,7,0,Math.PI*2); ctx.fill();
+  }
+}
+
+function drawGoal() {
+  const {x,y,w,h}=GOAL;
+  const t=Date.now()*0.005;
+  ctx.shadowBlur=20; ctx.shadowColor="#ffe066";
+
+  // Heart beacon
+  ctx.fillStyle="#ffe066";
+  ctx.font="bold "+Math.floor(h*0.3)+"px monospace";
+  ctx.textAlign="center";
+  ctx.fillText("♥",x+w/2, y+2+Math.sin(t)*4);
+
+  // Figure
+  const fx=x+w/2, fy=y+h*0.22;
+  ctx.fillStyle="#f5c08a";
+  ctx.beginPath(); ctx.arc(fx,fy,h*0.14,0,Math.PI*2); ctx.fill(); // head
+
+  ctx.fillStyle="#ff4488";
+  ctx.fillRect(fx-7,fy+h*0.16,14,h*0.33); // torso
+
+  // Waving arms
+  ctx.save(); ctx.translate(fx-7,fy+h*0.22);
+  ctx.rotate(Math.sin(t)*0.5); ctx.fillStyle="#f5c08a";
+  ctx.fillRect(-10,0,10,4); ctx.restore();
+  ctx.save(); ctx.translate(fx+7,fy+h*0.22);
+  ctx.rotate(-Math.sin(t)*0.5); ctx.fillStyle="#f5c08a";
+  ctx.fillRect(0,0,10,4); ctx.restore();
+
+  ctx.fillStyle="#3344bb";
+  ctx.fillRect(fx-6,fy+h*0.5,5,h*0.35);
+  ctx.fillRect(fx+1,fy+h*0.5,5,h*0.35);
+
+  ctx.shadowBlur=0;
+}
+
+function drawBarrel(b) {
+  ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.rot);
+  ctx.shadowBlur=6; ctx.shadowColor="#d96010";
+
+  // Body
+  ctx.fillStyle="#8c3a0a";
+  ctx.beginPath(); ctx.arc(0,0,b.r,0,Math.PI*2); ctx.fill();
+
+  // Outer ring
+  ctx.strokeStyle="#c86018"; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.arc(0,0,b.r,0,Math.PI*2); ctx.stroke();
+
+  // Barrel staves (wood planks)
+  ctx.strokeStyle="#5a2406"; ctx.lineWidth=1.5;
+  for(let a=0;a<Math.PI;a+=Math.PI/5){
+    const nx=Math.cos(a)*b.r, ny=Math.sin(a)*b.r;
+    ctx.beginPath(); ctx.moveTo(-nx,-ny); ctx.lineTo(nx,ny); ctx.stroke();
+  }
+
+  // Metal bands
+  ctx.strokeStyle="#d06010"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(0,0,b.r*0.72,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,b.r*0.42,0,Math.PI*2); ctx.stroke();
+
+  // Highlight
+  ctx.fillStyle="rgba(255,160,60,.22)";
+  ctx.beginPath(); ctx.arc(-b.r*0.28,-b.r*0.28,b.r*0.36,0,Math.PI*2); ctx.fill();
+
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+function drawPlayer() {
+  const {x,y,dir,invuln,onLadder,walkT}=P;
+  if(invuln>0 && Math.floor(invuln/120)%2===0) return;
+
+  ctx.save(); ctx.translate(x,y+PH);
+  if(dir<0) ctx.scale(-1,1);
+
+  const leg = P.onGround ? Math.sin(walkT)*6 : 0;
+  const arm = onLadder ? Math.sin(walkT*1.5)*8 : leg*0.4;
+
+  // Shadow
+  ctx.fillStyle="rgba(0,0,0,.25)";
+  ctx.beginPath(); ctx.ellipse(0,2,PW/2+2,4,0,0,Math.PI*2); ctx.fill();
+
+  // Left leg
+  ctx.fillStyle="#2244bb";
+  ctx.fillRect(-PW/2+2,-PH*0.44, PW/2-1, PH*0.44);
+  // Right leg
+  ctx.fillRect(1,-PH*0.44+leg, PW/2-1, PH*0.44);
+
+  // Boots
+  ctx.fillStyle="#442200";
+  ctx.fillRect(-PW/2+1,-PH*0.1,PW/2,PH*0.1+2);
+  ctx.fillRect(1,-PH*0.1+leg,PW/2,PH*0.1+2);
+
+  // Body
+  ctx.fillStyle="#cc2211";
+  ctx.fillRect(-PW/2+1,-PH*0.72,PW-2,PH*0.32);
+
+  // Overalls bib
+  ctx.fillStyle="#2244bb";
+  ctx.fillRect(-5,-PH*0.72,10,PH*0.16);
+
+  // Left arm
+  ctx.fillStyle="#cc2211";
+  ctx.fillRect(-PW/2-6,-PH*0.72+arm,7,PH*0.24);
+  // Right arm
+  ctx.fillRect(PW/2-1,-PH*0.72-arm,7,PH*0.24);
+
+  // Gloves
+  ctx.fillStyle="#eeeeee";
+  ctx.fillRect(-PW/2-8,-PH*0.5+arm,9,8);
+  ctx.fillRect(PW/2-1,-PH*0.5-arm,9,8);
+
+  // Head
+  ctx.fillStyle="#f0ae70";
+  ctx.fillRect(-PW/2+3,-PH,PW-6,PH*0.28);
+
+  // Cap
+  ctx.fillStyle="#cc2211";
+  ctx.fillRect(-PW/2+2,-PH,PW-4,PH*0.12);
+  ctx.fillRect(-PW/2-2,-PH+PH*0.1,PW+4,PH*0.09);
+  // Cap brim
+  ctx.fillStyle="#aa1a00";
+  ctx.fillRect(PW/2-2,-PH+PH*0.1,7,PH*0.06);
+
+  // Eye
+  ctx.fillStyle="#111";
+  ctx.fillRect(PW/2-9,-PH+PH*0.14,4,4);
+  // Mustache
+  ctx.fillStyle="#5a2e00";
+  ctx.fillRect(PW/2-12,-PH+PH*0.26,12,4);
+
+  ctx.restore();
+}
+
+/* ══ RENDER ══ */
+function render() {
+  drawBG();
+
+  // Draw platforms bottom to top for proper layering
+  for(const p of PLATS) drawGirder(p);
+  for(const l of LADDERS) drawLadder(l);
+  drawDrum();
+
+  const throwingNow = barrels.length > 0 && barrels[barrels.length-1].y < PLATS[4].y - 10;
+  drawKong(throwingNow || spawnTimer < 400);
   drawGoal();
 
   // Barrels
-  for (const b of barrels) drawBarrel(b);
-
-  // Particles
-  for (const p of particles) {
-    cx.fillStyle = p.col;
-    cx.globalAlpha = Math.max(0, p.life);
-    cx.fillRect(p.x - 2, p.y - 2, 4, 4);
-  }
-  cx.globalAlpha = 1;
-
-  // Sparks & floating text
-  for (const s of sparks) {
-    cx.globalAlpha = Math.max(0, s.life * 2);
-    if (s.spark) {
-      cx.fillStyle = "#ff9900";
-      cx.beginPath(); cx.arc(s.x, s.y, 2, 0, Math.PI*2); cx.fill();
-    } else {
-      cx.fillStyle = "#ffe066";
-      cx.font = "bold 14px ui-monospace,monospace";
-      cx.textAlign = "center";
-      cx.fillText(s.text, s.x, s.y);
-    }
-    cx.globalAlpha = 1;
-  }
+  for(const b of barrels) drawBarrel(b);
 
   drawPlayer();
 
-  // Bonus timer bar
-  if (running) {
-    const bw = Math.floor((PR - PL) * 0.28);
-    const bh = 5;
-    const bx = PL + Math.floor((PR-PL-bw)/2);
-    const by = H - 12;
-    const frac = Math.max(0, bonusTimer / 5000);
-    cx.fillStyle = "rgba(0,0,0,.4)";
-    cx.fillRect(bx, by, bw, bh);
-    cx.fillStyle = frac > 0.5 ? "#22ff88" : frac > 0.25 ? "#ffcc00" : "#ff3322";
-    cx.fillRect(bx, by, Math.floor(bw * frac), bh);
-    cx.strokeStyle = "rgba(255,255,255,.2)";
-    cx.lineWidth = 1;
-    cx.strokeRect(bx, by, bw, bh);
+  // Particles
+  for(const p of particles){
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.fillStyle=p.col;
+    ctx.shadowBlur=3; ctx.shadowColor=p.col;
+    ctx.beginPath(); ctx.arc(p.x,p.y,2.5,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  }
+  ctx.globalAlpha=1;
 
-    cx.fillStyle = "rgba(255,255,255,.4)";
-    cx.font = "9px ui-monospace,monospace";
-    cx.textAlign = "center";
-    cx.fillText("BONUS", bx + bw/2, by - 2);
+  // Floats
+  ctx.font="bold 14px ui-monospace,monospace";
+  ctx.textAlign="center";
+  for(const f of floats){
+    ctx.globalAlpha=Math.max(0,f.life*0.9);
+    ctx.fillStyle="#ffe066";
+    ctx.shadowBlur=7; ctx.shadowColor="#ffe066";
+    ctx.fillText(f.text,f.x,f.y);
+    ctx.shadowBlur=0;
+  }
+  ctx.globalAlpha=1;
+
+  // Bonus bar
+  if(running){
+    const bw=Math.floor(W*0.24), bh=6;
+    const bx=Math.floor((W-bw)/2), by=H-10;
+    const frac=Math.max(0,bonusTimer/5000);
+    ctx.fillStyle="rgba(0,0,0,.5)"; ctx.fillRect(bx,by,bw,bh);
+    ctx.fillStyle=frac>0.5?"#22ff88":frac>0.25?"#ffcc00":"#ff3322";
+    ctx.fillRect(bx,by,Math.floor(bw*frac),bh);
+    ctx.strokeStyle="rgba(255,255,255,.2)"; ctx.lineWidth=1;
+    ctx.strokeRect(bx,by,bw,bh);
+    ctx.fillStyle="rgba(255,255,255,.35)";
+    ctx.font="9px ui-monospace,monospace"; ctx.textAlign="center";
+    ctx.fillText("BONUS TIMER",bx+bw/2,by-2);
   }
 }
 
-/* ── main loop ── */
-function loop(ts) {
-  if (!last) last = ts;
-  const dt = ts - last; last = ts;
-  if (running) update(dt);
-  draw();
+/* ══ MAIN LOOP ══ */
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last; last=ts;
+  if(running) update(dt);
+  render();
   requestAnimationFrame(loop);
 }
 
-/* ── input ── */
-addEventListener("keydown", e => {
-  keys[e.key.toLowerCase()] = true;
-  if (!running && (e.key === "Enter" || e.key === " ")) resetGame();
-  if (running && (e.key === " " || e.key === "ArrowUp" || e.key.toLowerCase() === "w") && P.onGround) {
-    P.vy = -(8.2 + stage * 0.1);
-    P.onGround = false;
-    P.jumpBonusGiven = false;
+/* ══ INPUT ══ */
+addEventListener("keydown",e=>{
+  const k=e.key.toLowerCase();
+  keys[k]=true;
+  if(!running&&(e.key==="Enter"||e.key===" ")){e.preventDefault();resetGame();}
+  if(running&&(e.key===" "||e.key==="ArrowUp"||k==="w")&&P.onGround){
+    P.vy=-(9.0+stage*0.12);
+    P.onGround=false;
+    P.jumpedOver=false;
     e.preventDefault();
   }
+  if(e.key==="ArrowUp"||e.key===" ") e.preventDefault();
 });
-addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
-btn.addEventListener("click", resetGame);
-addEventListener("resize", () => { resize(); if (!running) newStage(); });
+addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false;});
+btn.addEventListener("click",resetGame);
+addEventListener("resize",()=>{
+  const r=cv.getBoundingClientRect();
+  W=Math.max(480,Math.floor(r.width));
+  H=Math.max(360,Math.floor(r.height));
+  cv.width=W; cv.height=H;
+  if(running) buildLayout();
+});
 
-resize();
+(function initSize(){
+  const r=cv.getBoundingClientRect();
+  W=Math.max(480,Math.floor(r.width));
+  H=Math.max(360,Math.floor(r.height));
+  cv.width=W; cv.height=H;
+  buildLayout();
+})();
+
 requestAnimationFrame(loop);
 })();
 </script>
