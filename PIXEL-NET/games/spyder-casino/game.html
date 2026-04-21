@@ -1092,10 +1092,43 @@ function casinoCard(card, hidden, size='') {
 // ════════════════════════════════════════════
 const BJ_START = 200, BJ_MIN = 5, BJ_THRESH = 20, BJ_SIMS = 700;
 let bjDeck=[], bjRC=0, bjBank=BJ_START, bjBet=0, bjHands=[], bjHandIdx=0, bjDealer=[], bjHole=null, bjMode='STANDARD', bjPhase='bet';
+let bjTermLog=[];
 
 function bjRC_val(c) { if(c.value<=6) return 1; if(c.value===10||c.rank==='A') return -1; return 0; }
 function bjHV(cards) { let v=0,a=0; for(const c of cards){v+=c.value;if(c.rank==='A')a++;} while(v>21&&a){v-=10;a--;} return v; }
 function bjIsTerminal(){ return visualStyle === 'terminal'; }
+function bjLog(msg){
+  bjTermLog.push(String(msg||''));
+  if (bjTermLog.length > 8) bjTermLog = bjTermLog.slice(-8);
+}
+function bjAsciiCard(card, hidden=false){
+  if (hidden || !card) return [
+    '┌──────────┐',
+    '│░░░░░░░░░░│',
+    '│░░░░░░░░░░│',
+    '│░░SPYDER░░│',
+    '│░░░░░░░░░░│',
+    '│░░░░░░░░░░│',
+    '└──────────┘',
+  ];
+  const sym = SUIT_SYM[card.suit];
+  const top = (card.rank.length===2?card.rank:card.rank+' ');
+  const btm = (card.rank.length===2?card.rank:' '+card.rank);
+  return [
+    '┌──────────┐',
+    `│ ${top}       │`,
+    '│          │',
+    `│    ${sym}     │`,
+    '│          │',
+    `│       ${btm} │`,
+    '└──────────┘',
+  ];
+}
+function bjAsciiRow(cards, hideHole=false){
+  if (!cards || !cards.length) return '';
+  const arts = cards.map((c,i)=>bjAsciiCard(c, hideHole && i===1));
+  return arts[0].map((_,line)=>arts.map(a=>a[line]).join('  ')).join('\n');
+}
 function bjPop() { if(bjDeck.length<BJ_THRESH){bjDeck=buildDeck();bjRC=0;} return bjDeck.pop(); }
 function bjCount(c) { if(bjMode==='ANALYSIS') bjRC+=bjRC_val(c); }
 function bjTrueCount() { return (bjRC/Math.max(1,bjDeck.length/52)).toFixed(1); }
@@ -1126,6 +1159,7 @@ function bjReset() {
   const aInp=document.getElementById('bjTermActInp'), aMsg=document.getElementById('bjTermActMsg');
   if(aInp) aInp.value='';
   if(aMsg) aMsg.textContent='';
+  bjTermLog=[];
   bjApplyTerminalLayout();
   bjUpdateHUD();
   bjRenderTerminalView();
@@ -1203,9 +1237,10 @@ function bjRenderTerminalView(){
   const el=document.getElementById('bjTermView');
   if(!el) return;
   const dv = bjDealer.length ? (bjPhase==='play' ? `${bjDealer[0].value} + ?` : `${bjHV(bjDealer)}`) : '-';
-  const dealerCards = bjDealer.length
-    ? bjDealer.map((c,i)=> (bjPhase==='play'&&i===1) ? '??' : `${c.rank}${SUIT_SYM[c.suit]}`).join(' ')
-    : '';
+  const dealerCards = bjDealer.length ? bjAsciiRow(bjDealer, bjPhase==='play') : '';
+  const handBlocks = bjHands.length
+    ? bjHands.map((h,i)=>`HAND ${i+1}${(i===bjHandIdx&&bjPhase==='play')?' <<<':''}  BET $${h.bet}  TOTAL ${bjHV(h.cards)}\n${bjAsciiRow(h.cards,false)}`).join('\n\n')
+    : 'No hand dealt yet.';
   const out = [
     '================================================================================',
     '★ SPYDER BLACKJACK ★',
@@ -1215,11 +1250,14 @@ function bjRenderTerminalView(){
     `DEALER  TOTAL ${dv}`,
     dealerCards,
     '--------------------------------------------------------------------------------',
-    ...(bjHands.length?bjHands.map((h,i)=>bjTermHandLine(h,i)).join('\n\n').split('\n'):['No hand dealt yet.']),
+    handBlocks,
     '--------------------------------------------------------------------------------',
     bjPhase==='bet' ? "Enter Bet (Min $5 or 'q' to cash out):" :
       bjPhase==='play' ? 'Action Hand 1 (h/s/d/p):' :
-      'Press n for next hand, or q to cash out.'
+      'Press n for next hand, or q to cash out.',
+    '',
+    'LOG:',
+    ...(bjTermLog.length ? bjTermLog : ['-'])
   ].join('\n');
   el.textContent=out;
 }
@@ -1227,23 +1265,25 @@ function bjRunTerminalCommand(raw){
   if(!bjIsTerminal()) return;
   const s=(raw||'').trim().toLowerCase();
   if(!s) return;
-  if(s==='q'){bjCashOut();return;}
+  if(s==='q'){bjLog('You cash out.'); bjCashOut();return;}
   if(bjPhase==='bet'){
     const m=s.match(/^bet\s+(\d+(?:\.\d+)?)$/) || s.match(/^(\d+(?:\.\d+)?)$/);
     if(m){
       const bet=Math.floor(Number(m[1]));
-      if(Number.isFinite(bet)&&bet>=BJ_MIN&&bet<=bjBank){ bjBet=bet; bjDeal(); return; }
+      if(Number.isFinite(bet)&&bet>=BJ_MIN&&bet<=bjBank){ bjBet=bet; bjLog(`Bet placed: $${bjBet}`); bjDeal(); return; }
     }
+    bjLog('Invalid bet.');
     return;
   }
   if(bjPhase==='play'){
-    if(s==='h'||s==='hit') return bjHit();
-    if(s==='s'||s==='stay'||s==='stand') return bjStay();
-    if(s==='d'||s==='double') return bjDouble();
-    if(s==='p'||s==='split') return bjSplit();
+    if(s==='h'||s==='hit') { bjLog('You choose: HIT'); return bjHit(); }
+    if(s==='s'||s==='stay'||s==='stand') { bjLog('You choose: STAY'); return bjStay(); }
+    if(s==='d'||s==='double') { bjLog('You choose: DOUBLE'); return bjDouble(); }
+    if(s==='p'||s==='split') { bjLog('You choose: SPLIT'); return bjSplit(); }
+    bjLog('Invalid action.');
     return;
   }
-  if(bjPhase==='done' && (s==='n'||s==='next')) return bjNextHand();
+  if(bjPhase==='done' && (s==='n'||s==='next')) { bjLog('Starting next hand...'); return bjNextHand(); }
 }
 function bjDeal() {
   if(bjBet<BJ_MIN||bjBet>bjBank) return;
@@ -1269,6 +1309,7 @@ function bjDeal() {
 function bjCurH() { return bjHands[bjHandIdx]; }
 function bjHit() {
   const h=bjCurH(), c=bjPop(); bjCount(c); h.cards.push(c);
+  bjLog(`You draw: ${c.rank}${SUIT_SYM[c.suit]}`);
   const v=bjHV(h.cards); bjRenderPlayer(false); bjRunProb();
   if(v>=21){h.finished=true;if(v>21)h.result='bust';bjAdvance();}else bjRenderActions();
 }
@@ -1276,10 +1317,12 @@ function bjStay() { bjCurH().finished=true; bjAdvance(); }
 function bjDouble() {
   const h=bjCurH();if(bjBank<h.bet)return;
   bjBank-=h.bet;h.bet*=2;const c=bjPop();bjCount(c);h.cards.push(c);
+  bjLog(`Double draw: ${c.rank}${SUIT_SYM[c.suit]} (Bet now $${h.bet})`);
   if(bjHV(h.cards)>21)h.result='bust';h.finished=true;bjRenderPlayer(false);bjAdvance();bjUpdateHUD();
 }
 function bjSplit() {
   const h=bjCurH();if(bjHands.length>=4||bjBank<h.bet)return;
+  bjLog('Hand split.');
   bjBank-=h.bet;const sc=h.cards.pop();
   const n1=bjPop();bjCount(n1);h.cards.push(n1);
   const n2=bjPop();bjCount(n2);
@@ -1293,11 +1336,12 @@ function bjAdvance() {
 }
 function bjDealerTurn() {
   bjCount(bjHole);bjRenderDealer(false);bjRenderPlayer(false);
+  bjLog(`Dealer reveals: ${bjHole.rank}${SUIT_SYM[bjHole.suit]}`);
   const anyAlive=bjHands.some(h=>bjHV(h.cards)<=21);
   if(anyAlive){
     const loop=()=>{
       if(bjHV(bjDealer)>=17){bjSettle();return;}
-      setTimeout(()=>{ const c=bjPop();bjCount(c);bjDealer.push(c);bjRenderDealer(false);loop(); },350);
+      setTimeout(()=>{ const c=bjPop();bjCount(c);bjDealer.push(c);bjLog(`Dealer draws: ${c.rank}${SUIT_SYM[c.suit]}`);bjRenderDealer(false);loop(); },350);
     };loop();
   } else bjSettle();
 }
@@ -1327,6 +1371,7 @@ function bjShowResults() {
   else if(rs.every(r=>r==='win')) {cls='win'; txt='WIN!';}
   else {cls='push';txt='SPLIT RESULT';}
   rb.innerHTML=`<div class="res-banner ${cls}">${txt}</div>`;
+  bjLog(`Round result: ${txt}`);
   if(bjBank<BJ_MIN) setTimeout(()=>bjEndGame(),1100);
   bjRenderTerminalView();
 }
