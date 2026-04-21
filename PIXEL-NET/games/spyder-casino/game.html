@@ -337,17 +337,26 @@ body:not(.casino) .tc{
   line-height:1.15;
 }
 /* casino */
-.cc{width:46px;height:66px;border-radius:5px;border:1.5px solid rgba(255,255,255,.3);
+.cc{width:58px;height:84px;border-radius:7px;border:2px solid rgba(255,255,255,.35);
   background:var(--ivory);display:flex;flex-direction:column;align-items:flex-start;
-  justify-content:space-between;padding:3px 4px;
-  font-family:Georgia,serif;font-size:13px;font-weight:bold;color:#222;
-  position:relative;flex-shrink:0;box-shadow:2px 3px 8px rgba(0,0,0,.55);}
+  justify-content:space-between;padding:4px 5px;
+  font-family:Georgia,serif;font-size:14px;font-weight:bold;color:#222;
+  position:relative;flex-shrink:0;box-shadow:3px 5px 12px rgba(0,0,0,.6);}
 .cc.red{color:#c0392b;}
 .cc.hid{background:repeating-linear-gradient(135deg,#1a3a6e 0,#1a3a6e 5px,#0d2249 5px,#0d2249 10px);border-color:rgba(255,255,255,.12);}
-.cc .sc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;opacity:.28;}
-.cc .cb{transform:rotate(180deg);font-size:10px;}
-.cc.sm{width:34px;height:50px;font-size:10px;}.cc.sm .sc{font-size:14px;}
-.cc.xs{width:26px;height:38px;font-size:8px;}.cc.xs .sc{font-size:11px;}
+.cc .ct{font-size:11px;line-height:.95;}
+.cc .cb{transform:rotate(180deg);font-size:11px;line-height:.95;align-self:flex-end;}
+.cc .pips{position:absolute;inset:16px 10px 16px 10px;}
+.cc .pip{position:absolute;transform:translate(-50%,-50%);font-size:14px;line-height:1;}
+.cc .face{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;opacity:.75;letter-spacing:.06em;}
+.cc.sm{width:42px;height:60px;font-size:10px;}
+.cc.sm .pips{inset:12px 7px 12px 7px;}
+.cc.sm .pip{font-size:11px;}
+.cc.sm .ct,.cc.sm .cb{font-size:8px;}
+.cc.xs{width:32px;height:46px;font-size:8px;}
+.cc.xs .pips{inset:10px 6px 10px 6px;}
+.cc.xs .pip{font-size:9px;}
+.cc.xs .ct,.cc.xs .cb{font-size:7px;}
 .cards-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:4px 0;}
 body:not(.casino) .cards-row{gap:10px;}
 .mode-hint{
@@ -374,6 +383,33 @@ body:not(.casino) .cc-empty{
 .bj-container{max-width:640px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:8px;padding:8px;}
 .section{border:1px solid rgba(0,255,65,.2);border-radius:6px;padding:10px 12px;background:var(--panel);}
 body.casino .section{border-color:rgba(212,168,67,.25);background:rgba(0,0,0,.45);}
+body.casino #bjScreen{
+  background:radial-gradient(120% 80% at 50% 0%, rgba(24,88,52,.36), rgba(8,24,12,.65));
+}
+body.casino .bj-container{
+  max-width:920px;
+  padding:14px 14px 20px 14px;
+  border:2px solid rgba(212,168,67,.34);
+  border-radius:220px / 128px;
+  background:
+    radial-gradient(ellipse at center, rgba(24,88,52,.92) 0%, rgba(18,68,41,.92) 62%, rgba(10,32,18,.95) 100%),
+    linear-gradient(180deg, rgba(255,224,102,.05), transparent 58%);
+  box-shadow:
+    inset 0 0 0 3px rgba(15,45,25,.75),
+    inset 0 0 0 10px rgba(212,168,67,.16),
+    0 18px 34px rgba(0,0,0,.44);
+}
+body.casino #bjDealerSec,
+body.casino #bjPlayerSecs .section,
+body.casino #bjBetZone{
+  border-width:2px;
+  border-radius:16px;
+  background:linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.55));
+}
+body.casino #bjBetZone .sec-lbl::after{
+  content:'  •  BETTING CIRCLE';
+  color:rgba(255,224,102,.8);
+}
 .sec-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--g2);margin-bottom:5px;opacity:.7;}
 .tot{font-size:12px;color:var(--amb);margin-top:4px;}
 .tot.bust{color:var(--red);}
@@ -417,10 +453,28 @@ body.casino .section{border-color:rgba(212,168,67,.25);background:rgba(0,0,0,.45
   font-size:10px;background:var(--panel);flex-shrink:0;}
 .he-chips-val{color:var(--amb);font-weight:bold;font-size:13px;}
 .table-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:5px;}
+body.casino .table-wrap{
+  max-width:980px;
+  width:100%;
+  margin:8px auto 0 auto;
+  border:2px solid rgba(212,168,67,.34);
+  border-radius:230px / 138px;
+  background:radial-gradient(ellipse at center, rgba(24,88,52,.92) 0%, rgba(18,68,41,.92) 62%, rgba(10,32,18,.95) 100%);
+  box-shadow:
+    inset 0 0 0 3px rgba(15,45,25,.75),
+    inset 0 0 0 10px rgba(212,168,67,.16),
+    0 18px 34px rgba(0,0,0,.44);
+  padding:14px 16px 16px 16px;
+}
 .bots-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;flex-shrink:0;}
 .bot-panel{border:1px solid rgba(0,255,65,.18);border-radius:5px;padding:5px 7px;
   background:var(--panel);text-align:center;font-size:9px;transition:border-color .2s;}
-body.casino .bot-panel{border-color:rgba(212,168,67,.2);background:rgba(0,0,0,.5);}
+body.casino .bot-panel{
+  border-color:rgba(212,168,67,.35);
+  border-width:2px;
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(0,0,0,.3), rgba(0,0,0,.55));
+}
 .bot-panel.active-t{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.2);}
 .bot-panel.folded-p{opacity:.38;}
 .bot-nm{font-size:9px;letter-spacing:1px;color:var(--amb);margin-bottom:2px;}
@@ -428,6 +482,12 @@ body.casino .bot-panel{border-color:rgba(212,168,67,.2);background:rgba(0,0,0,.5
 .bot-rl{color:var(--amb);font-size:8px;}
 .bot-ac{color:var(--g);font-size:8px;min-height:11px;margin-top:1px;}
 .comm-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:2px 0;}
+body.casino .comm-area{
+  border:2px dashed rgba(255,224,102,.28);
+  border-radius:18px;
+  margin:8px 30px;
+  background:rgba(0,0,0,.18);
+}
 .stage-lbl{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--g2);opacity:.65;}
 .pot-disp{font-size:13px;color:var(--amb);font-weight:bold;}
 .eq-bar{font-size:9px;color:var(--g2);text-align:center;min-height:12px;}
@@ -453,6 +513,12 @@ body.casino .chatter{
 }
 .player-area-he{border-top:1px solid rgba(0,255,65,.2);padding:6px 8px;background:var(--panel);flex-shrink:0;}
 body.casino .player-area-he{border-top-color:rgba(212,168,67,.2);}
+body.casino .player-area-he{
+  border-top-width:2px;
+  border-radius:16px;
+  margin:8px 20px 2px 20px;
+  background:linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.5));
+}
 .p-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
 .p-info{flex:1;}
 .p-name-chips{display:flex;justify-content:space-between;}
@@ -498,8 +564,8 @@ body:not(.casino) .res-box{
 /* mobile */
 @media(max-width:480px){
   .panel{font-size:11px;padding:14px;}
-  .cc{width:36px;height:52px;font-size:10px;}.cc .sc{font-size:15px;}
-  .cc.sm{width:28px;height:42px;}.cc.xs{width:22px;height:33px;}
+  .cc{width:46px;height:66px;font-size:11px;}
+  .cc.sm{width:34px;height:50px;}.cc.xs{width:26px;height:38px;}
   .cc-empty{width:36px;height:52px;}
   .chip{width:44px;height:44px;font-size:9px;}
   .he-hud,.bj-hud{font-size:9px;}
@@ -964,7 +1030,23 @@ function casinoCard(card, hidden, size='') {
   const sc = size==='sm'?' sm':size==='xs'?' xs':'';
   if (hidden || !card) return `<div class="cc hid${sc}"></div>`;
   const r=card.rank, sym=SUIT_SYM[card.suit], rc=RED_S.has(card.suit)?' red':'';
-  return `<div class="cc${rc}${sc}"><div>${r}<br><span style="font-size:8px">${sym}</span></div><div class="sc">${sym}</div><div class="cb">${r}<br><span style="font-size:8px">${sym}</span></div></div>`;
+  const pipLayouts = {
+    'A': [[50,50]],
+    '2': [[50,22],[50,78]],
+    '3': [[50,20],[50,50],[50,80]],
+    '4': [[28,24],[72,24],[28,76],[72,76]],
+    '5': [[28,24],[72,24],[50,50],[28,76],[72,76]],
+    '6': [[28,22],[72,22],[28,50],[72,50],[28,78],[72,78]],
+    '7': [[28,20],[72,20],[50,36],[28,50],[72,50],[28,80],[72,80]],
+    '8': [[28,20],[72,20],[28,40],[72,40],[28,60],[72,60],[28,80],[72,80]],
+    '9': [[28,18],[72,18],[28,36],[72,36],[50,50],[28,64],[72,64],[28,82],[72,82]],
+    '10': [[28,16],[72,16],[28,32],[72,32],[28,46],[72,46],[28,60],[72,60],[28,78],[72,78]]
+  };
+  const pips = pipLayouts[r] || null;
+  const pipHtml = pips
+    ? `<div class="pips">${pips.map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%;">${sym}</span>`).join('')}</div>`
+    : `<div class="face">${r} ${sym}</div>`;
+  return `<div class="cc${rc}${sc}"><div class="ct">${r}<br>${sym}</div>${pipHtml}<div class="cb">${r}<br>${sym}</div></div>`;
 }
 
 // ════════════════════════════════════════════
