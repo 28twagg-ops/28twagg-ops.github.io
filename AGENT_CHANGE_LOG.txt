@@ -225,3 +225,39 @@ Entry - 2026-04-21 (New games initiative batch: 3 originals)
     `{ type: 'GAME_OVER_SCORE', score: Number(...) }`.
 - Updated `PIXEL-NET/version.json` for this push cycle:
   - `v2026.04.21-03`
+
+Entry - 2026-04-21 (Post-launch fixes: Circuit + Orbit clarity)
+- Fixed `PIXEL-NET/games/circuit-salvager/game.html` startup crash:
+  - Initialized `player`, `cores`, `enemies`, and `walls` defaults before first render.
+  - Removed optional player access in input path now that player is always initialized.
+- Reworked `PIXEL-NET/games/orbit-siege/game.html` gameplay loop for clarity:
+  - Replaced rotate-cannon concept with direct ship-control wave shooter.
+  - Controls now intuitive (`WASD/Arrows` move, `Space` fire).
+  - HUD now displays `Score / Wave / Hull`.
+  - Kept one-time `GAME_OVER_SCORE` contract unchanged.
+- Updated `PIXEL-NET/games/orbit-siege/wrapper-v2.html` instructions to match the clearer controls/objective.
+
+Entry - 2026-04-21 (Version format guard: enforce 0.0.x display)
+- Updated `PIXEL-NET/version.json`:
+  - Set version to `0.0.4` (semantic style, no date prefix).
+- Updated `PIXEL-NET/index.html`:
+  - Version tag renderer now normalizes by removing a leading `v` if present.
+- Updated `PIXEL-NET/wrapper/shell.js`:
+  - Wrapper version tag now applies the same normalization guard.
+- Result:
+  - Homepage and wrappers consistently display `0.0.x` formatting even if a prefixed value is accidentally committed later.
+
+Entry - 2026-04-21 (Hit-style pivot pass: puzzle/climber/shooter)
+- Repurposed the 3 newly-added slots into clearer “hit-style” loops with original branding:
+  - `circuit-salvager` folder now ships **Stack Drop DX** (falling block line-clear loop).
+  - `orbit-siege` folder now ships **Tower Rush** (platform climber with rolling hazards).
+  - `neon-driftline` folder now ships **Galaxy Swarm 2084** (formation space shooter).
+- Updated wrappers and instruction cards to match the new loops:
+  - `PIXEL-NET/games/circuit-salvager/wrapper-v2.html`
+  - `PIXEL-NET/games/orbit-siege/wrapper-v2.html`
+  - `PIXEL-NET/games/neon-driftline/wrapper-v2.html`
+- Updated `PIXEL-NET/games.json` metadata for these entries:
+  - New display names/descriptions/tags/aliases for discoverability.
+  - Existing slugs/paths kept stable to avoid leaderboard key churn.
+- Updated `PIXEL-NET/version.json` for this push cycle:
+  - `v2026.04.21-04`

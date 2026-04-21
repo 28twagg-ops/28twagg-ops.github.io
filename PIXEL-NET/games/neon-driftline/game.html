@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Neon Driftline</title>
+<title>Galaxy Swarm 2084</title>
 <style>
   :root{--bg:#060816;--panel:#0d1227;--accent:#00f5ff;--hot:#ff2a8a;--text:#e8f3ff}
   *{box-sizing:border-box} html,body{margin:0;height:100%;background:transparent}
@@ -25,10 +25,10 @@
   <div id="hud"><div id="score">SCORE 0</div><div id="time">TIME 0</div></div>
   <div id="overlay">
     <div class="card">
-      <h1>NEON DRIFTLINE</h1>
-      <p>Dodge traffic. Collect boost shards.</p>
-      <p>Survive as speed ramps up.</p>
-      <button id="btn">START RUN</button>
+      <h1>GALAXY SWARM 2084</h1>
+      <p>Defeat incoming formations.</p>
+      <p>Survive wave ramps and dodge return fire.</p>
+      <button id="btn">LAUNCH</button>
     </div>
   </div>
 </div>
@@ -41,23 +41,25 @@
   const scoreEl = document.getElementById("score");
   const timeEl = document.getElementById("time");
   let w = 800, h = 600;
-  let running = false, score = 0, ms = 0, posted = false, spawnTick = 0, shardTick = 0;
-  let lanes = [0.2, 0.4, 0.6, 0.8];
-  let laneX = i => Math.floor(w * lanes[i]);
-  let player = { lane: 1, y: 0, target: 1, glow: 0 };
-  let cars = [];
-  let shards = [];
-  let speed = 3.5;
+  let running = false, score = 0, ms = 0, posted = false, spawnTick = 0, fireTick = 0, enemyFireTick = 0, wave = 1;
+  let player = { x: 0, y: 0, speed: 5.2, alive: true };
+  let keys = {};
+  let bullets = [];
+  let enemyBullets = [];
+  let enemies = [];
   function resize() {
     const r = c.getBoundingClientRect();
     w = Math.max(480, Math.floor(r.width));
     h = Math.max(480, Math.floor(r.height));
     c.width = w; c.height = h;
-    player.y = h - 80;
+    player.x = w / 2;
+    player.y = h - 70;
   }
   function reset() {
-    score = 0; ms = 0; speed = 3.5; cars = []; shards = []; posted = false; spawnTick = 0; shardTick = 0;
-    player.lane = 1; player.target = 1; player.glow = 0; player.y = h - 80;
+    score = 0; ms = 0; posted = false; spawnTick = 0; fireTick = 0; enemyFireTick = 0; wave = 1;
+    bullets = []; enemyBullets = []; enemies = [];
+    player.x = w / 2; player.y = h - 70; player.alive = true;
+    buildWave();
     running = true; overlay.classList.add("hidden");
   }
   function submit() {
@@ -71,29 +73,27 @@
     overlay.classList.remove("hidden");
     btn.textContent = "RESTART RUN";
   }
-  function spawnCar() {
-    const lane = Math.floor(Math.random() * 4);
-    cars.push({ lane, y: -40, speed: speed + Math.random() * 2, hue: Math.random() > 0.5 ? "#ff2a8a" : "#00f5ff" });
-  }
-  function spawnShard() {
-    shards.push({ lane: Math.floor(Math.random() * 4), y: -20, pulse: Math.random() * 6.28 });
-  }
-  function drawRoad() {
-    x.fillStyle = "#060816"; x.fillRect(0, 0, w, h);
-    x.fillStyle = "rgba(0,245,255,.09)";
-    for (let i = 1; i < 4; i++) {
-      const xx = laneX(i) - (laneX(1)-laneX(0))/2;
-      for (let y = (ms * 0.02) % 40 - 40; y < h; y += 40) x.fillRect(xx - 1, y, 2, 20);
+  function buildWave() {
+    enemies = [];
+    const rows = Math.min(5, 2 + wave);
+    const cols = 7;
+    const sx = Math.max(60, w / 2 - ((cols - 1) * 56) / 2);
+    for (let r = 0; r < rows; r++) {
+      for (let c0 = 0; c0 < cols; c0++) {
+        enemies.push({ x: sx + c0 * 56, y: 70 + r * 44, vx: 1.1 + wave * 0.08, alive: true });
+      }
     }
-    x.strokeStyle = "rgba(255,42,138,.45)";
-    x.strokeRect(20, 20, w - 40, h - 40);
   }
-  function drawCar(obj, ww, hh) {
-    const px = laneX(obj.lane) - ww / 2;
-    x.fillStyle = obj.hue;
-    x.shadowBlur = 14; x.shadowColor = obj.hue;
-    x.fillRect(px, obj.y, ww, hh);
-    x.shadowBlur = 0;
+  function drawSpace() {
+    x.fillStyle = "#060816"; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 90; i++) {
+      const sx = (i * 73) % w;
+      const sy = (i * 41 + ms * 0.05) % h;
+      x.fillStyle = "rgba(138,181,255,.6)";
+      x.fillRect(sx, sy, 2, 2);
+    }
+    x.strokeStyle = "rgba(0,245,255,.35)";
+    x.strokeRect(20, 20, w - 40, h - 40);
   }
   function loop(ts) {
     if (!loop.prev) loop.prev = ts;
@@ -102,48 +102,54 @@
     if (running) {
       ms += dt;
       if (ms % 1000 < dt) score += 10;
-      speed = 3.5 + Math.min(8, ms / 12000);
-      spawnTick += dt; shardTick += dt;
-      if (spawnTick > Math.max(220, 620 - ms / 40)) { spawnTick = 0; spawnCar(); }
-      if (shardTick > 1300) { shardTick = 0; spawnShard(); }
-      if (player.target !== player.lane) player.lane += (player.target - player.lane) * 0.18;
-      drawRoad();
-      const pW = 34, pH = 52;
-      const pX = laneX(Math.round(player.lane));
-      shards = shards.filter(s => {
-        s.y += speed + 1.2; s.pulse += 0.14;
-        const sx = laneX(s.lane);
-        x.fillStyle = "#ffe66a";
-        x.shadowBlur = 12; x.shadowColor = "#ffe66a";
-        x.beginPath(); x.arc(sx, s.y, 8 + Math.sin(s.pulse) * 2, 0, 6.28); x.fill(); x.shadowBlur = 0;
-        if (Math.abs(sx - pX) < 26 && Math.abs(s.y - player.y) < 36) { score += 75; return false; }
-        return s.y < h + 20;
-      });
-      cars = cars.filter(car => {
-        car.y += car.speed;
-        drawCar(car, 34, 58);
-        const cx = laneX(car.lane);
-        if (Math.abs(cx - pX) < 28 && Math.abs(car.y - player.y) < 44) { endRun(); }
-        return car.y < h + 70;
-      });
-      x.fillStyle = "#00f5ff";
-      x.shadowBlur = 16; x.shadowColor = "#00f5ff";
-      x.fillRect(pX - pW / 2, player.y - pH / 2, pW, pH);
-      x.shadowBlur = 0;
+      drawSpace();
+      if (keys["arrowleft"] || keys["a"]) player.x -= player.speed;
+      if (keys["arrowright"] || keys["d"]) player.x += player.speed;
+      player.x = Math.max(40, Math.min(w - 40, player.x));
+      fireTick += dt; enemyFireTick += dt; spawnTick += dt;
+      if ((keys[" "] || keys["enter"]) && fireTick > 170) { fireTick = 0; bullets.push({x:player.x,y:player.y-16,vy:-8}); }
+      if (enemyFireTick > Math.max(460, 1100 - wave * 60) && enemies.length) {
+        enemyFireTick = 0;
+        const shooter = enemies[(Math.random() * enemies.length) | 0];
+        enemyBullets.push({x:shooter.x,y:shooter.y+10,vy:4 + wave * 0.35});
+      }
+      let flip = false;
+      for (const e of enemies) {
+        e.x += e.vx;
+        if (e.x < 36 || e.x > w - 36) flip = true;
+      }
+      if (flip) { for (const e of enemies) { e.vx *= -1; e.y += 14; if (e.y > h - 120) endRun(); } }
+      bullets = bullets.filter(b => b.y > -20);
+      enemyBullets = enemyBullets.filter(b => b.y < h + 20);
+      for (const b of bullets) b.y += b.vy;
+      for (const b of enemyBullets) b.y += b.vy;
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          if (Math.hypot(enemies[i].x - bullets[j].x, enemies[i].y - bullets[j].y) < 18) {
+            enemies.splice(i, 1); bullets.splice(j, 1); score += 40; break;
+          }
+        }
+      }
+      for (const eb of enemyBullets) if (Math.hypot(eb.x - player.x, eb.y - player.y) < 18) endRun();
+      if (!enemies.length) { wave++; buildWave(); score += 200; }
+      x.fillStyle = "#00f5ff"; x.beginPath(); x.moveTo(player.x,player.y-16); x.lineTo(player.x-14,player.y+14); x.lineTo(player.x+14,player.y+14); x.closePath(); x.fill();
+      x.fillStyle = "#ff2a8a"; for (const e of enemies) { x.fillRect(e.x - 12, e.y - 10, 24, 20); }
+      x.fillStyle = "#ffe66a"; for (const b of bullets) x.fillRect(b.x - 2, b.y - 8, 4, 10);
+      x.fillStyle = "#ff839d"; for (const b of enemyBullets) x.fillRect(b.x - 2, b.y - 4, 4, 8);
       scoreEl.textContent = "SCORE " + score;
-      timeEl.textContent = "TIME " + Math.floor(ms / 1000);
+      timeEl.textContent = "WAVE " + wave;
     } else {
-      drawRoad();
+      drawSpace();
       scoreEl.textContent = "SCORE " + score;
-      timeEl.textContent = "TIME " + Math.floor(ms / 1000);
+      timeEl.textContent = "WAVE " + wave;
     }
     requestAnimationFrame(loop);
   }
   addEventListener("keydown", e => {
-    if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") player.target = Math.max(0, Math.round(player.target) - 1);
-    if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") player.target = Math.min(3, Math.round(player.target) + 1);
+    keys[e.key.toLowerCase()] = true;
     if (!running && (e.key === "Enter" || e.key === " ")) reset();
   });
+  addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
   btn.addEventListener("click", reset);
   addEventListener("resize", resize);
   resize();

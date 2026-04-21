@@ -89,33 +89,33 @@
     "featured": true
   },
   {
-    "name": "NEON DRIFTLINE",
+    "name": "GALAXY SWARM 2084",
     "type": "iframe",
     "slug": "neon-driftline",
     "path": "games/neon-driftline/wrapper-v2.html",
     "thumb": "assets/neon-driftline_thumb.svg",
-    "description": "Lane-drift survival racer with escalating speed and shard pickups.",
-    "tags": ["racing", "dodger", "traffic", "lane runner", "endless"],
-    "aliases": ["driftline", "neon racer"]
+    "description": "Formation shooter with wave escalation and reactive enemy fire.",
+    "tags": ["space shooter", "formation shooter", "arcade shooter", "galaxy", "invader style"],
+    "aliases": ["swarm shooter", "space wave"]
   },
   {
-    "name": "CIRCUIT SALVAGER",
+    "name": "STACK DROP DX",
     "type": "iframe",
     "slug": "circuit-salvager",
     "path": "games/circuit-salvager/wrapper-v2.html",
     "thumb": "assets/circuit-salvager_thumb.svg",
-    "description": "Grid salvage run: collect all cores while evading hunter drones.",
-    "tags": ["maze", "collector", "survival", "drones", "grid"],
-    "aliases": ["salvager", "circuit run"]
+    "description": "Neon block puzzler: rotate, stack, clear lines, and survive speed ramps.",
+    "tags": ["block puzzler", "line clear", "stacking", "falling blocks", "arcade puzzle"],
+    "aliases": ["stack drop", "block stacker"]
   },
   {
-    "name": "ORBIT SIEGE",
+    "name": "TOWER RUSH",
     "type": "iframe",
     "slug": "orbit-siege",
     "path": "games/orbit-siege/wrapper-v2.html",
     "thumb": "assets/orbit-siege_thumb.svg",
-    "description": "Defend a central core by rotating and firing an orbital cannon.",
-    "tags": ["defense", "arena", "turret", "space", "shooter"],
-    "aliases": ["orbital defense", "siege cannon"]
+    "description": "Platform climber where you dodge rolling hazards and race to the relay.",
+    "tags": ["tower climber", "platformer", "barrel dodge", "arcade climb", "retro action"],
+    "aliases": ["tower climb", "rush climber"]
   }
 ]
