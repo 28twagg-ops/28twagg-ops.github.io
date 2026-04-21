@@ -78,3 +78,16 @@ Entry - 2026-04-21 (Spyder Casino classic/polished toggle + AI/leaderboard updat
 - Updated leaderboard freshness flow:
   - After score submit in `endSubmit()`, both lobby leaderboards are immediately refreshed (`spyder-blackjack` + `spyder-holdem` top 5).
 - Re-ran lints for updated Spyder Casino file: no lint errors.
+
+Entry - 2026-04-21 (Remaining fixes completed and prepared for push)
+- Updated `PIXEL-NET/games/creek-crosser__embedA/game.html`:
+  - Added a themed start overlay requiring click/tap to begin.
+  - Ensured controls work immediately after start/focus (keyboard and touch controls now trigger start if needed).
+- Updated `PIXEL-NET/games/logic-bomb-v2/game.html`:
+  - Rebalanced early difficulty with explicit level config function.
+  - Levels 1–3 now ramp in enemy count/speed more gradually.
+- Updated `PIXEL-NET/games.json`:
+  - Added tags for multiple games to improve home-page search discoverability (including classic-name aliases like pacman/pac-man mapping to Neon Chase).
+  - Resolved a lingering merge marker conflict in the Millipede entry safely.
+- Validation:
+  - Lints/diagnostics checked for `creek-crosser`, `logic-bomb`, and `games.json`: no errors reported.

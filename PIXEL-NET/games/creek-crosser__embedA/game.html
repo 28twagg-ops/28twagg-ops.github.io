@@ -113,6 +113,33 @@ Purpose: AI implementation for themes
             pointer-events: auto;
             z-index: 10;
         }
+        #start-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 11;
+            text-align: center;
+            padding: 24px;
+            gap: 12px;
+        }
+        #start-screen h2 {
+            margin: 0;
+            color: var(--accent-color);
+            font-size: 34px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #e67e22;
+        }
+        #start-screen p {
+            margin: 0;
+            color: var(--ui-color);
+            max-width: 420px;
+            font-weight: 600;
+        }
 
         h1 {
             font-size: 40px;
@@ -232,6 +259,11 @@ Purpose: AI implementation for themes
                 <p style="font-size: 24px; margin-bottom: 30px;">Final Score: <span id="final-score">0</span></p>
                 <button onclick="resetGame()">Try Again</button>
             </div>
+            <div id="start-screen">
+                <h2>Creek Crosser</h2>
+                <p>Click or tap to start, then use Arrow Keys / WASD immediately.</p>
+                <button id="start-btn">Start Run</button>
+            </div>
         </div>
     </div>
 
@@ -250,6 +282,7 @@ Purpose: AI implementation for themes
 
 // --- Constants & Config ---
 let __pnScorePosted = false;
+let gameHasStarted = false;
 const GRID_SIZE = 40;
 const COLS = 13;
 const ROWS = 13;
@@ -1340,7 +1373,7 @@ function gameLoop(timestamp) {
 }
 
 window.addEventListener('keydown', (e) => {
-    if (gameState.isGameOver) return;
+    if (!gameHasStarted || gameState.isGameOver) return;
     switch(e.key) {
         case 'ArrowUp': case 'w': case 'W': player.move('up'); break;
         case 'ArrowDown': case 's': case 'S': player.move('down'); break;
@@ -1352,12 +1385,20 @@ window.addEventListener('keydown', (e) => {
 const btnUp = document.getElementById('btn-up'); const btnDown = document.getElementById('btn-down');
 const btnLeft = document.getElementById('btn-left'); const btnRight = document.getElementById('btn-right');
 [btnUp, btnDown, btnLeft, btnRight].forEach(btn => {
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); if (btn.id === 'btn-up') player.move('up'); if (btn.id === 'btn-down') player.move('down'); if (btn.id === 'btn-left') player.move('left'); if (btn.id === 'btn-right') player.move('right'); }, {passive: false});
-    btn.addEventListener('mousedown', (e) => { if (btn.id === 'btn-up') player.move('up'); if (btn.id === 'btn-down') player.move('down'); if (btn.id === 'btn-left') player.move('left'); if (btn.id === 'btn-right') player.move('right'); });
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); if (!gameHasStarted) startGameplay(); if (btn.id === 'btn-up') player.move('up'); if (btn.id === 'btn-down') player.move('down'); if (btn.id === 'btn-left') player.move('left'); if (btn.id === 'btn-right') player.move('right'); }, {passive: false});
+    btn.addEventListener('mousedown', () => { if (!gameHasStarted) startGameplay(); if (btn.id === 'btn-up') player.move('up'); if (btn.id === 'btn-down') player.move('down'); if (btn.id === 'btn-left') player.move('left'); if (btn.id === 'btn-right') player.move('right'); });
 });
 
 function init() { canvas.width = CANVAS_WIDTH; canvas.height = CANVAS_HEIGHT; initLanes(); resetTimer(); updateHUD(); requestAnimationFrame(gameLoop); }
 init();
+function startGameplay() {
+    gameHasStarted = true;
+    const startScreen = document.getElementById('start-screen');
+    if (startScreen) startScreen.style.display = 'none';
+    window.focus();
+}
+document.getElementById('start-btn').addEventListener('click', startGameplay);
+canvas.addEventListener('pointerdown', () => { if (!gameHasStarted) startGameplay(); });
 </script>
 </body>
 </html>

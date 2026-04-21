@@ -376,6 +376,12 @@ display: flex;
         startBtn.addEventListener('click', executeAction);
 
         function initGame() { score = 0; lives = 3; currentLevel = 0; resetLevel(); }
+        function getLevelConfig(levelIdx) {
+            if (levelIdx <= 0) return { enemyCount: 3, enemySpeed: 1.9 };
+            if (levelIdx === 1) return { enemyCount: 4, enemySpeed: 2.05 };
+            if (levelIdx === 2) return { enemyCount: 5, enemySpeed: 2.2 };
+            return { enemyCount: Math.min(10, 5 + levelIdx), enemySpeed: 2.2 + (levelIdx * 0.09) };
+        }
 
         function applyColorsToUI() {
             const root = document.documentElement;
@@ -393,7 +399,8 @@ display: flex;
             activeLocks = []; explosions = []; floatingTexts = []; bombCooldownTimer = 0;
             player.x = 10 * TILE_SIZE + 16; player.y = 15 * TILE_SIZE + 16;
             player.dir = DIR.NONE; player.nextDir = DIR.NONE;
-            createEnemies(Math.min(10, 5 + currentLevel), 2.3 + (currentLevel * 0.1));
+            const cfg = getLevelConfig(currentLevel);
+            createEnemies(cfg.enemyCount, cfg.enemySpeed);
             updateHUD();
             levelIndicator.innerText = `LEVEL ${currentLevel + 1}`;
             levelIndicator.style.display = 'block';
