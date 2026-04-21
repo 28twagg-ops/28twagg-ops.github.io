@@ -54,6 +54,11 @@ body.casino{background:radial-gradient(ellipse at 50% 0%,#1e7040 0%,var(--felt) 
 .toggle-wrap input:checked+.slider-track+.slider-knob{background:var(--gold);}
 /* easier: use JS to move knob */
 #knob{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--g);transition:transform .2s,background .2s;}
+#uiToggleBar{
+  position:fixed;top:34px;right:10px;z-index:200;
+  display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:1px;
+}
+#uiToggleBar span{opacity:.65;}
 
 /* ═══════════════════════════════════════
    TERMINAL PANEL
@@ -69,6 +74,39 @@ body.casino .panel{background:rgba(6,20,10,.95);border-color:var(--gold);}
 .p-div{border-top:1px solid var(--g2);margin:8px 0;opacity:.35;}
 .lbl{color:var(--amb);font-weight:bold;}
 .mut{color:var(--g2);opacity:.7;}
+.lobby-card{
+  border:1px solid rgba(0,255,65,.25);
+  border-radius:8px;
+  padding:12px 14px;
+  background:rgba(0,255,65,.03);
+  box-shadow:0 0 0 rgba(0,0,0,0);
+  transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+body:not(.polished) .lobby-card{
+  border:1px solid rgba(0,255,65,.25);
+  border-radius:6px;
+  box-shadow:none;
+  transform:none;
+  background:rgba(0,255,65,.03);
+}
+body:not(.polished) .lobby-card:hover{
+  transform:none;
+  box-shadow:none;
+  border-color:rgba(0,255,65,.25);
+}
+.lobby-card:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 20px rgba(0,0,0,.25);
+  border-color:rgba(0,255,65,.5);
+}
+body.casino .lobby-card{
+  border-color:rgba(212,168,67,.25);
+  background:linear-gradient(180deg,rgba(212,168,67,.07),rgba(0,0,0,.28));
+}
+body.casino .lobby-card:hover{
+  border-color:rgba(255,224,102,.6);
+  box-shadow:0 10px 24px rgba(0,0,0,.35),0 0 20px rgba(212,168,67,.15);
+}
 
 /* ═══════════════════════════════════════
    BUTTONS
@@ -192,7 +230,22 @@ body.casino .bot-panel{border-color:rgba(212,168,67,.2);background:rgba(0,0,0,.5
 .stage-lbl{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--g2);opacity:.65;}
 .pot-disp{font-size:13px;color:var(--amb);font-weight:bold;}
 .eq-bar{font-size:9px;color:var(--g2);text-align:center;min-height:12px;}
-.chatter{font-size:8px;color:var(--g2);opacity:.55;font-style:italic;min-height:11px;}
+.chatter{
+  font-size:8px;color:var(--g2);opacity:.9;font-style:italic;min-height:26px;
+  border:1px solid rgba(0,255,65,.18);border-radius:6px;padding:5px 8px;
+  background:rgba(0,0,0,.28);max-width:540px;text-align:center;
+}
+body.casino .chatter{
+  border-color:rgba(212,168,67,.22);
+  background:rgba(0,0,0,.35);
+}
+body:not(.polished) .chatter{
+  border:none;
+  background:transparent;
+  padding:0;
+  min-height:12px;
+  max-width:none;
+}
 .player-area-he{border-top:1px solid rgba(0,255,65,.2);padding:6px 8px;background:var(--panel);flex-shrink:0;}
 body.casino .player-area-he{border-top-color:rgba(212,168,67,.2);}
 .p-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
@@ -255,6 +308,14 @@ body.casino .res-box{border-color:var(--gold);}
   </div>
   <span>CASINO</span>
 </div>
+<div id="uiToggleBar">
+  <span>CLASSIC</span>
+  <div class="toggle-wrap" onclick="toggleUiMode()" title="Switch UI polish">
+    <div class="slider-track"></div>
+    <div id="uiKnob"></div>
+  </div>
+  <span>POLISHED</span>
+</div>
 
 <!-- ════════════════════════════════════════
      LOBBY
@@ -263,14 +324,14 @@ body.casino .res-box{border-color:var(--gold);}
   <div class="panel">
     <div class="p-title" style="font-size:20px;letter-spacing:6px">★ SPYDER CASINO ★</div>
     <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:2px;margin-bottom:6px">
-      Tyler Waggoner · Oklahoma State · 2026
+      Chips talk. Mistakes cost.
     </div>
     <div class="p-div"></div>
 
     <!-- BLACKJACK CARD -->
-    <div style="border:1px solid rgba(0,255,65,.25);border-radius:6px;padding:12px 14px;margin-bottom:8px;background:rgba(0,255,65,.03);">
+    <div class="lobby-card" style="margin-bottom:8px;">
       <div style="font-size:14px;font-weight:bold;letter-spacing:3px;margin-bottom:4px">♠ SPYDER BLACKJACK</div>
-      <div class="mut" style="font-size:10px;margin-bottom:8px">Skill-based card game · $200 bankroll · Beat the dealer · Split, double, count cards in Analysis mode</div>
+      <div class="mut" style="font-size:10px;margin-bottom:8px">Bankroll: $200 · Dealer stands on 17 · Blackjack pays 3:2 · Split + double enabled</div>
       <div class="br" style="margin-top:0;">
         <button class="btn pri" onclick="startBJ('STANDARD')">▶ STANDARD</button>
         <button class="btn amb" onclick="startBJ('ANALYSIS')">◈ ANALYSIS</button>
@@ -278,9 +339,9 @@ body.casino .res-box{border-color:var(--gold);}
     </div>
 
     <!-- HOLDEM CARD -->
-    <div style="border:1px solid rgba(0,255,65,.25);border-radius:6px;padding:12px 14px;background:rgba(0,255,65,.03);">
+    <div class="lobby-card">
       <div style="font-size:14px;font-weight:bold;letter-spacing:3px;margin-bottom:4px">♣ TEXAS HOLD'EM</div>
-      <div class="mut" style="font-size:10px;margin-bottom:8px">1 vs 3 smart bots · $200 chips · $10/$20 blinds · Analysis mode shows win probability</div>
+      <div class="mut" style="font-size:10px;margin-bottom:8px">1v3 table · $200 chips · $10/$20 blinds · Smart adaptive bots with table talk</div>
       <div class="br" style="margin-top:0;">
         <button class="btn pri" onclick="startHE('STANDARD')">▶ STANDARD</button>
         <button class="btn amb" onclick="startHE('ANALYSIS')">◈ ANALYSIS</button>
@@ -463,6 +524,7 @@ const SUIT_SYM = {Hearts:'♥',Diamonds:'♦',Clubs:'♣',Spades:'♠'};
 const RED_S = new Set(['Hearts','Diamonds']);
 
 let visualStyle = localStorage.getItem('SC_STYLE') || 'terminal'; // 'terminal'|'casino'
+let uiMode = localStorage.getItem('SC_UI_MODE') || 'polished'; // 'classic'|'polished'
 let userInitials = localStorage.getItem('PIXELNET_INITIALS') || '';
 let endGameSlug = '', endGameMode = '';
 
@@ -480,7 +542,21 @@ function toggleStyle() {
   if (document.getElementById('bjScreen').classList.contains('active')) bjRenderAll();
   if (document.getElementById('heScreen').classList.contains('active')) heRenderAll(false);
 }
+function applyUiMode() {
+  document.body.classList.toggle('polished', uiMode === 'polished');
+  const uiKnob = document.getElementById('uiKnob');
+  if (uiKnob) {
+    uiKnob.style.transform = uiMode === 'polished' ? 'translateX(20px)' : 'translateX(0)';
+    uiKnob.style.background = uiMode === 'polished' ? 'var(--gold)' : 'var(--g)';
+  }
+}
+function toggleUiMode() {
+  uiMode = uiMode === 'polished' ? 'classic' : 'polished';
+  localStorage.setItem('SC_UI_MODE', uiMode);
+  applyUiMode();
+}
 applyStyle();
+applyUiMode();
 
 // ── UTILS ─────────────────────────────────────────────────────
 function showScreen(id) {
@@ -786,8 +862,17 @@ function bjRenderAll() { bjRenderDealer(bjPhase==='play');bjRenderPlayer(bjPhase
 //    ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝  HOLD'EM
 // ════════════════════════════════════════════
 const HE_START=200,HE_SB=10,HE_BB=20,HE_SIMS=500;
-const HE_CHATTER=["Dealer: 'New deck, same heartbreak.'","Dealer: 'Confidence is expensive.'","Dealer: 'Chips in. Feelings out.'","Dealer: 'The river giveth and taketh.'","Dealer: 'Bold raise. Questionable strategy.'"];
-const HE_BOT_NAMES=["SLICK","BUBBA","PROF","MUMBLES","KNUCKLES","LUNCHBOX","MAVERICK","BANDIT","DEUCE","WILDCARD","REDLINE","TINY"];
+const HE_CHATTER=[
+  "Dealer: 'New deck, same heartbreak.'",
+  "Dealer: 'Confidence is expensive.'",
+  "Dealer: 'Chips in. Feelings out.'",
+  "Dealer: 'The river giveth and taketh.'",
+  "Dealer: 'Bold raise. Questionable strategy.'",
+  "Dealer: 'No side pots. Pay up or fold up.'",
+  "Dealer: 'Play the hand, not the ego.'",
+  "Dealer: 'House rule: pressure reveals truth.'"
+];
+const HE_BOT_NAMES=["SLICK","BUBBA","PROF","MUMBLES","KNUCKLES","LUNCHBOX","MAVERICK","BANDIT","DEUCE","WILDCARD","REDLINE","TINY","JEFF","ACE","GRIT","NO-LIMIT NATE"];
 const HE_BOT_EXCUSES=["rage-quit after the river","bet the rent and lost","was dragged out by security","said 'BRB' and never came back"];
 // Pre-flop hand strength tiers (0=trash,1=weak,2=medium,3=strong,4=premium)
 const PF_STRENGTH = {
@@ -801,6 +886,19 @@ const HAND_NAMES=['High Card','Pair','Two Pair','Trips','Straight','Flush','Full
 
 let hePlayers=[], hePot=0, heCommunity=[], heDeck=[], heDealerIdx=0, heRoundNum=1, heCurrentBet=0, heStageName='', heMode='STANDARD';
 let heWaitResolve=null, heRaiseMin=0;
+let heUserRaisedPreflop=false;
+const heUserModel={hands:0,preflopRaises:0,showdowns:0,strongShowdowns:0,bluffsSeen:0};
+function heAdaptiveLine(){
+  const hands=Math.max(1,heUserModel.hands);
+  const raiseRate=heUserModel.preflopRaises/hands;
+  const bluffRate=heUserModel.showdowns>0?heUserModel.bluffsSeen/heUserModel.showdowns:0;
+  if(raiseRate>0.55&&bluffRate<0.2) return "JEFF: This kid doesn't bluff. Respect the raise.";
+  if(raiseRate>0.6&&bluffRate>0.45) return "VIPER: Too splashy. We can float and snap it off.";
+  if(heUserModel.strongShowdowns>=3) return "MUMBLES: They've shown strong too often. Tighten and trap.";
+  if(hands>=6&&raiseRate<0.25) return "ACE: Too passive. Start stealing those blinds.";
+  if(hands>=6&&bluffRate>0.5) return "GRIT: Pure smoke. Call lighter on the river.";
+  return null;
+}
 
 // ── HAND EVAL ──────────────────────────────────────────────────
 function hCV(c){return RANK_VAL[c.rank];}
@@ -905,6 +1003,21 @@ function heBotDecision(bot,phase,toCall,pot,comm,allOppIn){
   } else { // BALANCED
     callThresh=0.42;raiseThresh=0.28;bluffRate=0.10;
   }
+  const hands=Math.max(1,heUserModel.hands);
+  const userRaiseRate=heUserModel.preflopRaises/hands;
+  const userBluffRate=heUserModel.showdowns>0?heUserModel.bluffsSeen/heUserModel.showdowns:0;
+  const userStrongRate=heUserModel.showdowns>0?heUserModel.strongShowdowns/heUserModel.showdowns:0;
+  // Adaptive counter-play against observed user tendencies.
+  if(userStrongRate>0.55){
+    callThresh-=0.08;
+    raiseThresh-=0.08;
+  } else if(userBluffRate>0.45){
+    callThresh+=0.08;
+    raiseThresh-=0.04;
+  }
+  if(phase==='PRE-FLOP' && userRaiseRate>0.55){
+    callThresh+=0.06;
+  }
 
   // Adjust by hand strength
   const strFactor = phase==='PRE-FLOP' ? pStr/4 : psStr/9;
@@ -954,6 +1067,8 @@ function heUser(){return hePlayers[3];}
 
 // ── PLAY ROUND ────────────────────────────────────────────────
 async function hePlayRound(){
+  heUserModel.hands++;
+  heUserRaisedPreflop=false;
   // Replace broke bots
   for(let i=0;i<3;i++){
     if(hePlayers[i].chips<HE_BB){
@@ -1047,7 +1162,10 @@ async function heBotTurn(p,phase){
     if(p.roundBet>heCurrentBet)heCurrentBet=p.roundBet;
     p.lastAction=p.roundBet>(heCurrentBet-cost)?`RAISE $${p.roundBet}`:cost===0?'CHECK':'CALL';
   }
-  heSetChatter(`${p.name} → ${p.lastAction}`);
+  let line=`${p.name} → ${p.lastAction}`;
+  const adap=heAdaptiveLine();
+  if(adap&&Math.random()<0.28) line=`${line}\n${adap}`;
+  heSetChatter(line);
   heRenderAll(false);await sleep(200);
 }
 
@@ -1100,6 +1218,10 @@ function heConfirmRaise(){
   p.chips-=cost;p.roundBet+=cost;hePot+=cost;
   if(p.roundBet>heCurrentBet)heCurrentBet=p.roundBet;
   p.lastAction=`RAISE $${p.roundBet}`;
+  if(p.style==='HUMAN'&&heStageName==='PRE-FLOP'&&cost>0){
+    heUserRaisedPreflop=true;
+    heUserModel.preflopRaises++;
+  }
   heHideRaise();heWaitResolve=null;heClearAct();heRenderAll(false);res();
 }
 function heClearAct(){document.getElementById('heActZone').innerHTML='';document.getElementById('heRbetInfo').textContent='';}
@@ -1121,6 +1243,13 @@ async function heShowResult(winners,reason){
       <div style="display:flex;gap:3px;justify-content:center">${p.hand.map(c=>cardEl(c,false,'sm')).join('')}</div>
       <div style="font-size:8px;color:var(--g2);margin-top:2px">${hn}</div>`;
     rc.appendChild(div);
+  }
+  const user=heUser();
+  if(user&&user.status!=='FOLDED'){
+    heUserModel.showdowns++;
+    const [uScore]=hBest(user.hand,heCommunity);
+    if((uScore && uScore[0] >= 1)) heUserModel.strongShowdowns++;
+    else if(heUserRaisedPreflop) heUserModel.bluffsSeen++;
   }
   overlay.classList.add('show');
 }
@@ -1203,10 +1332,13 @@ async function endSubmit(){
   document.getElementById('endMsg').textContent='Submitting...';
   // parse score
   let scoreNum=0;
-  if(endGameSlug===BJ_SLUG) scoreNum=Math.round(parseFloat(document.getElementById('endScore').textContent.replace('$',''))*100);
+  if(endGameSlug===BJ_SLUG) scoreNum=Math.round(parseFloat(document.getElementById('endScore').textContent.replace('$','')));
   else scoreNum=parseInt(document.getElementById('endScore').textContent)||0;
   const entry={initials:ini,score:scoreNum,mode:endGameMode,t:Date.now()};
   await fbPost(endGameSlug,entry);
+  // Keep lobby leaderboards up-to-date immediately after any submit.
+  fbFetch(BJ_SLUG, 5).then(r => renderLb(r, 'bjLobbyLb', 'bj'));
+  fbFetch(HE_SLUG, 5).then(r => renderLb(r, 'heLobbyLb', 'he'));
   window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum},'*');
   document.getElementById('endMsg').textContent='✓ Score saved!';
   setTimeout(()=>fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he')),600);

@@ -65,3 +65,16 @@ Entry - 2026-04-21 (Poker Project alignment pass)
 - Kept adaptive AI behavior in place and extended adaptive chatter lines for passive/aggressive/bluffy pattern reads.
 - Updated `PIXEL-NET/games/spyder-casino/wrapper-v2.html` instructions to a cleaner, scannable format matching requested style.
 - Confirmed no linter errors in edited Spyder Casino files.
+
+Entry - 2026-04-21 (Spyder Casino classic/polished toggle + AI/leaderboard updates)
+- Added a separate UI mode switch in `PIXEL-NET/games/spyder-casino/game.html`:
+  - `CLASSIC ↔ POLISHED` toggle (saved in localStorage key `SC_UI_MODE`)
+  - This is independent from the existing `TERMINAL ↔ CASINO` style switch.
+- Implemented visual fallback behavior so users can revert to classic/original presentation:
+  - Classic mode removes lobby card hover polish and the Hold'em boxed chatter panel.
+  - Polished mode keeps enhanced card/lobby/chatter presentation.
+- Improved Hold'em bot adaptation logic in `heBotDecision(...)`:
+  - Bots now adjust call/raise thresholds based on observed user tendencies (strong-showdown rate, bluff rate, pre-flop raise rate).
+- Updated leaderboard freshness flow:
+  - After score submit in `endSubmit()`, both lobby leaderboards are immediately refreshed (`spyder-blackjack` + `spyder-holdem` top 5).
+- Re-ran lints for updated Spyder Casino file: no lint errors.
