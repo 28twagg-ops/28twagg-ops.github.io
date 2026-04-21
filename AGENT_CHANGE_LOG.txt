@@ -91,3 +91,19 @@ Entry - 2026-04-21 (Remaining fixes completed and prepared for push)
   - Resolved a lingering merge marker conflict in the Millipede entry safely.
 - Validation:
   - Lints/diagnostics checked for `creek-crosser`, `logic-bomb`, and `games.json`: no errors reported.
+
+Entry - 2026-04-21 (Final competitive atmosphere completion)
+- Updated `PIXEL-NET/index.html` to finish the remaining request for score takeover recognition:
+  - Added a `Top Pixels Takeover Honor Board` section under the podium.
+  - During leaderboard aggregation, computes per-game dethrone messages from top-vs-second rows:
+    - format: `AAA took over GAME from BBB (+margin)`.
+  - Added no-event fallback messaging when no live dethrone rows are available.
+- Re-verified requested checklist items in current codebase:
+  - Caked Up Cats score submit contract and buffered movement present.
+  - Creek Crosser start/focus gate present.
+  - Knight Flight wrapper entry points to `game.html`.
+  - Millipede firing SFX present and gated by user interaction.
+  - Featured-game fallback + search aliases/tags + reset-initials hardening present.
+  - Logic Bomb level 1–3 easing present.
+- Validation:
+  - Lints/diagnostics for updated `index.html`: no errors reported.

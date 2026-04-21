@@ -147,6 +147,28 @@
       color:rgba(255,255,255,.6);
       margin-bottom:12px;
     }
+    .takeover-wrap{
+      margin-top:14px;
+      border-top:1px solid rgba(255,255,255,.12);
+      padding-top:12px;
+    }
+    .takeover-title{
+      font-family:'Orbitron',sans-serif;
+      font-size:.85rem;
+      letter-spacing:1.5px;
+      color:var(--neon-pink);
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .takeover-row{
+      font-size:.88rem;
+      color:rgba(255,255,255,.78);
+      padding:6px 8px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:8px;
+      background:rgba(255,255,255,.02);
+      margin-bottom:6px;
+    }
     .top-pixels-list{display:flex;flex-direction:column;gap:8px;}
     .pixel-row{
       display:grid;
@@ -284,6 +306,10 @@
       <h4>Top Pixels</h4>
       <div class="meta" id="topPixelsMeta">Loading competitive board…</div>
       <div class="top-pixels-list" id="topPixelsList"></div>
+      <div class="takeover-wrap">
+        <div class="takeover-title">Takeover Honor Board</div>
+        <div id="takeoverList"></div>
+      </div>
     </section>
 
     <div class="section-header">
@@ -400,9 +426,11 @@
     function renderTopPixels(items, sourceLabel){
       const meta = document.getElementById("topPixelsMeta");
       const list = document.getElementById("topPixelsList");
+      const takeoverEl = document.getElementById("takeoverList");
       if(!items.length){
         meta.textContent = "No leaderboard scores yet. Finish a run to claim first place.";
         list.innerHTML = "";
+        takeoverEl.innerHTML = `<div class="takeover-row">No takeovers yet. Be the first to set a record.</div>`;
         return;
       }
       meta.textContent = `Live ${sourceLabel}. Hold time is based on leaderboard timestamps.`;
@@ -414,6 +442,12 @@
           <div class="pixel-score">${row.score}</div>
         </div>
       `).join("");
+      const takeovers = items
+        .filter(r => r.takeoverText)
+        .slice(0, 5);
+      takeoverEl.innerHTML = takeovers.length
+        ? takeovers.map(r => `<div class="takeover-row">${r.takeoverText}</div>`).join("")
+        : `<div class="takeover-row">No live dethrone events yet — current leaders are still defending.</div>`;
     }
 
     async function loadTopPixels(games){
@@ -425,11 +459,20 @@
         rows.sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
         const top = rows[0];
         if(top){
+          const second = rows[1] || null;
+          let takeoverText = "";
+          if (second && Number(top.score) > Number(second.score)) {
+            const topIni = (top.initials || top.name || "???").toString().toUpperCase().slice(0,3);
+            const secIni = (second.initials || second.name || "???").toString().toUpperCase().slice(0,3);
+            const margin = (Number(top.score) || 0) - (Number(second.score) || 0);
+            takeoverText = `${topIni} took over ${g.name} from ${secIni} (+${margin})`;
+          }
           scored.push({
             initials: (top.initials || top.name || "???").toString().toUpperCase().slice(0,3),
             score: Number(top.score) || 0,
             t: Number(top.t) || Date.now(),
-            gameName: g.name || g.slug
+            gameName: g.name || g.slug,
+            takeoverText
           });
         }
       });
