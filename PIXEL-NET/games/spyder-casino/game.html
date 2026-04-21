@@ -284,21 +284,24 @@ body:not(.casino) .term-screen{display:block;}
   min-height:320px;
 }
 .term-cmd{
-  margin-top:8px;
+  margin-top:0;
   display:flex;
-  gap:8px;
   align-items:center;
+  border-top:1px solid rgba(0,255,65,.18);
 }
 .term-cmd input{
   flex:1;
   background:#000;
   color:#00ff41;
-  border:1px solid #00cc33;
+  border:none;
+  outline:none;
   border-radius:0;
   font-family:inherit;
   font-size:12px;
-  padding:6px 8px;
+  padding:6px 10px;
+  caret-color:#00ff41;
 }
+.term-cmd input::placeholder{ color:rgba(0,255,65,.28); }
 body:not(.casino) .bj-container > .section,
 body:not(.casino) #bjActionBtns,
 body:not(.casino) #bjNextBtns,
@@ -723,7 +726,7 @@ Select a game:
   <div class="term-screen terminal-only" id="bjTermScreen">
     <pre class="term-view" id="bjTermView"></pre>
     <div class="term-cmd">
-      <input id="bjTermCmdInp" placeholder="type command and press Enter" autocomplete="off" spellcheck="false" />
+      <input id="bjTermCmdInp" autocomplete="off" spellcheck="false" />
     </div>
   </div>
   <div class="mode-hint">TERMINAL KEYS: BET [1-5] DEAL [ENTER] PLAY [H,S,D,P] NEXT [N] CASHOUT [C] LOBBY [ESC]</div>
@@ -803,7 +806,7 @@ Select a game:
   <div class="term-screen terminal-only" id="heTermScreen">
     <pre class="term-view" id="heTermView"></pre>
     <div class="term-cmd">
-      <input id="heTermCmdInp" placeholder="type command and press Enter" autocomplete="off" spellcheck="false" />
+      <input id="heTermCmdInp" autocomplete="off" spellcheck="false" />
     </div>
   </div>
   <div class="mode-hint">TERMINAL KEYS: CALL/CHECK [C] RAISE [R] FOLD [F] CONFIRM [ENTER] LOBBY [ESC]</div>
