@@ -1248,6 +1248,40 @@ function heSmallCardRow(cards, hidden=false){
 function bjPop() { if(bjDeck.length<BJ_THRESH){bjDeck=buildDeck();bjRC=0;} return bjDeck.pop(); }
 function bjCount(c) { if(bjMode==='ANALYSIS') bjRC+=bjRC_val(c); }
 function bjTrueCount() { return (bjRC/Math.max(1,bjDeck.length/52)).toFixed(1); }
+function bjTerminalProbLine(){
+  if(bjMode!=='ANALYSIS' || bjPhase!=='play') return '';
+  const h=bjCurH(); if(!h) return '';
+  const pv=bjHV(h.cards);
+  if(pv>=21) return '';
+  if(bjHands.length>1) return '[Probability Engine Disabled for Split Hands]';
+  const pool=[...bjDeck];
+  if(bjHole) pool.push(bjHole);
+  if(!pool.length) return '';
+  const sims=Math.max(120, Math.min(BJ_SIMS, 320));
+  let ws=0,wh=0;
+  for(let t=0;t<sims;t++){
+    const sim=shuffle(pool);
+    const dh=[bjDealer[0],sim.pop()];
+    while(bjHV(dh)<17&&sim.length)dh.push(sim.pop());
+    const ds=bjHV(dh);
+    if(ds>21||pv>ds)ws++;else if(pv===ds)ws+=0.5;
+  }
+  for(let t=0;t<sims;t++){
+    const sim=shuffle(pool);
+    const nc=sim.pop();
+    if(!nc) continue;
+    const ps=bjHV([...h.cards,nc]);
+    if(ps<=21){
+      const dh=[bjDealer[0],sim.pop()].filter(Boolean);
+      while(dh.length&&bjHV(dh)<17&&sim.length)dh.push(sim.pop());
+      const ds=dh.length?bjHV(dh):0;
+      if(ds>21||ps>ds)wh++;else if(ps===ds)wh+=0.5;
+    }
+  }
+  const pS=(ws/sims)*100, pH=(wh/sims)*100;
+  const rec=pH>pS?'HIT':'STAY';
+  return `PROBABILITY: Stay ${pS.toFixed(1)}% | Hit ${pH.toFixed(1)}% | Advice: ${rec}`;
+}
 
 function startBJ(mode) {
   bjMode=mode; bjBank=BJ_START; bjBankBefore=BJ_START; bjDeck=buildDeck(); bjRC=0;
@@ -1361,7 +1395,7 @@ function bjRenderTerminalView(){
   out.push(ctr('★ SPYDER BLACKJACK ★'));
   out.push('='.repeat(W));
   out.push('');
-  out.push(`Bankroll: $${bjBank.toFixed(2)}`);
+  out.push(`Bankroll: $${bjBank.toFixed(2)}   MODE: ${bjMode}`);
   out.push('');
 
   if(bjPhase==='bet'||!bjDealer.length){
@@ -1379,6 +1413,9 @@ function bjRenderTerminalView(){
       out.push(`Dealer Total: ${dv}${bjHV(bjDealer)>21?' (BUST)':''}`);
     } else {
       out.push(`Total: ${dv} + ?`);
+    }
+    if(bjMode==='ANALYSIS'){
+      out.push(`[Count: ${bjRC} | True Count: ${bjTrueCount()}]`);
     }
     out.push('');
     out.push('-'.repeat(W));
@@ -1424,6 +1461,8 @@ function bjRenderTerminalView(){
         if(canD) opts.push('(D)ouble');
         if(canSp) opts.push('S(p)lit');
         out.push(`Action Hand ${bjHandIdx+1} ${opts.join(', ')}:`);
+        const pLine=bjTerminalProbLine();
+        if(pLine) out.push(pLine);
       }
     }
   }
@@ -2091,6 +2130,7 @@ function heRenderTerminalView(){
   out.push('='.repeat(W));
   out.push(ctr(` TEXAS HOLD'EM - POT: $${hePot} (${heStageName||'PRE-FLOP'}) `));
   out.push('='.repeat(W));
+  out.push(ctr(`MODE: ${heMode}`));
   out.push('');
 
   // ── Three bot columns (26 chars each) ──
