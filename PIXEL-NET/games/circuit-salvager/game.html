@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Circuit Salvager</title>
+<style>
+  *{box-sizing:border-box}html,body{margin:0;height:100%;background:transparent}
+  body{font-family:ui-monospace,Consolas,monospace;color:#e9f8ff;overflow:hidden}
+  canvas{position:absolute;inset:0;width:100%;height:100%}
+  #overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(4,10,10,.85)}
+  #overlay.hidden{display:none}
+  .panel{background:rgba(7,20,20,.95);border:1px solid #29ffd6;padding:16px;border-radius:12px;text-align:center}
+  h1{margin:0 0 8px;color:#29ffd6;font-size:26px}
+  p{margin:4px 0;color:#b4fff0;font-size:13px}
+  button{margin-top:10px;padding:10px 16px;background:#061614;border:1px solid #29ffd6;color:#29ffd6;cursor:pointer}
+  #hud{position:absolute;top:8px;left:10px;right:10px;display:flex;justify-content:space-between;font-weight:700}
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="600"></canvas>
+<div id="hud"><div id="score">SCORE 0</div><div id="wave">WAVE 1</div><div id="lives">HULL 3</div></div>
+<div id="overlay"><div class="panel"><h1>CIRCUIT SALVAGER</h1><p>Collect all cores before drone lock.</p><p>Avoid sentries. Clear waves to scale score.</p><button id="btn">START SALVAGE</button></div></div>
+<script>
+(() => {
+  const c = document.getElementById("c"), x = c.getContext("2d");
+  const scoreEl = document.getElementById("score"), waveEl = document.getElementById("wave"), livesEl = document.getElementById("lives");
+  const overlay = document.getElementById("overlay"), btn = document.getElementById("btn");
+  let w=800,h=600,cell=40,cols=20,rows=15;
+  let running=false,score=0,wave=1,lives=3,posted=false,last=0;
+  let player,cores,enemies,walls;
+  function resize(){const r=c.getBoundingClientRect();w=Math.max(520,Math.floor(r.width));h=Math.max(420,Math.floor(r.height));c.width=w;c.height=h;cell=Math.floor(Math.min(w/20,h/15));cols=Math.floor(w/cell);rows=Math.floor(h/cell);}
+  function resetWave(){
+    player={x:1,y:1}; cores=[]; enemies=[]; walls=new Set();
+    for(let i=0;i<Math.floor(cols*rows*0.08);i++){const wx=(Math.random()*cols)|0,wy=(Math.random()*rows)|0;if((wx+wy)>4)walls.add(wx+","+wy);}
+    for(let i=0;i<6+wave*2;i++){spawnItem(cores);}
+    for(let i=0;i<2+Math.floor(wave*0.8);i++){spawnEnemy();}
+  }
+  function spawnItem(arr){let t=0;while(t++<400){const x0=(Math.random()*cols)|0,y0=(Math.random()*rows)|0,k=x0+","+y0;if(k!=="1,1"&&!walls.has(k)&&!arr.some(a=>a.x===x0&&a.y===y0)){arr.push({x:x0,y:y0,p:Math.random()*6.28});return;}}}
+  function spawnEnemy(){let t=0;while(t++<300){const x0=(Math.random()*cols)|0,y0=(Math.random()*rows)|0,k=x0+","+y0;if(!walls.has(k)&&Math.abs(x0-1)+Math.abs(y0-1)>8){enemies.push({x:x0,y:y0,tx:x0,ty:y0,m:0});return;}}}
+  function submit(){if(posted)return;posted=true;try{window.parent.postMessage({type:"GAME_OVER_SCORE",score:Number(score)||0},"*");}catch(_){}}
+  function endGame(){running=false;submit();overlay.classList.remove("hidden");btn.textContent="RESTART SALVAGE";}
+  function start(){score=0;wave=1;lives=3;posted=false;resetWave();running=true;overlay.classList.add("hidden");}
+  addEventListener("keydown",e=>{
+    const k=e.key.toLowerCase(); let nx=player?.x,ny=player?.y;
+    if(!running&&(e.key==="Enter"||e.key===" ")) return start();
+    if(!running) return;
+    if(k==="arrowup"||k==="w")ny--; if(k==="arrowdown"||k==="s")ny++; if(k==="arrowleft"||k==="a")nx--; if(k==="arrowright"||k==="d")nx++;
+    if(nx<0||ny<0||nx>=cols||ny>=rows||walls.has(nx+","+ny))return;
+    player.x=nx;player.y=ny;
+  });
+  btn.addEventListener("click",start);
+  function tick(ts){
+    if(!last)last=ts; const dt=ts-last; last=ts;
+    x.fillStyle="#051013";x.fillRect(0,0,w,h);
+    if(running){
+      cores=cores.filter(c0=>{c0.p+=0.2; if(c0.x===player.x&&c0.y===player.y){score+=40;return false;} return true;});
+      for(const e of enemies){
+        e.m+=dt; if(e.m>260-Math.min(140,wave*12)){e.m=0;
+          const dirs=[[1,0],[-1,0],[0,1],[0,-1]].sort(()=>Math.random()-0.5);
+          let best={x:e.x,y:e.y,d:1e9};
+          for(const d of dirs){const tx=e.x+d[0],ty=e.y+d[1]; if(tx<0||ty<0||tx>=cols||ty>=rows||walls.has(tx+","+ty))continue; const dist=Math.abs(tx-player.x)+Math.abs(ty-player.y); if(dist<best.d)best={x:tx,y:ty,d:dist};}
+          e.x=best.x;e.y=best.y;
+        }
+        if(e.x===player.x&&e.y===player.y){lives--; player.x=1;player.y=1; if(lives<=0)endGame();}
+      }
+      if(cores.length===0){wave++; score+=100; resetWave();}
+      scoreEl.textContent="SCORE "+score; waveEl.textContent="WAVE "+wave; livesEl.textContent="HULL "+lives;
+    }
+    for(let yy=0;yy<rows;yy++)for(let xx=0;xx<cols;xx++){
+      x.strokeStyle="rgba(41,255,214,.08)"; x.strokeRect(xx*cell,yy*cell,cell,cell);
+    }
+    for(const k of walls){const [wx,wy]=k.split(",").map(Number); x.fillStyle="#10343a"; x.fillRect(wx*cell+2,wy*cell+2,cell-4,cell-4);}
+    for(const c0 of cores){x.fillStyle="#ffe56d"; x.shadowBlur=12; x.shadowColor="#ffe56d"; x.beginPath(); x.arc(c0.x*cell+cell/2,c0.y*cell+cell/2,6+Math.sin(c0.p)*1.6,0,6.28); x.fill(); x.shadowBlur=0;}
+    for(const e of enemies){x.fillStyle="#ff4c7d"; x.fillRect(e.x*cell+8,e.y*cell+8,cell-16,cell-16);}
+    if(player){x.fillStyle="#29ffd6";x.fillRect(player.x*cell+7,player.y*cell+7,cell-14,cell-14);}
+    requestAnimationFrame(tick);
+  }
+  addEventListener("resize",resize); resize(); requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

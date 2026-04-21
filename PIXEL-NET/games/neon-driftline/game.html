@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Driftline</title>
+<style>
+  :root{--bg:#060816;--panel:#0d1227;--accent:#00f5ff;--hot:#ff2a8a;--text:#e8f3ff}
+  *{box-sizing:border-box} html,body{margin:0;height:100%;background:transparent}
+  body{font-family:ui-monospace,Consolas,monospace;color:var(--text);overflow:hidden}
+  #wrap{position:relative;width:100%;height:100%}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:8px 10px;font-weight:700;text-shadow:0 0 8px #000}
+  #overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(3,6,14,.84)}
+  #overlay.hidden{display:none}
+  .card{background:rgba(13,18,39,.95);border:1px solid rgba(0,245,255,.4);padding:18px;border-radius:10px;text-align:center;max-width:420px}
+  h1{margin:0 0 10px;color:var(--accent);font-size:28px;letter-spacing:2px}
+  p{margin:6px 0;color:#b9d8ff;font-size:13px}
+  button{margin-top:10px;padding:10px 16px;border:1px solid var(--accent);background:#071125;color:var(--accent);cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c" width="800" height="600"></canvas>
+  <div id="hud"><div id="score">SCORE 0</div><div id="time">TIME 0</div></div>
+  <div id="overlay">
+    <div class="card">
+      <h1>NEON DRIFTLINE</h1>
+      <p>Dodge traffic. Collect boost shards.</p>
+      <p>Survive as speed ramps up.</p>
+      <button id="btn">START RUN</button>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const c = document.getElementById("c");
+  const x = c.getContext("2d");
+  const overlay = document.getElementById("overlay");
+  const btn = document.getElementById("btn");
+  const scoreEl = document.getElementById("score");
+  const timeEl = document.getElementById("time");
+  let w = 800, h = 600;
+  let running = false, score = 0, ms = 0, posted = false, spawnTick = 0, shardTick = 0;
+  let lanes = [0.2, 0.4, 0.6, 0.8];
+  let laneX = i => Math.floor(w * lanes[i]);
+  let player = { lane: 1, y: 0, target: 1, glow: 0 };
+  let cars = [];
+  let shards = [];
+  let speed = 3.5;
+  function resize() {
+    const r = c.getBoundingClientRect();
+    w = Math.max(480, Math.floor(r.width));
+    h = Math.max(480, Math.floor(r.height));
+    c.width = w; c.height = h;
+    player.y = h - 80;
+  }
+  function reset() {
+    score = 0; ms = 0; speed = 3.5; cars = []; shards = []; posted = false; spawnTick = 0; shardTick = 0;
+    player.lane = 1; player.target = 1; player.glow = 0; player.y = h - 80;
+    running = true; overlay.classList.add("hidden");
+  }
+  function submit() {
+    if (posted) return;
+    posted = true;
+    try { window.parent.postMessage({ type: "GAME_OVER_SCORE", score: Number(score) || 0 }, "*"); } catch (_) {}
+  }
+  function endRun() {
+    running = false;
+    submit();
+    overlay.classList.remove("hidden");
+    btn.textContent = "RESTART RUN";
+  }
+  function spawnCar() {
+    const lane = Math.floor(Math.random() * 4);
+    cars.push({ lane, y: -40, speed: speed + Math.random() * 2, hue: Math.random() > 0.5 ? "#ff2a8a" : "#00f5ff" });
+  }
+  function spawnShard() {
+    shards.push({ lane: Math.floor(Math.random() * 4), y: -20, pulse: Math.random() * 6.28 });
+  }
+  function drawRoad() {
+    x.fillStyle = "#060816"; x.fillRect(0, 0, w, h);
+    x.fillStyle = "rgba(0,245,255,.09)";
+    for (let i = 1; i < 4; i++) {
+      const xx = laneX(i) - (laneX(1)-laneX(0))/2;
+      for (let y = (ms * 0.02) % 40 - 40; y < h; y += 40) x.fillRect(xx - 1, y, 2, 20);
+    }
+    x.strokeStyle = "rgba(255,42,138,.45)";
+    x.strokeRect(20, 20, w - 40, h - 40);
+  }
+  function drawCar(obj, ww, hh) {
+    const px = laneX(obj.lane) - ww / 2;
+    x.fillStyle = obj.hue;
+    x.shadowBlur = 14; x.shadowColor = obj.hue;
+    x.fillRect(px, obj.y, ww, hh);
+    x.shadowBlur = 0;
+  }
+  function loop(ts) {
+    if (!loop.prev) loop.prev = ts;
+    const dt = Math.min(34, ts - loop.prev);
+    loop.prev = ts;
+    if (running) {
+      ms += dt;
+      if (ms % 1000 < dt) score += 10;
+      speed = 3.5 + Math.min(8, ms / 12000);
+      spawnTick += dt; shardTick += dt;
+      if (spawnTick > Math.max(220, 620 - ms / 40)) { spawnTick = 0; spawnCar(); }
+      if (shardTick > 1300) { shardTick = 0; spawnShard(); }
+      if (player.target !== player.lane) player.lane += (player.target - player.lane) * 0.18;
+      drawRoad();
+      const pW = 34, pH = 52;
+      const pX = laneX(Math.round(player.lane));
+      shards = shards.filter(s => {
+        s.y += speed + 1.2; s.pulse += 0.14;
+        const sx = laneX(s.lane);
+        x.fillStyle = "#ffe66a";
+        x.shadowBlur = 12; x.shadowColor = "#ffe66a";
+        x.beginPath(); x.arc(sx, s.y, 8 + Math.sin(s.pulse) * 2, 0, 6.28); x.fill(); x.shadowBlur = 0;
+        if (Math.abs(sx - pX) < 26 && Math.abs(s.y - player.y) < 36) { score += 75; return false; }
+        return s.y < h + 20;
+      });
+      cars = cars.filter(car => {
+        car.y += car.speed;
+        drawCar(car, 34, 58);
+        const cx = laneX(car.lane);
+        if (Math.abs(cx - pX) < 28 && Math.abs(car.y - player.y) < 44) { endRun(); }
+        return car.y < h + 70;
+      });
+      x.fillStyle = "#00f5ff";
+      x.shadowBlur = 16; x.shadowColor = "#00f5ff";
+      x.fillRect(pX - pW / 2, player.y - pH / 2, pW, pH);
+      x.shadowBlur = 0;
+      scoreEl.textContent = "SCORE " + score;
+      timeEl.textContent = "TIME " + Math.floor(ms / 1000);
+    } else {
+      drawRoad();
+      scoreEl.textContent = "SCORE " + score;
+      timeEl.textContent = "TIME " + Math.floor(ms / 1000);
+    }
+    requestAnimationFrame(loop);
+  }
+  addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") player.target = Math.max(0, Math.round(player.target) - 1);
+    if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") player.target = Math.min(3, Math.round(player.target) + 1);
+    if (!running && (e.key === "Enter" || e.key === " ")) reset();
+  });
+  btn.addEventListener("click", reset);
+  addEventListener("resize", resize);
+  resize();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

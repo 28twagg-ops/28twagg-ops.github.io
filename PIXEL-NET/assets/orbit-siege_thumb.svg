@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#080815"/>
+  <circle cx="256" cy="256" r="170" fill="none" stroke="#9f7bff" stroke-opacity=".35"/>
+  <circle cx="256" cy="256" r="128" fill="none" stroke="#9f7bff" stroke-opacity=".25"/>
+  <circle cx="256" cy="256" r="86" fill="none" stroke="#9f7bff" stroke-opacity=".2"/>
+  <circle cx="256" cy="256" r="30" fill="#8ff0ff"/>
+  <line x1="256" y1="256" x2="382" y2="210" stroke="#d8c7ff" stroke-width="8"/>
+  <circle cx="382" cy="210" r="14" fill="#9f7bff"/>
+  <circle cx="95" cy="170" r="14" fill="#ff5ea8"/>
+  <circle cx="408" cy="368" r="14" fill="#ff5ea8"/>
+  <circle cx="145" cy="360" r="10" fill="#ff5ea8"/>
+  <text x="52" y="68" fill="#d9cbff" font-family="Orbitron, sans-serif" font-size="34" font-weight="700">ORBIT SIEGE</text>
+</svg>
