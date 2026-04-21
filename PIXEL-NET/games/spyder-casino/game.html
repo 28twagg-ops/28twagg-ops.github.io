@@ -195,6 +195,26 @@ body:not(.casino) .chip-row{
   border-top:1px solid #00cc33;
   padding-top:8px;
 }
+#termSelRow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-top:8px;
+  font-size:12px;
+}
+#termSelection{
+  width:120px;
+  background:#000;
+  color:#00ff41;
+  border:1px solid #00cc33;
+  border-radius:0;
+  font-family:inherit;
+  font-size:12px;
+  padding:5px 7px;
+  outline:none;
+}
+#termSelection:focus{border-color:#00ff41;}
 .btn:hover{background:rgba(0,255,65,.1);border-color:var(--g);}
 .btn.pri{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.15);}
 .btn.red{color:var(--red);border-color:var(--red);}
@@ -455,6 +475,10 @@ Select a game:
 [4] Texas Hold'em (ANALYSIS)
 [Q] Back
 ================================================================================</pre>
+        <div id="termSelRow">
+          <span>Selection:</span>
+          <input id="termSelection" maxlength="1" autocomplete="off" />
+        </div>
       </div>
     </div>
     <div class="casino-only">
@@ -666,7 +690,7 @@ const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 const SUIT_SYM = {Hearts:'♥',Diamonds:'♦',Clubs:'♣',Spades:'♠'};
 const RED_S = new Set(['Hearts','Diamonds']);
 
-let visualStyle = localStorage.getItem('SC_STYLE') || 'terminal'; // 'terminal'|'casino'
+let visualStyle = (localStorage.getItem('SC_STYLE') || 'terminal').toLowerCase(); // 'terminal'|'casino'
 let userInitials = localStorage.getItem('PIXELNET_INITIALS') || localStorage.getItem('playerInitials') || '';
 let endGameSlug = '', endGameMode = '';
 let heKeyActions = null;
@@ -675,9 +699,14 @@ let lobbyHeRows = [];
 
 // ── STYLE TOGGLE ──────────────────────────────────────────────
 function applyStyle() {
+  if (visualStyle !== 'terminal' && visualStyle !== 'casino') visualStyle = 'terminal';
   document.body.classList.toggle('casino', visualStyle === 'casino');
   document.getElementById('knob').style.transform = visualStyle === 'casino' ? 'translateX(20px)' : 'translateX(0)';
   document.getElementById('knob').style.background = visualStyle === 'casino' ? 'var(--gold)' : 'var(--g)';
+  const t = document.getElementById('terminalLobby');
+  const c = document.querySelector('.casino-only');
+  if (t) t.style.display = visualStyle === 'terminal' ? 'block' : 'none';
+  if (c) c.style.display = visualStyle === 'casino' ? 'block' : 'none';
 }
 function toggleStyle() {
   visualStyle = visualStyle === 'terminal' ? 'casino' : 'terminal';
@@ -696,9 +725,12 @@ function showScreen(id) {
 }
 function goLobby() {
   showScreen('lobbyScreen');
+  applyStyle();
   fbFetch(BJ_SLUG, 5).then(r => { lobbyBjRows = Array.isArray(r) ? r : []; renderLb(lobbyBjRows, 'bjLobbyLb', 'bj'); renderTerminalLobbyBoard(); });
   fbFetch(HE_SLUG, 5).then(r => { lobbyHeRows = Array.isArray(r) ? r : []; renderLb(lobbyHeRows, 'heLobbyLb', 'he'); renderTerminalLobbyBoard(); });
   heKeyActions = null;
+  const sel = document.getElementById('termSelection');
+  if (sel && visualStyle === 'terminal') { sel.value=''; sel.focus(); }
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function shuffle(arr) {
@@ -773,6 +805,15 @@ function renderTerminalLobbyBoard(){
     lines.push(left.padEnd(colW,' ') + gap + right.padEnd(colW,' '));
   }
   el.textContent = lines.join('\n');
+}
+function runTerminalSelection(v){
+  const key = (v||'').toLowerCase();
+  if (key === '1') { startBJ('STANDARD'); return true; }
+  if (key === '2') { startBJ('ANALYSIS'); return true; }
+  if (key === '3') { startHE('STANDARD'); return true; }
+  if (key === '4') { startHE('ANALYSIS'); return true; }
+  if (key === 'q') { return true; }
+  return false;
 }
 
 // ── CARD ENGINE (shared) ──────────────────────────────────────
@@ -1554,6 +1595,10 @@ window.addEventListener('keydown', (e) => {
   const endOn = document.getElementById('endScreen').classList.contains('active');
   if (key === 'escape' && (bjOn || heOn || endOn)) { goLobby(); return; }
   if (lobby) {
+    if (visualStyle === 'terminal') {
+      if (runTerminalSelection(key)) return;
+      if (e.key === 'Enter') return;
+    }
     if (key === '1' || e.key === 'Enter') { startBJ('STANDARD'); return; }
     if (key === '2') { startBJ('ANALYSIS'); return; }
     if (key === '3') { startHE('STANDARD'); return; }
@@ -1584,6 +1629,19 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') heKeyActions.confirmRaise && heKeyActions.confirmRaise();
   }
   if (endOn && e.key === 'Enter') endSubmit();
+});
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('termSelection');
+  if (!sel) return;
+  sel.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const v = sel.value.trim();
+      if (runTerminalSelection(v)) {
+        sel.value = '';
+        e.preventDefault();
+      }
+    }
+  });
 });
 goLobby();
 </script>
