@@ -1210,7 +1210,7 @@ const BJ_START = 200, BJ_MIN = 5, BJ_THRESH = 20, BJ_SIMS = 700;
 let bjDeck=[], bjRC=0, bjBank=BJ_START, bjBet=0, bjHands=[], bjHandIdx=0, bjDealer=[], bjHole=null, bjMode='STANDARD', bjPhase='bet';
 let bjTermLog=[];
 let bjDoneAt=0;
-let bjNeedEnterRelease=false;
+let bjDoneReadyAt=0;
 
 function bjRC_val(c) { if(c.value<=6) return 1; if(c.value===10||c.rank==='A') return -1; return 0; }
 function bjHV(cards) { let v=0,a=0; for(const c of cards){v+=c.value;if(c.rank==='A')a++;} while(v>21&&a){v-=10;a--;} return v; }
@@ -1500,7 +1500,7 @@ function bjRunTerminalCommand(raw){
   if(!bjIsTerminal()) return;
   const s=(raw||'').trim().toLowerCase();
   if(bjPhase==='done' && (s===''||s==='n'||s==='next')) {
-    if(bjNeedEnterRelease) return;
+    if(Date.now() < bjDoneReadyAt) return;
     return bjNextHand();
   }
   if(!s) return;
@@ -1598,7 +1598,9 @@ function bjSettle() {
 function bjShowResults() {
   bjPhase='done';
   bjDoneAt=Date.now();
-  bjNeedEnterRelease=true;
+  // Brief guard blocks accidental carry-over Enter from action submit,
+  // but still keeps "one press to continue" once results are on screen.
+  bjDoneReadyAt=bjDoneAt+180;
   document.getElementById('bjActionBtns').style.display='none';
   document.getElementById('bjProbSec').style.display='none';
   document.getElementById('bjNextBtns').style.display='flex';
@@ -2495,7 +2497,7 @@ window.addEventListener('keydown', (e) => {
       if (key === 'q') { e.preventDefault(); bjCashOut(); return; }
       if ((key === 'n' || e.key === 'Enter') && bjPhase === 'done') {
         e.preventDefault();
-        if (!bjNeedEnterRelease) bjNextHand();
+        if (Date.now() >= bjDoneReadyAt) bjNextHand();
         return;
       }
       if ((key === 'h' || key === 's' || key === 'd' || key === 'p') && bjPhase === 'play') { e.preventDefault(); bjRunTerminalCommand(key); return; }
@@ -2576,7 +2578,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bjCmd.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         if (bjPhase === 'done') {
-          if (!bjNeedEnterRelease) bjNextHand();
+          if (Date.now() >= bjDoneReadyAt) bjNextHand();
           bjCmd.value = '';
           e.stopPropagation();
           e.preventDefault();
@@ -2606,11 +2608,6 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
       }
     });
-  }
-});
-window.addEventListener('keyup', (e) => {
-  if (e.key === 'Enter' && bjPhase === 'done' && bjNeedEnterRelease) {
-    bjNeedEnterRelease = false;
   }
 });
 goLobby();
