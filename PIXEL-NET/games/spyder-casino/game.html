@@ -226,6 +226,8 @@ body:not(.casino) #bjActionBtns > button{
 body:not(.casino) #bjActionBtns{
   justify-content:flex-start;
 }
+body:not(.casino) #heActZone,
+body:not(.casino) #heRaiseZ{display:none !important;}
 .term-line{
   font-size:12px;
   color:#00ff41;
@@ -611,7 +613,7 @@ Select a game:
           <div class="chip c100" onclick="bjAddBet(100)">$100</div>
         </div>
         <div class="br" style="margin-top:0">
-          <button class="btn" onclick="bjClearBet()">CLEAR</button>
+          <button class="btn" id="bjClearBtn" onclick="bjClearBet()">CLEAR</button>
           <button class="btn pri" id="bjDealBtn" onclick="bjDeal()" disabled>DEAL</button>
         </div>
       </div>
@@ -684,6 +686,14 @@ Select a game:
         <button class="btn amb" onclick="heConfirmRaise()">RAISE</button>
         <button class="btn" onclick="heHideRaise()">CANCEL</button>
       </div>
+      <div class="term-act" id="heTermActWrap">
+        <div class="term-line" id="heTermActLine">Action [(C)all/(K)eck, (R)aise, (F)old]:</div>
+        <div class="term-inline">
+          <input class="term-input" id="heTermActInp" placeholder="c / k / r / f" />
+          <button class="btn pri" onclick="heSubmitTerminalAction()">SUBMIT ACTION</button>
+        </div>
+        <div class="term-line" id="heTermActMsg"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -745,6 +755,7 @@ let visualStyle = (localStorage.getItem('SC_STYLE') || 'terminal').toLowerCase()
 let userInitials = localStorage.getItem('PIXELNET_INITIALS') || localStorage.getItem('playerInitials') || '';
 let endGameSlug = '', endGameMode = '';
 let heKeyActions = null;
+let heTermHandlers = null;
 let lobbyBjRows = [];
 let lobbyHeRows = [];
 
@@ -783,6 +794,7 @@ function goLobby() {
   fbFetch(BJ_SLUG, 5).then(r => { lobbyBjRows = Array.isArray(r) ? r : []; renderLb(lobbyBjRows, 'bjLobbyLb', 'bj'); renderTerminalLobbyBoard(); });
   fbFetch(HE_SLUG, 5).then(r => { lobbyHeRows = Array.isArray(r) ? r : []; renderLb(lobbyHeRows, 'heLobbyLb', 'he'); renderTerminalLobbyBoard(); });
   heKeyActions = null;
+  heTermHandlers = null;
   const sel = document.getElementById('termSelection');
   if (sel && visualStyle === 'terminal') { sel.value=''; sel.focus(); }
 }
@@ -944,6 +956,7 @@ function bjReset() {
   const aInp=document.getElementById('bjTermActInp'), aMsg=document.getElementById('bjTermActMsg');
   if(aInp) aInp.value='';
   if(aMsg) aMsg.textContent='';
+  bjApplyTerminalLayout();
   bjUpdateHUD();
 }
 function bjAddBet(amt) {
@@ -994,6 +1007,17 @@ function bjSubmitTerminalAction(){
 function bjUpdateHUD() {
   document.getElementById('bjBank').textContent=bjBank.toFixed(2);
   if(bjMode==='ANALYSIS'){document.getElementById('bjCount').textContent=bjRC;document.getElementById('bjTrue').textContent=bjTrueCount();}
+}
+function bjApplyTerminalLayout() {
+  const terminal = bjIsTerminal();
+  const chips = document.querySelector('#bjBetZone .chip-row');
+  const dealBtn = document.getElementById('bjDealBtn');
+  const clearBtn = document.getElementById('bjClearBtn');
+  const betWrap = document.getElementById('bjTermBetWrap');
+  if (chips) chips.style.display = terminal ? 'none' : 'flex';
+  if (dealBtn) dealBtn.style.display = terminal ? 'none' : '';
+  if (clearBtn) clearBtn.style.display = terminal ? 'none' : '';
+  if (betWrap) betWrap.style.display = terminal ? 'block' : 'none';
 }
 function bjDeal() {
   if(bjBet<BJ_MIN||bjBet>bjBank) return;
@@ -1127,6 +1151,7 @@ function bjRenderActions() {
   const canSp=(srk||svl)&&bjBank>=h.bet&&bjHands.length<4&&h.cards.length===2;
   document.getElementById('bjDouble').disabled=!canD;
   document.getElementById('bjSplit').disabled=!canSp;
+  bjApplyTerminalLayout();
   if(bjIsTerminal()){
     const line=document.getElementById('bjTermActLine');
     const inp=document.getElementById('bjTermActInp');
@@ -1529,6 +1554,13 @@ function heUserTurn(p){
         if (rz.classList.contains('show')) heConfirmRaise();
       }
     };
+    heTermHandlers = {
+      toCall,
+      call: () => heKeyActions.call && heKeyActions.call(),
+      raise: () => heKeyActions.raise && heKeyActions.raise(),
+      fold: () => heKeyActions.fold && heKeyActions.fold()
+    };
+    heRenderTerminalPrompt();
   });
 }
 function heActCall(p,res){
@@ -1558,6 +1590,32 @@ function heConfirmRaise(){
   heHideRaise();heWaitResolve=null;heClearAct();heRenderAll(false);res();
 }
 function heClearAct(){document.getElementById('heActZone').innerHTML='';document.getElementById('heRbetInfo').textContent='';}
+function heRenderTerminalPrompt() {
+  const wrap = document.getElementById('heTermActWrap');
+  const line = document.getElementById('heTermActLine');
+  const inp = document.getElementById('heTermActInp');
+  if (!wrap || !line || !inp) return;
+  if (visualStyle !== 'terminal' || !heTermHandlers || !document.getElementById('heScreen').classList.contains('active')) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+  line.textContent = heTermHandlers.toCall > 0
+    ? `Action [To call: $${heTermHandlers.toCall}] (C)all, (R)aise, (F)old:`
+    : 'Action [(K)eck/(C)all, (R)aise, (F)old]:';
+  setTimeout(() => inp.focus(), 0);
+}
+function heSubmitTerminalAction() {
+  if (visualStyle !== 'terminal' || !heTermHandlers) return;
+  const inp = document.getElementById('heTermActInp');
+  const msg = document.getElementById('heTermActMsg');
+  if (!inp) return;
+  const k = (inp.value || '').trim().toLowerCase();
+  if (k === 'c' || k === 'k' || k === 'call' || k === 'check') { heTermHandlers.call(); inp.value=''; if(msg) msg.textContent=''; return; }
+  if (k === 'r' || k === 'raise' || k === 'bet') { heTermHandlers.raise(); inp.value=''; if(msg) msg.textContent=''; return; }
+  if (k === 'f' || k === 'fold') { heTermHandlers.fold(); inp.value=''; if(msg) msg.textContent=''; return; }
+  if (msg) msg.textContent = 'Invalid action.';
+}
 
 async function heShowResult(winners,reason){
   heStageName='SHOWDOWN';heRenderAll(true);await sleep(250);
@@ -1760,6 +1818,15 @@ document.addEventListener('DOMContentLoaded', () => {
     actInp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         bjSubmitTerminalAction();
+        e.preventDefault();
+      }
+    });
+  }
+  const heInp = document.getElementById('heTermActInp');
+  if (heInp) {
+    heInp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        heSubmitTerminalAction();
         e.preventDefault();
       }
     });
