@@ -266,3 +266,60 @@ Entry - 2026-04-21 (Thumbnail implementation: Stack Drop DX)
 - Implemented user-approved generated art as live Stack Drop thumbnail:
   - Added/updated `PIXEL-NET/assets/stack-drop-dx_thumb.png`.
   - Updated `PIXEL-NET/games.json` Stack Drop entry thumb path to `assets/stack-drop-dx_thumb.png`.
+
+Entry - 2026-04-21 (Thumbnail implementation: Tower Rush)
+- Implemented user-approved generated art as live Tower Rush thumbnail:
+  - Added/updated `PIXEL-NET/assets/tower-rush_thumb.png`.
+  - Updated `PIXEL-NET/games.json` Tower Rush entry thumb path to `assets/tower-rush_thumb.png`.
+
+Entry - 2026-04-21 (Thumbnail implementation: Galaxy Swarm 2084)
+- Implemented user-approved generated art as live Galaxy Swarm thumbnail:
+  - Added/updated `PIXEL-NET/assets/galaxy-swarm-2084_thumb.png`.
+  - Updated `PIXEL-NET/games.json` Galaxy Swarm entry thumb path to `assets/galaxy-swarm-2084_thumb.png`.
+
+Entry - 2026-04-21 (Galaxy Swarm gameplay + visual depth overhaul)
+- Reworked `PIXEL-NET/games/neon-driftline/game.html` to better match thumbnail quality:
+  - Added richer enemy rendering (modular neon drone shape instead of plain boxes).
+  - Added starfield parallax and nebula path accents for depth.
+  - Added lives/hull system with hit flash feedback and explosion particles.
+  - Added chain-burst mechanic with lightning arcs between nearby enemies.
+  - Added multi-hit enemies on later waves and improved wave pressure scaling.
+  - Preserved one-time game-over score submit contract (`GAME_OVER_SCORE`).
+
+Entry - 2026-04-21 (Stack Drop DX runtime fix)
+- Fixed `PIXEL-NET/games/circuit-salvager/game.html` crash-on-load bug:
+  - `board` was being read in render before initialization, causing immediate runtime failure.
+  - Initialized `board = empty()` before first animation frame.
+- Input compatibility hardening:
+  - Start/hard-drop now accepts both `e.key === " "` and `e.code === "Space"`.
+  - Start button label is reset to `RESTART DROP` after game start.
+
+Entry - 2026-04-21 (Tower Rush classic girder-climber overhaul)
+- Rebuilt `PIXEL-NET/games/orbit-siege/game.html` to better match the requested classic ramp-climb feel:
+  - Added sloped girder platforms with alternating ramp directions.
+  - Added ladder system with climb input (`Up/Down` or `W/S`) and platform traversal.
+  - Added top relay goal zone for stage clear progression.
+  - Refined barrel behavior to roll along girders, flip/drop at edges, and pressure lane choices.
+  - Added player respawn invulnerability blink and improved life-loss handling.
+  - Preserved one-time leaderboard score submit contract (`GAME_OVER_SCORE`).
+- Validation:
+  - Lints/diagnostics for updated Tower Rush game file: no errors reported.
+
+Entry - 2026-04-21 (Version bump + thumbnail commit fix)
+- Bumped `PIXEL-NET/version.json` from `0.0.14` to `0.0.15`.
+- Committed and pushed all previously untracked thumbnail assets so they show on GitHub Pages:
+  - `PIXEL-NET/assets/galaxy-swarm-2084_thumb.png`
+  - `PIXEL-NET/assets/tower-rush_thumb.png`
+  - `PIXEL-NET/assets/spyder-casino_thumb.png`
+- Committed and pushed new `PIXEL-NET/games/galaxy-swarm-2084/` game folder.
+- Root cause: files were saved locally but never `git add`ed, so GH Pages could not serve them.
+
+Entry - 2026-04-21 (Galaxy Swarm slug/path identity fix)
+- Resolved Galaxy Swarm naming/mapping mismatch so it no longer points at `neon-driftline`:
+  - Added dedicated folder `PIXEL-NET/games/galaxy-swarm-2084/` with `game.html` and `wrapper-v2.html`.
+  - Updated wrapper slug to `galaxy-swarm-2084`.
+  - Updated `PIXEL-NET/games.json` entry:
+    - `slug`: `galaxy-swarm-2084`
+    - `path`: `games/galaxy-swarm-2084/wrapper-v2.html`
+- Result:
+  - Catalog identity, wrapper slug, and thumbnail naming now align for Galaxy Swarm 2084.

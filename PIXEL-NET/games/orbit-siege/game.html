@@ -20,30 +20,48 @@ button{margin-top:10px;padding:10px 16px;background:#130f2f;border:1px solid #9f
 <body>
 <canvas id="c" width="800" height="600"></canvas>
 <div id="hud"><div id="score">SCORE 0</div><div id="wave">STAGE 1</div><div id="hp">LIVES 3</div></div>
-<div id="overlay"><div class="box"><h1>TOWER RUSH</h1><p>Climb to the top while dodging rolling hazards.</p><p>Reach the relay node to clear each stage.</p><button id="btn">START CLIMB</button></div></div>
+<div id="overlay"><div class="box"><h1>TOWER RUSH</h1><p>Climb girders, jump barrels, reach the relay.</p><p>Classic ramp-dodge pressure, original world.</p><button id="btn">START CLIMB</button></div></div>
 <script>
 (() => {
   const c=document.getElementById("c"),x=c.getContext("2d"),overlay=document.getElementById("overlay"),btn=document.getElementById("btn");
   const scoreEl=document.getElementById("score"),waveEl=document.getElementById("wave"),hpEl=document.getElementById("hp");
-  let w=800,h=600,score=0,lives=3,stage=1,posted=false,running=false,last=0,spawn=0;
-  let keys={},player={x:60,y:540,vx:0,vy:0,onGround:false},barrels=[],platforms=[];
-  function resize(){const b=c.getBoundingClientRect();w=Math.max(520,Math.floor(b.width));h=Math.max(420,Math.floor(b.height));c.width=w;c.height=h;player.y=h-56;}
+  let w=800,h=600,score=0,lives=3,stage=1,posted=false,running=false,last=0,spawn=0,invuln=0;
+  let keys={},player={x:60,y:540,vx:0,vy:0,onGround:false,w:18,h:24},barrels=[],platforms=[],ladders=[],goal={x:0,y:0,w:22,h:22};
+  function resize(){const b=c.getBoundingClientRect();w=Math.max(640,Math.floor(b.width));h=Math.max(480,Math.floor(b.height));c.width=w;c.height=h;}
+  function yOnPlatform(p, px){ return p.y + (px - p.x) * (p.slope || 0); }
+  function nearLadder(){ return ladders.find(l => Math.abs((l.x+l.width/2)-player.x)<16 && player.y+player.h>l.yTop && player.y<l.yBottom+4); }
   function buildStage(){
+    const left = 46, right = w - 46, span = right - left, topY = 74, step = 82;
     platforms = [
-      {x:40, y:h-60, w:w-80, h:12},
-      {x:80, y:h-150, w:w-180, h:12},
-      {x:120,y:h-240, w:w-120, h:12},
-      {x:60, y:h-330, w:w-190, h:12},
-      {x:120,y:h-420, w:w-120, h:12}
+      {x:left,         y:h-64,       w:span,       h:12, slope:  0.04},
+      {x:left+70,      y:h-64-step,  w:span-120,   h:12, slope: -0.045},
+      {x:left+20,      y:h-64-step*2,w:span-40,    h:12, slope:  0.05},
+      {x:left+95,      y:h-64-step*3,w:span-150,   h:12, slope: -0.05},
+      {x:left+35,      y:h-64-step*4,w:span-60,    h:12, slope:  0.04},
+      {x:left+120,     y:topY,       w:span-180,   h:12, slope: -0.03}
     ];
+    ladders = [];
+    for (let i=0;i<platforms.length-1;i++){
+      const a=platforms[i];
+      const b=platforms[i+1];
+      const lx = (i%2===0) ? a.x + a.w - 70 : a.x + 50;
+      ladders.push({x:lx,yTop:b.y+10,yBottom:a.y,width:18});
+    }
+    goal = {x: platforms[platforms.length-1].x + platforms[platforms.length-1].w - 38, y: platforms[platforms.length-1].y - 24, w:22, h:22};
     barrels = [];
-    player.x = 70; player.y = h-84; player.vx=0; player.vy=0;
+    player.x = left + 18; player.y = h-90; player.vx=0; player.vy=0; player.onGround=false;
     spawn = 0;
   }
-  function reset(){score=0;lives=3;stage=1;posted=false;running=true;buildStage();overlay.classList.add("hidden");}
+  function reset(){score=0;lives=3;stage=1;posted=false;running=true;invuln=0;buildStage();overlay.classList.add("hidden");btn.textContent="RESTART CLIMB";}
   function submit(){if(posted)return;posted=true;try{window.parent.postMessage({type:"GAME_OVER_SCORE",score:Number(score)||0},"*");}catch(_){ }}
   function end(){running=false;submit();overlay.classList.remove("hidden");btn.textContent="RESTART CLIMB";}
-  function loseLife(){ lives--; if(lives<=0) end(); else { player.x=70; player.y=h-84; player.vx=0; player.vy=0; barrels=[]; } }
+  function loseLife(){
+    if(invuln>0) return;
+    lives--;
+    if(lives<=0){ end(); return; }
+    invuln=1200;
+    player.x=64; player.y=h-90; player.vx=0; player.vy=0; player.onGround=false;
+  }
   addEventListener("keydown",e=>{
     keys[e.key.toLowerCase()] = true;
     if((e.key===" "||e.key==="Enter")&&!running) reset();
@@ -54,51 +72,87 @@ button{margin-top:10px;padding:10px 16px;background:#130f2f;border:1px solid #9f
   function loop(ts){
     if(!last)last=ts; const dt=Math.min(34,ts-last); last=ts;
     x.fillStyle="#0a0a14";x.fillRect(0,0,w,h);
-    x.fillStyle="#1d2245"; x.fillRect(0,0,w,40);
+    x.fillStyle="#2a1322"; x.fillRect(0,0,w,46);
+    const grad = x.createLinearGradient(0,h*0.25,0,h);
+    grad.addColorStop(0,"#4b1b2f"); grad.addColorStop(1,"#f89f43");
+    x.fillStyle=grad; x.globalAlpha=0.22; x.fillRect(0,46,w,h-46); x.globalAlpha=1;
     if(running){
+      if(invuln>0) invuln-=dt;
       player.vx = 0;
-      if(keys["arrowleft"]||keys["a"]) player.vx = -4.2;
-      if(keys["arrowright"]||keys["d"]) player.vx = 4.2;
+      if(keys["arrowleft"]||keys["a"]) player.vx = -4.1;
+      if(keys["arrowright"]||keys["d"]) player.vx = 4.1;
+      const ladder = nearLadder();
+      if(ladder && (keys["arrowup"]||keys["w"])) { player.vy = -3.1; player.onGround=false; }
+      else if(ladder && (keys["arrowdown"]||keys["s"])) { player.vy = 3.1; player.onGround=false; }
       player.x += player.vx;
-      player.vy += 0.48;
+      if(!ladder || !(keys["arrowup"]||keys["w"]||keys["arrowdown"]||keys["s"])) player.vy += 0.48;
       player.y += player.vy;
       player.onGround = false;
       for(const p of platforms){
-        if(player.x+12 > p.x && player.x-12 < p.x+p.w && player.y+14 >= p.y && player.y+14 <= p.y+p.h+Math.max(1,player.vy)){
-          player.y = p.y-14; player.vy = 0; player.onGround = true;
+        const py = yOnPlatform(p, player.x);
+        if(player.x+player.w/2 > p.x && player.x-player.w/2 < p.x+p.w && player.y+player.h >= py && player.y+player.h <= py + p.h + Math.max(1,player.vy)){
+          player.y = py-player.h; player.vy = 0; player.onGround = true;
         }
       }
       if(player.y > h+20) loseLife();
       player.x = Math.max(12, Math.min(w-12, player.x));
-
       spawn += dt;
-      if(spawn > Math.max(620, 1600 - stage*120)){
+      if(spawn > Math.max(460, 1320 - stage*90)){
         spawn = 0;
-        barrels.push({x:w-60, y:h-446, vx:-(2.2+stage*0.15), vy:0, r:10});
+        const top = platforms[platforms.length-1];
+        barrels.push({x:top.x + top.w - 26, y:yOnPlatform(top, top.x + top.w - 26) - 10, vx:-(2.25+stage*0.16), vy:0, r:10, bounce:0});
       }
       for(const b of barrels){
         b.x += b.vx;
-        const currentPlat = platforms.find(p => b.y + b.r >= p.y-2 && b.y + b.r <= p.y+6 && b.x > p.x && b.x < p.x + p.w);
+        const currentPlat = platforms.find(p => b.x > p.x && b.x < p.x + p.w && Math.abs((b.y + b.r) - yOnPlatform(p,b.x)) < 8);
         if(currentPlat){
-          if((b.vx < 0 && b.x < currentPlat.x + 8) || (b.vx > 0 && b.x > currentPlat.x + currentPlat.w - 8)){
-            b.vx *= -1; b.y += 90;
+          b.y = yOnPlatform(currentPlat, b.x) - b.r;
+          if((b.vx < 0 && b.x < currentPlat.x + 7) || (b.vx > 0 && b.x > currentPlat.x + currentPlat.w - 7)){
+            b.vx *= -1;
+            b.bounce = 18;
+            b.y += 44;
           }
-        }
-        if(Math.hypot(b.x-player.x,b.y-player.y)<22) loseLife();
+        } else b.y += 1.2 + Math.min(2.2, stage*0.08);
+        if(b.bounce>0) b.bounce--;
+        if(Math.hypot(b.x-player.x,(b.y+2)-player.y)<22) loseLife();
       }
-      barrels = barrels.filter(b => b.y < h+40);
-
-      if(player.y < h-442 && player.x > w-120){ score += 500; stage++; buildStage(); }
-      score += Math.max(0, Math.floor((h - player.y) * 0.001));
+      barrels = barrels.filter(b => b.y < h+42);
+      if(player.x > goal.x && player.x < goal.x + goal.w && player.y + player.h > goal.y && player.y < goal.y + goal.h){
+        score += 700 + stage * 90;
+        stage++;
+        buildStage();
+      }
+      score += Math.max(0, Math.floor((h - player.y) * 0.002));
     }
-    for(const p of platforms){ x.fillStyle="#3a2a64"; x.fillRect(p.x,p.y,p.w,p.h); }
-    x.fillStyle="#72ffcc"; x.fillRect(w-112,h-448,18,18);
-    for(const b of barrels){ x.fillStyle="#ff5ea8"; x.beginPath(); x.arc(b.x,b.y,b.r,0,6.28); x.fill(); }
-    x.fillStyle="#9f7bff"; x.fillRect(player.x-10,player.y-14,20,28);
+    for(const p of platforms){
+      x.strokeStyle="#59264a"; x.lineWidth=10; x.beginPath();
+      x.moveTo(p.x, yOnPlatform(p,p.x)); x.lineTo(p.x+p.w, yOnPlatform(p,p.x+p.w)); x.stroke();
+      x.lineWidth=2; x.strokeStyle="#ff8b42"; x.beginPath();
+      x.moveTo(p.x, yOnPlatform(p,p.x)-4); x.lineTo(p.x+p.w, yOnPlatform(p,p.x+p.w)-4); x.stroke();
+    }
+    for(const l of ladders){
+      x.strokeStyle="#8ca0aa"; x.lineWidth=2;
+      x.beginPath(); x.moveTo(l.x,l.yTop); x.lineTo(l.x,l.yBottom); x.moveTo(l.x+l.width,l.yTop); x.lineTo(l.x+l.width,l.yBottom); x.stroke();
+      for(let y0=l.yTop+6; y0<l.yBottom; y0+=9){ x.beginPath(); x.moveTo(l.x,y0); x.lineTo(l.x+l.width,y0); x.stroke(); }
+    }
+    x.fillStyle="#ffd766"; x.fillRect(goal.x,goal.y,goal.w,goal.h);
+    x.strokeStyle="#ff8b42"; x.strokeRect(goal.x-2,goal.y-2,goal.w+4,goal.h+4);
+    for(const b of barrels){
+      x.fillStyle="#7e3d31"; x.beginPath(); x.arc(b.x,b.y,b.r,0,6.28); x.fill();
+      x.strokeStyle="#d77a55"; x.lineWidth=2; x.beginPath(); x.arc(b.x,b.y,b.r-3,0,6.28); x.stroke();
+      x.fillStyle="#2b1513"; x.fillRect(b.x-3,b.y-2,6,4);
+    }
+    if(!(invuln>0 && Math.floor(invuln/120)%2===0)){
+      x.fillStyle="#1f273f"; x.fillRect(player.x-player.w/2,player.y-player.h,player.w,player.h);
+      x.fillStyle="#ffd5a0"; x.beginPath(); x.arc(player.x,player.y-player.h+6,5,0,6.28); x.fill();
+    }
     scoreEl.textContent="SCORE "+score; waveEl.textContent="STAGE "+stage; hpEl.textContent="LIVES "+lives;
     requestAnimationFrame(loop);
   }
-  addEventListener("resize",resize); resize(); requestAnimationFrame(loop);
+  addEventListener("resize",()=>{ resize(); if(!running) buildStage(); });
+  resize();
+  buildStage();
+  requestAnimationFrame(loop);
 })();
 </script>
 </body>

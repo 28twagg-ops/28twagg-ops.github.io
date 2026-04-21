@@ -28,7 +28,7 @@
   const overlay = document.getElementById("overlay"), btn = document.getElementById("btn");
   let w=800,h=600,cell=26,cols=10,rows=20,ox=0,oy=0;
   let running=false,score=0,lines=0,level=1,posted=false,last=0,drop=0;
-  let board = [], piece = null, next = null;
+  let board = null, piece = null, next = null;
   const SHAPES = [
     [[1,1,1,1]],
     [[1,1],[1,1]],
@@ -45,7 +45,7 @@
     cell=Math.floor(Math.min(h/(rows+2), w/(cols+8))); ox=Math.floor((w-cols*cell)/2); oy=Math.floor((h-rows*cell)/2);
   }
   function randPiece(){ const i=(Math.random()*SHAPES.length)|0; return {m:SHAPES[i].map(r=>r.slice()), c:i+1, x:3, y:-1}; }
-  function resetGame(){ score=0; lines=0; level=1; posted=false; board=empty(); piece=randPiece(); next=randPiece(); drop=0; running=true; overlay.classList.add("hidden"); }
+  function resetGame(){ score=0; lines=0; level=1; posted=false; board=empty(); piece=randPiece(); next=randPiece(); drop=0; running=true; overlay.classList.add("hidden"); btn.textContent="RESTART DROP"; }
   function rotate(m){ return m[0].map((_,i)=>m.map(r=>r[i]).reverse()); }
   function collides(p,dx=0,dy=0,mat=p.m){
     for(let y=0;y<mat.length;y++)for(let x0=0;x0<mat[y].length;x0++)if(mat[y][x0]){
@@ -73,13 +73,13 @@
   function gameOver(){running=false;submit();overlay.classList.remove("hidden");btn.textContent="RESTART DROP";}
   addEventListener("keydown",e=>{
     const k=e.key.toLowerCase();
-    if(!running&&(e.key==="Enter"||e.key===" ")) return resetGame();
+    if(!running&&(e.key==="Enter"||e.key===" "||e.code==="Space")) return resetGame();
     if(!running) return;
     if(k==="arrowleft"||k==="a"){ if(!collides(piece,-1,0)) piece.x--; }
     if(k==="arrowright"||k==="d"){ if(!collides(piece,1,0)) piece.x++; }
     if(k==="arrowdown"||k==="s"){ if(!collides(piece,0,1)) piece.y++; else lockPiece(); score+=1; }
     if(k==="arrowup"||k==="w"){ const r=rotate(piece.m); if(!collides(piece,0,0,r)) piece.m=r; }
-    if(k===" "){ while(!collides(piece,0,1)) piece.y++; lockPiece(); score+=10; }
+    if(k===" "||e.code==="Space"){ while(!collides(piece,0,1)) piece.y++; lockPiece(); score+=10; }
   });
   btn.addEventListener("click",resetGame);
   function drawCell(cx,cy,v){
@@ -105,7 +105,10 @@
     }
     requestAnimationFrame(tick);
   }
-  addEventListener("resize",resize); resize(); requestAnimationFrame(tick);
+  addEventListener("resize",resize);
+  resize();
+  board = empty();
+  requestAnimationFrame(tick);
 })();
 </script>
 </body>

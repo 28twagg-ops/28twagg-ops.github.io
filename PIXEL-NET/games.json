@@ -83,7 +83,7 @@
     "type": "iframe",
     "slug": "spyder-casino",
     "path": "games/spyder-casino/wrapper-v2.html",
-    "thumb": "assets/spyder-casino_thumb.svg",
+    "thumb": "assets/spyder-casino_thumb.png",
     "description": "Blackjack + Texas Hold'em hub with classic/polished UI and adaptive bots.",
     "tags": ["casino", "blackjack", "holdem", "poker", "cards"],
     "featured": true
@@ -91,9 +91,9 @@
   {
     "name": "GALAXY SWARM 2084",
     "type": "iframe",
-    "slug": "neon-driftline",
-    "path": "games/neon-driftline/wrapper-v2.html",
-    "thumb": "assets/neon-driftline_thumb.svg",
+    "slug": "galaxy-swarm-2084",
+    "path": "games/galaxy-swarm-2084/wrapper-v2.html",
+    "thumb": "assets/galaxy-swarm-2084_thumb.png",
     "description": "Formation shooter with wave escalation and reactive enemy fire.",
     "tags": ["space shooter", "formation shooter", "arcade shooter", "galaxy", "invader style"],
     "aliases": ["swarm shooter", "space wave"]
@@ -113,7 +113,7 @@
     "type": "iframe",
     "slug": "orbit-siege",
     "path": "games/orbit-siege/wrapper-v2.html",
-    "thumb": "assets/orbit-siege_thumb.svg",
+    "thumb": "assets/tower-rush_thumb.png",
     "description": "Platform climber where you dodge rolling hazards and race to the relay.",
     "tags": ["tower climber", "platformer", "barrel dodge", "arcade climb", "retro action"],
     "aliases": ["tower climb", "rush climber"]
