@@ -565,6 +565,18 @@ body.casino .comm-area{
 body.casino .stage-lbl{font-size:10px;letter-spacing:2.4px;}
 body.casino .pot-disp{font-size:18px;}
 .eq-bar{font-size:9px;color:var(--g2);text-align:center;min-height:12px;}
+body.casino .eq-bar{
+  font-size:12px;
+  color:#ffe066;
+  font-weight:bold;
+  min-height:18px;
+  text-shadow:0 0 8px rgba(255,224,102,.3);
+}
+body:not(.casino) .eq-bar{
+  font-size:12px;
+  color:#00ff41;
+  min-height:16px;
+}
 .chatter{
   font-size:8px;color:var(--g2);opacity:.9;font-style:italic;min-height:12px;
   text-align:center;
@@ -1283,10 +1295,14 @@ function bjTerminalProbLine(){
   return `PROBABILITY: Stay ${pS.toFixed(1)}% | Hit ${pH.toFixed(1)}% | Advice: ${rec}`;
 }
 
+function normMode(mode){
+  const m=String(mode||'STANDARD').trim().toUpperCase();
+  return m.startsWith('A') ? 'ANALYSIS' : 'STANDARD';
+}
 function startBJ(mode) {
-  bjMode=mode; bjBank=BJ_START; bjBankBefore=BJ_START; bjDeck=buildDeck(); bjRC=0;
-  document.getElementById('bjModeTag').textContent=mode;
-  document.getElementById('bjCountDisp').style.display=mode==='ANALYSIS'?'inline':'none';
+  bjMode=normMode(mode); bjBank=BJ_START; bjBankBefore=BJ_START; bjDeck=buildDeck(); bjRC=0;
+  document.getElementById('bjModeTag').textContent=bjMode;
+  document.getElementById('bjCountDisp').style.display=bjMode==='ANALYSIS'?'inline':'none';
   showScreen('bjScreen');
   bjReset();
 }
@@ -1904,8 +1920,8 @@ function heBotDecision(bot,phase,toCall,pot,comm,allOppIn){
 
 // ── HOLDEM INIT ───────────────────────────────────────────────
 function startHE(mode){
-  heMode=mode;heRoundNum=1;heDealerIdx=0;
-  document.getElementById('heModeTag').textContent=mode;
+  heMode=normMode(mode);heRoundNum=1;heDealerIdx=0;
+  document.getElementById('heModeTag').textContent=heMode;
   hePlayers=[
     {name:'THE ROCK',    chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'CONSERVATIVE',remark:''},
     {name:'VIPER',       chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'AGGRESSIVE',remark:''},
@@ -2360,10 +2376,16 @@ function heRenderAll(showdown){
   else document.getElementById('heHandRank').textContent='';
 
   // Equity
-  if(heMode==='ANALYSIS'&&u.hand.length>=2&&!showdown){
-    const ao=hePlayers.filter(p=>p.name!=='YOU'&&p.status!=='FOLDED').length;
-    document.getElementById('heEqBar').textContent=`[ ANALYST: ${heCalcEquity(u.hand,heCommunity,ao)} ]`;
-  } else document.getElementById('heEqBar').textContent='';
+  if(heMode==='ANALYSIS'){
+    if(u.hand.length>=2&&!showdown){
+      const ao=hePlayers.filter(p=>p.name!=='YOU'&&p.status!=='FOLDED').length;
+      document.getElementById('heEqBar').textContent=`[ ANALYST: ${heCalcEquity(u.hand,heCommunity,ao)} ]`;
+    } else {
+      document.getElementById('heEqBar').textContent='[ ANALYSIS MODE ACTIVE ]';
+    }
+  } else {
+    document.getElementById('heEqBar').textContent='';
+  }
   heRenderTerminalView();
 }
 function heSetChatter(msg){document.getElementById('heChatter').textContent=msg;}
