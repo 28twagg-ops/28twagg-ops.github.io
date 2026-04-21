@@ -37,6 +37,10 @@ body:not(.casino) *{
 ═══════════════════════════════════════ */
 .screen{display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;}
 .screen.active{display:flex;}
+.terminal-only{display:none;}
+.casino-only{display:block;}
+body:not(.casino) .terminal-only{display:block;}
+body:not(.casino) .casino-only{display:none;}
 
 /* ═══════════════════════════════════════
    STYLE TOGGLE — fixed top-right
@@ -78,6 +82,8 @@ body:not(.casino) .panel{
   border:1px solid #00ff41;
   box-shadow:none;
   background:#000;
+  max-width:84ch;
+  width:min(98vw,84ch);
 }
 body.casino .panel{
   border-width:2px;
@@ -160,6 +166,34 @@ body:not(.casino) .mode-hint{
 }
 body:not(.casino) .chip{
   border-radius:0;
+  background:#000 !important;
+  color:#00ff41 !important;
+  border-color:#00cc33 !important;
+}
+body:not(.casino) .chip:hover,
+body:not(.casino) .chip:active{
+  transform:none;
+}
+body:not(.casino) .chip-row{
+  gap:4px;
+}
+#terminalLobby pre{
+  margin:0;
+  white-space:pre;
+  font-size:12px;
+  line-height:1.25;
+  color:#00ff41;
+}
+#terminalLobby .term-meta{
+  text-align:center;
+  color:var(--g2);
+  margin:4px 0;
+  font-size:11px;
+}
+#terminalLobby .term-menu{
+  margin-top:8px;
+  border-top:1px solid #00cc33;
+  padding-top:8px;
 }
 .btn:hover{background:rgba(0,255,65,.1);border-color:var(--g);}
 .btn.pri{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.15);}
@@ -393,46 +427,78 @@ body:not(.casino) .res-box{
 ════════════════════════════════════════ -->
 <div class="screen active" id="lobbyScreen">
   <div class="panel">
-    <div class="p-title" style="font-size:20px;letter-spacing:6px">SPYDER CASINO</div>
-    <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:2px;margin-bottom:6px">
-      Chips talk. Mistakes cost.
-    </div>
-    <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:1px;margin-bottom:6px;opacity:.8">
-      ================= TERMINAL LOBBY =================
-    </div>
-    <pre style="font-size:10px;color:var(--g2);text-align:center;line-height:1.35;margin:0 0 8px 0;">[ 1 ] BJ STD  [ 2 ] BJ ANL  [ 3 ] HE STD  [ 4 ] HE ANL  [ ESC ] LOBBY</pre>
-    <div class="p-div"></div>
-
-    <!-- BLACKJACK CARD -->
-    <div class="lobby-card" style="margin-bottom:8px;">
-      <div style="font-size:14px;font-weight:bold;letter-spacing:3px;margin-bottom:4px">♠ SPYDER BLACKJACK</div>
-      <div class="mut" style="font-size:10px;margin-bottom:8px">Bankroll: $200 · Dealer stands on 17 · Blackjack pays 3:2 · Split + double enabled</div>
-      <div class="br" style="margin-top:0;">
-        <button class="btn pri" onclick="startBJ('STANDARD')">▶ STANDARD</button>
-        <button class="btn amb" onclick="startBJ('ANALYSIS')">◈ ANALYSIS</button>
+    <div id="terminalLobby" class="terminal-only">
+      <pre id="terminalBanner">██████╗██████╗ ██╗   ██╗██████╗ ███████╗██████╗
+██╔════╝██╔══██╗╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗
+╚█████╗ ██████╔╝ ╚████╔╝ ██║  ██║█████╗  ██████╔╝
+ ╚═══██╗██╔═══╝   ╚██╔╝  ██║  ██║██╔══╝  ██╔══██╗
+██████╔╝██║        ██║   ██████╔╝███████╗██║  ██║
+╚═════╝ ╚═╝        ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝</pre>
+      <div class="term-meta">Created by Tyler Waggoner</div>
+      <div class="term-meta">Established 2026 at Oklahoma State</div>
+      <pre id="terminalLbBoard">================================================================================
+LEGENDS OF SPYDER
+================================================================================
+BLACKJACK - TOP 5                         TEXAS HOLD'EM - TOP 5
+-----------------                         ----------------------
+#1 ...
+#2 ...
+#3 ...
+#4 ...
+#5 ...</pre>
+      <div class="term-menu">
+        <pre>================================================================================
+Select a game:
+[1] Spyder Blackjack (STANDARD)
+[2] Spyder Blackjack (ANALYSIS)
+[3] Texas Hold'em (STANDARD)
+[4] Texas Hold'em (ANALYSIS)
+[Q] Back
+================================================================================</pre>
       </div>
     </div>
-
-    <!-- HOLDEM CARD -->
-    <div class="lobby-card">
-      <div style="font-size:14px;font-weight:bold;letter-spacing:3px;margin-bottom:4px">♣ TEXAS HOLD'EM</div>
-      <div class="mut" style="font-size:10px;margin-bottom:8px">1v3 table · $200 chips · $10/$20 blinds · Smart adaptive bots with table talk</div>
-      <div class="br" style="margin-top:0;">
-        <button class="btn pri" onclick="startHE('STANDARD')">▶ STANDARD</button>
-        <button class="btn amb" onclick="startHE('ANALYSIS')">◈ ANALYSIS</button>
+    <div class="casino-only">
+      <div class="p-title" style="font-size:20px;letter-spacing:6px">SPYDER CASINO</div>
+      <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:2px;margin-bottom:6px">
+        Chips talk. Mistakes cost.
       </div>
-    </div>
-
-    <div class="p-div"></div>
-    <!-- Combined leaderboard -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div>
-        <div style="font-size:9px;letter-spacing:2px;color:var(--g2);margin-bottom:4px;opacity:.7">BLACKJACK TOP 5</div>
-        <div id="bjLobbyLb"><div class="mut" style="font-size:9px">Loading...</div></div>
+      <div style="text-align:center;color:var(--g2);font-size:9px;letter-spacing:1px;margin-bottom:6px;opacity:.8">
+        ================= TERMINAL LOBBY =================
       </div>
-      <div>
-        <div style="font-size:9px;letter-spacing:2px;color:var(--g2);margin-bottom:4px;opacity:.7">HOLD'EM TOP 5</div>
-        <div id="heLobbyLb"><div class="mut" style="font-size:9px">Loading...</div></div>
+      <pre style="font-size:10px;color:var(--g2);text-align:center;line-height:1.35;margin:0 0 8px 0;">[ 1 ] BJ STD  [ 2 ] BJ ANL  [ 3 ] HE STD  [ 4 ] HE ANL  [ ESC ] LOBBY</pre>
+      <div class="p-div"></div>
+
+      <!-- BLACKJACK CARD -->
+      <div class="lobby-card" style="margin-bottom:8px;">
+        <div style="font-size:14px;font-weight:bold;letter-spacing:3px;margin-bottom:4px">♠ SPYDER BLACKJACK</div>
+        <div class="mut" style="font-size:10px;margin-bottom:8px">Bankroll: $200 · Dealer stands on 17 · Blackjack pays 3:2 · Split + double enabled</div>
+        <div class="br" style="margin-top:0;">
+          <button class="btn pri" onclick="startBJ('STANDARD')">▶ STANDARD</button>
+          <button class="btn amb" onclick="startBJ('ANALYSIS')">◈ ANALYSIS</button>
+        </div>
+      </div>
+
+      <!-- HOLDEM CARD -->
+      <div class="lobby-card">
+        <div style="font-size:14px;font-weight:bold;letter-spacing:3px;margin-bottom:4px">♣ TEXAS HOLD'EM</div>
+        <div class="mut" style="font-size:10px;margin-bottom:8px">1v3 table · $200 chips · $10/$20 blinds · Smart adaptive bots with table talk</div>
+        <div class="br" style="margin-top:0;">
+          <button class="btn pri" onclick="startHE('STANDARD')">▶ STANDARD</button>
+          <button class="btn amb" onclick="startHE('ANALYSIS')">◈ ANALYSIS</button>
+        </div>
+      </div>
+
+      <div class="p-div"></div>
+      <!-- Combined leaderboard -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;color:var(--g2);margin-bottom:4px;opacity:.7">BLACKJACK TOP 5</div>
+          <div id="bjLobbyLb"><div class="mut" style="font-size:9px">Loading...</div></div>
+        </div>
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;color:var(--g2);margin-bottom:4px;opacity:.7">HOLD'EM TOP 5</div>
+          <div id="heLobbyLb"><div class="mut" style="font-size:9px">Loading...</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -604,6 +670,8 @@ let visualStyle = localStorage.getItem('SC_STYLE') || 'terminal'; // 'terminal'|
 let userInitials = localStorage.getItem('PIXELNET_INITIALS') || localStorage.getItem('playerInitials') || '';
 let endGameSlug = '', endGameMode = '';
 let heKeyActions = null;
+let lobbyBjRows = [];
+let lobbyHeRows = [];
 
 // ── STYLE TOGGLE ──────────────────────────────────────────────
 function applyStyle() {
@@ -628,8 +696,8 @@ function showScreen(id) {
 }
 function goLobby() {
   showScreen('lobbyScreen');
-  fbFetch(BJ_SLUG, 5).then(r => renderLb(r, 'bjLobbyLb', 'bj'));
-  fbFetch(HE_SLUG, 5).then(r => renderLb(r, 'heLobbyLb', 'he'));
+  fbFetch(BJ_SLUG, 5).then(r => { lobbyBjRows = Array.isArray(r) ? r : []; renderLb(lobbyBjRows, 'bjLobbyLb', 'bj'); renderTerminalLobbyBoard(); });
+  fbFetch(HE_SLUG, 5).then(r => { lobbyHeRows = Array.isArray(r) ? r : []; renderLb(lobbyHeRows, 'heLobbyLb', 'he'); renderTerminalLobbyBoard(); });
   heKeyActions = null;
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -669,6 +737,42 @@ function renderLb(rows, elId, type) {
     const sc = type==='bj' ? `$${parseFloat(r.score||0).toFixed(0)}` : `${Math.round(r.score||0)} chips`;
     return `<div class="lb-row${i===0?' t1':''}"><div class="lb-rk">#${i+1}</div><div class="lb-nm">${nm}</div><div class="lb-md">${md}</div><div class="lb-sc">${sc}</div></div>`;
   }).join('');
+}
+function fmtMoney(x){
+  const n = Number(x||0);
+  return `$${n.toFixed(2)}`;
+}
+function terminalRow(i, row, type){
+  if(!row) return `#${i+1} ...`;
+  const nm = (row.initials||row.name||'...').toString().toUpperCase().slice(0,3);
+  const md = (row.mode||'STANDARD').toString().toUpperCase().slice(0,8);
+  if(type==='bj'){
+    const sc = fmtMoney(row.score||0).padStart(10,' ');
+    return `#${i+1} ${nm}  ${md.padEnd(8,' ')} ${sc}`;
+  }
+  const chips = `${Math.round(Number(row.score||0))}`.padStart(6,' ');
+  return `#${i+1} ${nm}  ${md.padEnd(8,' ')} ${chips}`;
+}
+function renderTerminalLobbyBoard(){
+  const el = document.getElementById('terminalLbBoard');
+  if(!el) return;
+  const colW = 38;
+  const gap = '  ';
+  const leftTitle = 'BLACKJACK - TOP 5';
+  const rightTitle = 'TEXAS HOLD\'EM - TOP 5';
+  const lines = [
+    '================================================================================',
+    'LEGENDS OF SPYDER',
+    '================================================================================',
+    leftTitle.padEnd(colW,' ') + gap + rightTitle.padEnd(colW,' '),
+    '-'.repeat(leftTitle.length).padEnd(colW,' ') + gap + '-'.repeat(rightTitle.length).padEnd(colW,' ')
+  ];
+  for(let i=0;i<5;i++){
+    const left = terminalRow(i, lobbyBjRows[i], 'bj');
+    const right = terminalRow(i, lobbyHeRows[i], 'he');
+    lines.push(left.padEnd(colW,' ') + gap + right.padEnd(colW,' '));
+  }
+  el.textContent = lines.join('\n');
 }
 
 // ── CARD ENGINE (shared) ──────────────────────────────────────
@@ -1424,8 +1528,8 @@ async function endSubmit(){
   const entry={initials:ini,score:scoreNum,mode:endGameMode,t:Date.now()};
   await fbPost(endGameSlug,entry);
   // Keep lobby leaderboards up-to-date immediately after any submit.
-  fbFetch(BJ_SLUG, 5).then(r => renderLb(r, 'bjLobbyLb', 'bj'));
-  fbFetch(HE_SLUG, 5).then(r => renderLb(r, 'heLobbyLb', 'he'));
+  fbFetch(BJ_SLUG, 5).then(r => { lobbyBjRows = Array.isArray(r) ? r : []; renderLb(lobbyBjRows, 'bjLobbyLb', 'bj'); renderTerminalLobbyBoard(); });
+  fbFetch(HE_SLUG, 5).then(r => { lobbyHeRows = Array.isArray(r) ? r : []; renderLb(lobbyHeRows, 'heLobbyLb', 'he'); renderTerminalLobbyBoard(); });
   window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum},'*');
   document.getElementById('endMsg').textContent='✓ Score saved!';
   setTimeout(()=>fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he')),600);
