@@ -325,6 +325,34 @@ Entry - 2026-04-21 (Galaxy Swarm slug/path identity fix)
   - Catalog identity, wrapper slug, and thumbnail naming now align for Galaxy Swarm 2084.
 
 
+Entry - 2026-04-21 (v0.0.23 - Multi-game overhaul: Stack Drop DX + Galaxy Swarm 2084 + Tower Rush)
+- PIXEL-NET/games/circuit-salvager/game.html (Stack Drop DX):
+  - ROOT CRASH BUG FIXED: board/score/piece were undefined on page load; now initialized at declaration time
+  - Added 3-piece preview queue (double-bag system, shows next 3 pieces)
+  - Added Back-to-Back (B2B) tracker: consecutive TETRIS/T-spins earn ×1.5 score, shown in HUD
+  - Added Perfect Clear detection: empty board after clear = +2000pts + full screen flash
+  - Added T-Spin detection: T-piece locked against 3 corners earns T-SPIN bonus
+  - Added Danger Zone overlay: top rows pulse red when board is >70% full
+  - Added Garbage rows (level 5+): partial filled rows rise from bottom every 20s
+  - Added per-piece inner glyph designs (I, O, T, J, L, S, Z characters drawn inside each block)
+  - Upgraded DAS/ARR: 133ms delay, 10ms repeat — proper guideline Tetris feel
+  - Added floating text color variants per clear type
+  - Level-up visual: screen flash on multi-line clears
+- PIXEL-NET/games/galaxy-swarm-2084/game.html (Galaxy Swarm 2084):
+  - FORMATION MOVEMENT FIXED: Enemies now march as one synchronized grid (true Space Invaders style)
+  - Shared formDx/formDir/formSpd state — all non-diving enemies move together as a unit
+  - Formation steps down when any edge enemy hits wall boundary, speeds up each step
+  - Boss Phase 2: at 50% HP boss speeds up + gains aimed shots + screen shake + float text
+  - Added Shield power-up (8s): absorbs one hit, visual bubble around player ship
+  - Column Clear bonus: killing all enemies in a column = +300pts popup
+  - Improved GUNSHIP: now fires 3-way spread shot
+  - Improved ELITE: now fires aimed shot at player
+  - Boss fires extra aimed shot in phase 2
+  - HUD shows shield status (🛡)
+- PIXEL-NET/games/orbit-siege/game.html (Tower Rush):
+  - v0.0.20: Full DK-style rebuild with platform-aware barrel cascade, authenticated Kong
+- Bumped PIXEL-NET/version.json to 0.0.23
+
 Entry - 2026-04-21 (Tower Rush full DK-style rewrite)
 - Completely rewrote PIXEL-NET/games/orbit-siege/game.html:
   - Drew gorilla at summit with animated throw arm + red glowing eyes

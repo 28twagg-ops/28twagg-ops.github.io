@@ -59,9 +59,16 @@ let running = false, posted = false;
 let score = 0, wave = 1, lives = 3, combo = 0, comboTimer = 0;
 let fireCooldown = 0, shakeT = 0, shakeAmt = 0;
 let dualShot = false, dualTimer = 0;
-let waveIntro = 0; // countdown ms for wave text
+let shielded = false, shieldTimer = 0; // shield power-up
+let waveIntro = 0;
 let last = 0;
 let keys = {};
+
+/* ── Formation state (shared by all non-diving enemies) ── */
+let formDx  = 0;      // current x-offset from base positions
+let formDir = 1;      // +1 right / -1 left
+let formSpd = 1.0;    // pixels per frame (increases with wave)
+let formStepY = 14;   // how far down formation steps on wall hit
 
 /* ── entity pools ── */
 let stars = [], nebula = [];
@@ -133,6 +140,8 @@ function gameOver() {
 function resetGame() {
   score = 0; wave = 1; lives = 3; combo = 0; comboTimer = 0;
   fireCooldown = 0; shakeT = 0; dualShot = false; dualTimer = 0;
+  shielded = false; shieldTimer = 0;
+  formDx = 0; formDir = 1;
   bullets = []; eBullets = []; particles = []; floats = [];
   P.x = W/2; P.y = H - 64; P.flash = 0;
   posted = false;
@@ -165,6 +174,7 @@ function buildWave() {
   enemies = [];
   waveIntro = 1400;
 
+  formDx = 0; formDir = 1; formSpd = 0.85 + wave * 0.12;
   const isBoss = wave % 5 === 0;
   if (isBoss) {
     // Boss wave — one large boss + escort drones
@@ -191,14 +201,18 @@ function buildWave() {
     return;
   }
 
-  // Normal wave — grid formation
+  // Normal wave — tight grid formation
   const rows  = Math.min(5, 2 + Math.floor(wave/2));
   const cols  = Math.min(10, 6 + Math.floor(wave/3));
   const xSep  = Math.min(58, Math.floor((W - 120) / cols));
-  const ySep  = 46;
+  const ySep  = 44;
   const startX = W/2 - (cols-1)*xSep/2;
   const startY = 52;
-  const speed  = 1.0 + wave * 0.10;
+
+  // Reset formation state for new wave
+  formDx  = 0;
+  formDir = 1;
+  formSpd = 0.85 + wave * 0.12;
 
   for (let r = 0; r < rows; r++) {
     for (let col = 0; col < cols; col++) {
@@ -211,11 +225,10 @@ function buildWave() {
       enemies.push({
         ...t,
         x: ex, y: ey, baseX: ex, baseY: ey,
-        vx: speed, vy: 0,
-        phase: Math.random()*6.28,
-        type: typeKey,
+        phase: col * 0.4 + r * 0.9,  // stagger fire timing
+        type: typeKey, col: r, row: r,
         diving: false, diveTarget: null,
-        fireTick: Math.random() * 800,
+        fireTick: Math.random() * 1000 + col * 80,
         fireRate: Math.max(500, 1400 - wave*55)
       });
     }
@@ -327,6 +340,16 @@ function drawPlayer() {
   cx.lineTo(w*0.08, h/2);
   cx.lineTo(0, h/2 + 5 + Math.sin(ft+1)*3);
   cx.closePath(); cx.fill();
+
+  // Shield bubble
+  if (shielded) {
+    const sr = P.w + 10 + Math.sin(Date.now()*0.006)*3;
+    cx.shadowBlur = 18; cx.shadowColor = "#6677ff";
+    cx.strokeStyle = "#8899ff"; cx.lineWidth = 2.5;
+    cx.globalAlpha = 0.55 + Math.sin(Date.now()*0.01)*0.15;
+    cx.beginPath(); cx.arc(0, 0, sr, 0, Math.PI*2); cx.stroke();
+    cx.globalAlpha = 1; cx.shadowBlur = 0;
+  }
 
   cx.shadowBlur = 0;
   cx.restore();
@@ -527,8 +550,9 @@ function update(dt) {
   // Combo decay
   if (comboTimer > 0) { comboTimer -= ms; if (comboTimer <= 0) combo = 0; }
 
-  // Dual shot timer
-  if (dualTimer > 0) { dualTimer -= ms; if (dualTimer <= 0) dualShot = false; }
+  // Power-up timers
+  if (dualTimer  > 0) { dualTimer  -= ms; if (dualTimer  <= 0) dualShot  = false; }
+  if (shieldTimer> 0) { shieldTimer-= ms; if (shieldTimer<= 0) shielded  = false; }
 
   // Screen shake
   if (shakeT > 0) { shakeT -= ms; }
@@ -561,28 +585,61 @@ function update(dt) {
   for (const b of eBullets) { b.x += b.vx||0; b.y += b.vy; }
   eBullets = eBullets.filter(b => b.y < H+20 && b.x > -20 && b.x < W+20);
 
+  /* ── Formation march (shared offset for all non-diving non-boss enemies) ── */
+  const formEnemies = enemies.filter(e => !e.diving && e.type !== "BOSS");
+  if (formEnemies.length > 0) {
+    formDx += formSpd * formDir * (ms/16);
+    // Find formation extent
+    const minX = Math.min(...formEnemies.map(e => e.baseX + formDx));
+    const maxX = Math.max(...formEnemies.map(e => e.baseX + formDx));
+    if (minX < 22 || maxX > W - 22) {
+      formDir *= -1;
+      formDx  += formDir * 2; // nudge away from wall immediately
+      // Step formation down — classic Space Invaders
+      for (const e of formEnemies) {
+        e.baseY += formStepY;
+        if (e.baseY > H * 0.60) { gameOver(); return; }
+      }
+      // Speed up a little each step (classic escalation)
+      formSpd = Math.min(formSpd + 0.08, 5.5);
+    }
+  }
+
   /* ── Enemy update ── */
-  let flipDir = false;
   for (const e of enemies) {
-    if (e.diving) {
+    if (e.type === "BOSS") {
+      // Boss bounces independently
+      e.x += e.vx * (ms/16);
+      if (e.x < 60 || e.x > W-60) e.vx *= -1;
+      // Phase 2 at 50% HP: speed up + extra shots
+      const bossMax = ETYPE.BOSS.hp + wave*2;
+      if (e.hp <= bossMax/2 && !e.phase2) {
+        e.phase2 = true;
+        e.vx *= 1.8;
+        e.fireRate = Math.max(300, e.fireRate - 200);
+        shakeT = 400; shakeAmt = 10;
+        floats.push({ x:e.x, y:e.y-50, text:"PHASE 2!", life:1.8, vy:-1.4 });
+      }
+    } else if (e.diving) {
       // Dive toward player
-      const dx = P.x - e.x, dy = (P.y - 50) - e.y;
-      const dist = Math.hypot(dx, dy);
-      const dspd = 3.5 + wave*0.15;
+      const dx = P.x - e.x, dy = (P.y - 40) - e.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const dspd = (3.8 + wave*0.18) * (ms/16);
       e.x += (dx/dist)*dspd;
       e.y += (dy/dist)*dspd;
-      // Return if past player or off screen
-      if (e.y > P.y + 20 || dist < 24) {
+      if (e.y > P.y + 30 || dist < 20) {
         e.diving = false;
-        // snap back toward formation slowly
+        // Snap baseX to current x so it re-joins formation smoothly
+        e.baseX = e.x - formDx;
+        e.baseY = Math.min(e.baseY, e.y);
       }
     } else {
-      // Formation march
-      e.x += e.vx;
-      e.y = e.baseY + Math.sin(Date.now()*0.0025 + e.phase) * 9;
-      if (e.x < 30 || e.x > W-30) flipDir = true;
+      // Follow shared formation offset
+      e.x = e.baseX + formDx;
+      // Gentle individual bob (small, keeps grid feel)
+      e.y = e.baseY + Math.sin(Date.now()*0.002 + e.phase) * 5;
       // Random dive trigger
-      if (e.type !== "BOSS" && Math.random() < 0.0003 * (1 + wave*0.3) && e.y < H*0.55) {
+      if (e.type !== "BOSS" && Math.random() < 0.00025 * (1 + wave*0.35) && e.y < H*0.52) {
         e.diving = true;
       }
     }
@@ -590,38 +647,30 @@ function update(dt) {
     // Enemy fire
     e.fireTick -= ms;
     if (e.fireTick <= 0) {
-      e.fireTick = e.fireRate + Math.random()*300;
-      const isBoss = e.type === "BOSS";
-      if (isBoss) {
-        // Triple spread shot
-        for (let a = -0.3; a <= 0.31; a += 0.3) {
-          eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*3.5, vy:4.5+wave*0.2, col:"#00ff88" });
+      e.fireTick = e.fireRate + Math.random()*400;
+      if (e.type === "BOSS") {
+        // Triple spread + aimed shot at phase 2
+        for (let a = -0.35; a <= 0.36; a += 0.175) {
+          eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*4, vy:4.5+wave*0.2, col:"#00ff88" });
+        }
+        if (e.phase2) {
+          // Aimed at player too
+          const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, sp=5+wave*0.1;
+          eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*sp*0.5, vy:(dy/d)*sp, col:"#00ffee" });
         }
       } else if (e.type === "GUNSHIP") {
-        eBullets.push({ x:e.x-6, y:e.y+e.r, vx:-0.5, vy:4+wave*0.18, col:"#ff8c00" });
-        eBullets.push({ x:e.x+6, y:e.y+e.r, vx: 0.5, vy:4+wave*0.18, col:"#ff8c00" });
-      } else {
+        // 3-way spread
+        for (let a = -0.2; a <= 0.21; a += 0.2) {
+          eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*2.5, vy:4+wave*0.16, col:"#ff8c00" });
+        }
+      } else if (e.type === "ELITE") {
         // Aimed at player
-        const dx = P.x - e.x, dy = P.y - e.y;
-        const dist = Math.hypot(dx,dy)||1;
-        const spd = 3.8 + wave*0.15;
-        eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/dist)*spd*0.4, vy:spd, col:"#ff4466" });
-      }
-    }
-
-    // Boss also moves left/right bouncing
-    if (e.type === "BOSS") {
-      e.x += e.vx;
-      if (e.x < 60 || e.x > W-60) e.vx *= -1;
-    }
-  }
-
-  if (flipDir) {
-    for (const e of enemies) {
-      if (!e.diving) {
-        e.vx *= -1;
-        e.baseY += 10;
-        if (e.baseY > H * 0.62) { gameOver(); return; }
+        const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, sp=4.2+wave*0.15;
+        eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*sp*0.45, vy:sp, col:"#aa66ff" });
+      } else {
+        // Basic aimed drop
+        const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1, sp=3.5+wave*0.12;
+        eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*sp*0.3, vy:sp, col:"#ff4466" });
       }
     }
   }
@@ -655,9 +704,22 @@ function update(dt) {
           }
           addScore(e.pts + (e.diving ? e.pts : 0), e.x, e.y-20, true);
           // Power-up drop
-          if (Math.random() < 0.06 || (e.type==="BOSS" && !dualShot)) {
+          const pRoll = Math.random();
+          if (e.type === "BOSS" || pRoll < 0.05) {
             dualShot = true; dualTimer = 12000;
-            floats.push({ x:e.x, y:e.y, text:"DUAL SHOT!", life:1.4, vy:-1.2 });
+            floats.push({ x:e.x, y:e.y, text:"⚡ DUAL SHOT!", life:1.4, vy:-1.4 });
+          } else if (pRoll < 0.10 && !shielded) {
+            shielded = true; shieldTimer = 8000;
+            floats.push({ x:e.x, y:e.y, text:"🛡 SHIELD!", life:1.4, vy:-1.4 });
+          }
+          // Formation bonus: check if entire column cleared
+          if (formEnemies.length > 0) {
+            const colX = e.baseX;
+            const colLeft = enemies.filter(en => Math.abs(en.baseX - colX) < 8);
+            if (colLeft.length === 0) {
+              score += 300;
+              floats.push({ x:e.x, y:e.y-30, text:"COLUMN CLEAR! +300", life:1.6, vy:-1.0 });
+            }
           }
           enemies.splice(ei, 1);
         }
@@ -682,12 +744,20 @@ function update(dt) {
   if (P.flash <= 0) {
     for (const eb of eBullets) {
       if (Math.hypot(eb.x-P.x, eb.y-P.y) < 16) {
-        lives--;
-        P.flash = 1800;
-        shakeT = 400; shakeAmt = 9;
-        explosion(P.x, P.y, "#00f5ff", 24, true);
         eBullets.splice(eBullets.indexOf(eb), 1);
-        if (lives <= 0) { gameOver(); return; }
+        if (shielded) {
+          // Shield absorbs the hit
+          shielded = false; shieldTimer = 0;
+          shakeT = 200; shakeAmt = 4;
+          explosion(P.x, P.y, "#88aaff", 14, false);
+          floats.push({ x:P.x, y:P.y-30, text:"SHIELD BLOCKED!", life:1.2, vy:-1.2 });
+        } else {
+          lives--;
+          P.flash = 1800;
+          shakeT = 400; shakeAmt = 9;
+          explosion(P.x, P.y, "#00f5ff", 24, true);
+          if (lives <= 0) { gameOver(); return; }
+        }
         break;
       }
     }
@@ -735,7 +805,9 @@ function update(dt) {
   hScore.textContent = "SCORE " + score;
   hWave.textContent  = "WAVE " + wave + (wave%5===0 ? " ⚠ BOSS" : "");
   hInfo.textContent  = "HULL " + "♥".repeat(Math.max(0,lives)) + "♡".repeat(Math.max(0,3-lives))
-    + "  ×" + mult + (dualShot ? "  ⚡DUAL" : "");
+    + "  ×" + mult
+    + (dualShot  ? "  ⚡DUAL" : "")
+    + (shielded  ? "  🛡" : "");
 }
 
 /* ══════════════════════════════════════════════════
