@@ -71,6 +71,19 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
   const globalBadge = FIREBASE_DB_URL ? '<span class="badge">GLOBAL</span>' : '';
   const stepsHTML   = instructions.map(buildInstructionCard).join('');
+  const isSpyderCasino = (CFG.slug || '').toLowerCase() === 'spyder-casino';
+  const desktopBoardHTML = isSpyderCasino
+    ? `<div style="display:grid;grid-template-columns:1fr;gap:10px">
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack ${globalBadge}</h3><div class="boardStack" id="boardDesktopBj"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Hold'em ${globalBadge}</h3><div class="boardStack" id="boardDesktopHe"></div></div>
+       </div>`
+    : `<div class="boardStack" id="boardDesktop"></div>`;
+  const mobileBoardHTML = isSpyderCasino
+    ? `<div style="display:grid;grid-template-columns:1fr;gap:10px">
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack ${globalBadge}</h3><div class="boardStack" id="boardMobileBj"></div></div>
+         <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Hold'em ${globalBadge}</h3><div class="boardStack" id="boardMobileHe"></div></div>
+       </div>`
+    : `<div class="boardStack" id="boardMobile"></div>`;
 
   // Inject markup
   document.body.innerHTML = `
@@ -96,7 +109,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       </div>
       <div class="panel leaderboard">
         <h3>Leaderboard ${globalBadge}</h3>
-        <div class="content"><div class="boardStack" id="boardDesktop"></div></div>
+        <div class="content">${desktopBoardHTML}</div>
       </div>
     </div>
 
@@ -113,7 +126,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
           </div>
           <div class="panel leaderboard displayCard hidden" id="view-board">
             <h3 style="margin:0;padding:11px 14px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);border-bottom:1px solid rgba(255,255,255,.08);">Leaderboard ${globalBadge}</h3>
-            <div class="content"><div class="boardStack" id="boardMobile"></div></div>
+            <div class="content">${mobileBoardHTML}</div>
           </div>
         </div>
         <div class="btnbar">
@@ -274,10 +287,13 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // --- Firebase REST helpers (shared leaderboard) ---
   const FB_BASE = FIREBASE_DB_URL ? `${FIREBASE_DB_URL}/lb/${slug}` : null;
 
-  async function fbFetch() {
-    if (!FB_BASE) return null;
+  async function fbFetch(slugOverride) {
+    const base = FIREBASE_DB_URL
+      ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
+      : null;
+    if (!base) return null;
     try {
-      const r = await fetch(`${FB_BASE}.json`);
+      const r = await fetch(`${base}.json`);
       if (!r.ok) return null;
       const data = await r.json();
       if (!data || typeof data !== 'object') return [];
@@ -288,10 +304,13 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     } catch(_) { return null; }
   }
 
-  async function fbPost(entry) {
-    if (!FB_BASE) return;
+  async function fbPost(entry, slugOverride) {
+    const base = FIREBASE_DB_URL
+      ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
+      : null;
+    if (!base) return;
     try {
-      await fetch(`${FB_BASE}.json`, {
+      await fetch(`${base}.json`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(entry),
@@ -318,6 +337,15 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // Refresh both desktop + mobile boards.
   // If Firebase is configured, shows global scores; otherwise falls back to local.
   const refreshBoards = async () => {
+    if (isSpyderCasino) {
+      const bjRows = ((await fbFetch('spyder-blackjack')) || []).slice(0, 10);
+      const heRows = ((await fbFetch('spyder-holdem')) || []).slice(0, 10);
+      renderBoard('boardDesktopBj', bjRows);
+      renderBoard('boardDesktopHe', heRows);
+      renderBoard('boardMobileBj', bjRows);
+      renderBoard('boardMobileHe', heRows);
+      return;
+    }
     const cloud = await fbFetch();
     const rows  = (cloud !== null ? cloud : lbLoad()).slice(0, 10);
     renderBoard('boardDesktop', rows);
@@ -327,7 +355,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
   // --- Score intake (dedup burst within 1.2 s) ---
   let lastSig = '', lastAt = 0;
-  async function addScore(rawScore) {
+  async function addScore(rawScore, scoreSlug) {
     const initials = getInitials() || '???';
     const score = Math.max(0, Math.floor(Number(rawScore) || 0));
     const now = Date.now();
@@ -337,6 +365,12 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
     const entry = { initials, score, t: now };
 
+    if (isSpyderCasino && scoreSlug) {
+      const entry = { initials, score, t: now };
+      fbPost(entry, scoreSlug).finally(() => refreshBoards());
+      refreshBoards();
+      return;
+    }
     // Always save locally (works offline / no Firebase configured)
     const rows = lbLoad();
     rows.push(entry);
@@ -360,7 +394,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (d.type === 'GAME_OVER_SCORE' || d.type === 'GAME_OVER' ||
         d.type === 'PIXELNET_SCORE'  || d.type === 'PIXELNET_SUBMIT_SCORE') {
       const s = d.score != null ? d.score : (d.finalScore != null ? d.finalScore : d.value);
-      if (s != null) addScore(s);
+      if (s != null) addScore(s, d.slug);
     }
   });
 

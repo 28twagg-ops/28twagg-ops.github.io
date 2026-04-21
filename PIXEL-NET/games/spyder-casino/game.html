@@ -228,6 +228,11 @@ body:not(.casino) #bjActionBtns{
 }
 body:not(.casino) #heActZone,
 body:not(.casino) #heRaiseZ{display:none !important;}
+body:not(.casino) .bj-hud,
+body:not(.casino) .he-hud,
+body:not(.casino) .mode-hint{
+  display:none !important;
+}
 .term-line{
   font-size:12px;
   color:#00ff41;
@@ -1733,7 +1738,7 @@ async function endSubmit(){
   // Keep lobby leaderboards up-to-date immediately after any submit.
   fbFetch(BJ_SLUG, 5).then(r => { lobbyBjRows = Array.isArray(r) ? r : []; renderLb(lobbyBjRows, 'bjLobbyLb', 'bj'); renderTerminalLobbyBoard(); });
   fbFetch(HE_SLUG, 5).then(r => { lobbyHeRows = Array.isArray(r) ? r : []; renderLb(lobbyHeRows, 'heLobbyLb', 'he'); renderTerminalLobbyBoard(); });
-  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum},'*');
+  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:endGameSlug},'*');
   document.getElementById('endMsg').textContent='✓ Score saved!';
   setTimeout(()=>fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he')),600);
 }
