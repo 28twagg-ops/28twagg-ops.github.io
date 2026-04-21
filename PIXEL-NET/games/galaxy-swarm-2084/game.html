@@ -55,12 +55,14 @@ const hInfo   = document.getElementById("h-info");
 let W = 800, H = 600;
 
 /* ── game state ── */
+const MAX_LIVES = 4;
 let running = false, posted = false;
-let score = 0, wave = 1, lives = 3, combo = 0, comboTimer = 0;
+let score = 0, wave = 1, lives = MAX_LIVES, combo = 0, comboTimer = 0;
 let fireCooldown = 0, shakeT = 0, shakeAmt = 0;
 let dualShot = false, dualTimer = 0;
 let shielded = false, shieldTimer = 0;
 let waveIntro = 0;
+let waveGrace = 0; // no enemy fire/dives during intro grace
 let last = 0;
 let keys = {};
 
@@ -139,9 +141,10 @@ function gameOver() {
    RESET / WAVE BUILD
 ══════════════════════════════════════════════════ */
 function resetGame() {
-  score = 0; wave = 1; lives = 3; combo = 0; comboTimer = 0;
+  score = 0; wave = 1; lives = MAX_LIVES; combo = 0; comboTimer = 0;
   fireCooldown = 0; shakeT = 0; dualShot = false; dualTimer = 0;
   shielded = false; shieldTimer = 0;
+  waveGrace = 0;
   formDx = 0; formDir = 1;
   bullets = []; eBullets = []; particles = []; floats = [];
   P.x = W/2; P.y = H - 64; P.flash = 0;
@@ -157,6 +160,7 @@ function buildBunkers() {
   bunkers = [];
   const n = 3, bw = Math.floor(W * 0.1), bh = Math.floor(H * 0.06);
   const gap = (W - n * bw) / (n + 1);
+  const segHp = wave <= 3 ? 4 : 3; // friendlier early waves
   for (let i = 0; i < n; i++) {
     const bx = gap + i * (bw + gap);
     const by = H - Math.floor(H * 0.18);
@@ -165,7 +169,7 @@ function buildBunkers() {
     for (let sx = 0; sx < 5; sx++) for (let sy = 0; sy < 3; sy++) {
       // notch in bottom-center
       if (sy === 2 && (sx === 1 || sx === 2 || sx === 3)) continue;
-      segs.push({ x: bx + sx*sw, y: by + sy*sh, w: sw, h: sh, hp: 3 });
+      segs.push({ x: bx + sx*sw, y: by + sy*sh, w: sw, h: sh, hp: segHp, maxHp: segHp });
     }
     bunkers.push({ segs });
   }
@@ -174,11 +178,12 @@ function buildBunkers() {
 function buildWave() {
   enemies = [];
   waveIntro = 1400;
+  waveGrace = Math.max(900, 2600 - wave * 220); // wave 1: 2.38s, wave 5: 1.5s
 
   // Formation starts slow on wave 1, ramps up with wave number
   formDx = 0; formDir = 1;
-  formSpd = 0.30 + wave * 0.10;   // wave 1: 0.40, wave 5: 0.80, wave 10: 1.30
-  maxEBullets = Math.min(2 + Math.floor(wave/2), 8); // wave 1: 2 bullets max, grows slowly
+  formSpd = 0.24 + wave * 0.085;   // softer early movement
+  maxEBullets = Math.min(1 + Math.floor(wave/2), 6); // wave 1: 1 bullet max
   const isBoss = wave % 5 === 0;
   if (isBoss) {
     // Boss wave — one large boss + escort drones
@@ -188,7 +193,7 @@ function buildWave() {
       vx: 1.4 + wave*0.06, vy: 0,
       phase: 0, hp: t.hp + wave*2,
       type: "BOSS", diving: false, diveTarget: null, fireTick: 0,
-      fireRate: Math.max(600, 1400 - wave*40)
+      fireRate: Math.max(780, 1650 - wave*38)
     });
     const escorts = 6;
     for (let i = 0; i < escorts; i++) {
@@ -199,7 +204,7 @@ function buildWave() {
         vx: 1.4 + wave*0.09, vy: 0,
         phase: i*1.04, hp: 1,
         type: "DRONE", diving: false, diveTarget: null, fireTick: Math.random()*600,
-        fireRate: Math.max(700, 1200 - wave*35)
+        fireRate: Math.max(900, 1700 - wave*35)
       });
     }
     return;
@@ -214,9 +219,8 @@ function buildWave() {
   const startY = 52;
 
   // Formation state already reset above
-  // Wave 1: fire rate very slow (every 4-6s per enemy), grows with wave
-  // Wave 5+: every ~1.5s per eligible enemy, still capped by maxEBullets
-  const fireRateBase = Math.max(800, 4500 - wave * 380);
+  // Wave 1: very readable. Later waves ramp steadily.
+  const fireRateBase = Math.max(1200, 5200 - wave * 420);
 
   for (let r = 0; r < rows; r++) {
     for (let col = 0; col < cols; col++) {
@@ -518,7 +522,7 @@ function drawBunkers() {
   for (const bk of bunkers) {
     for (const s of bk.segs) {
       if (s.hp <= 0) continue;
-      const frac = s.hp / 3;
+      const frac = s.hp / (s.maxHp || 3);
       cx.fillStyle = `rgba(0,${Math.floor(180*frac)},${Math.floor(100*frac)},0.85)`;
       cx.fillRect(s.x, s.y, s.w, s.h);
       cx.strokeStyle = `rgba(0,255,120,${frac*0.6})`;
@@ -543,7 +547,7 @@ function drawBullet(b) {
 function drawEBullet(b) {
   cx.shadowBlur = 8; cx.shadowColor = b.col || "#ff4466";
   cx.fillStyle = b.col || "#ff4466";
-  cx.beginPath(); cx.arc(b.x, b.y, 4, 0, Math.PI*2); cx.fill();
+  cx.beginPath(); cx.arc(b.x, b.y, 3.2, 0, Math.PI*2); cx.fill();
   cx.shadowBlur = 0;
 }
 
@@ -565,6 +569,7 @@ function update(dt) {
 
   // Wave intro
   if (waveIntro > 0) { waveIntro -= ms; }
+  if (waveGrace > 0) { waveGrace -= ms; }
 
   // Player flash
   if (P.flash > 0) P.flash -= ms;
@@ -577,7 +582,7 @@ function update(dt) {
   /* ── Firing ── */
   fireCooldown -= ms;
   if ((keys[" "] || keys["enter"]) && fireCooldown <= 0) {
-    fireCooldown = dualShot ? 100 : 160;
+    fireCooldown = dualShot ? 90 : 130;
     bullets.push({ x: P.x, y: P.y - P.h, vy: -(9.5 + wave*0.08) });
     if (dualShot) {
       bullets.push({ x: P.x - 14, y: P.y - P.h/2, vy: -(9.0) });
@@ -595,11 +600,10 @@ function update(dt) {
   const allFormEnemies = enemies.filter(e => e.type !== "BOSS");
   const formEnemies = allFormEnemies.filter(e => !e.diving);
   if (formEnemies.length > 0) {
-    // Classic Space Invaders escalation: speed multiplies as enemy count drops
-    // Full grid (12–30 enemies) = base speed. Last few enemies = up to 4× faster
+    // Classic escalation, but capped to avoid unfair spikes
     const startCount = (Math.min(5, 2+Math.floor(wave/2))) * (Math.min(10, 6+Math.floor(wave/3)));
     const countRatio = formEnemies.length / Math.max(1, startCount);
-    const countBoost = 1 + (1 - countRatio) * 3.5; // 1× at full, up to 4.5× at last enemy
+    const countBoost = 1 + (1 - countRatio) * 2.2; // 1× at full, up to 3.2× at last enemy
     const effectiveSpd = formSpd * countBoost;
 
     formDx += effectiveSpd * formDir * (ms/16);
@@ -613,7 +617,7 @@ function update(dt) {
         if (e.baseY > H * 0.60) { gameOver(); return; }
       }
       // Slight base speed bump each wall bounce
-      formSpd = Math.min(formSpd + 0.04, 3.0);
+      formSpd = Math.min(formSpd + 0.03, 2.2);
     }
   }
 
@@ -628,7 +632,7 @@ function update(dt) {
       if (e.hp <= bossMax/2 && !e.phase2) {
         e.phase2 = true;
         e.vx *= 1.8;
-        e.fireRate = Math.max(300, e.fireRate - 200);
+        e.fireRate = Math.max(520, e.fireRate - 160);
         shakeT = 400; shakeAmt = 10;
         floats.push({ x:e.x, y:e.y-50, text:"PHASE 2!", life:1.8, vy:-1.4 });
       }
@@ -636,7 +640,7 @@ function update(dt) {
       // Dive toward player
       const dx = P.x - e.x, dy = (P.y - 40) - e.y;
       const dist = Math.hypot(dx, dy) || 1;
-      const dspd = (3.8 + wave*0.18) * (ms/16);
+      const dspd = (3.1 + wave*0.15) * (ms/16);
       e.x += (dx/dist)*dspd;
       e.y += (dy/dist)*dspd;
       if (e.y > P.y + 30 || dist < 20) {
@@ -652,8 +656,8 @@ function update(dt) {
       e.y = e.baseY + Math.sin(Date.now()*0.002 + e.phase) * 5;
       // Dive trigger — much rarer on early waves
       // Wave 1: ~0.00006/frame per enemy (nearly none), wave 5: ~0.00025, wave 10+: ~0.0005
-      const diveChance = 0.00004 * (1 + wave * 0.55);
-      if (!e.diving && e.type !== "BOSS" && Math.random() < diveChance && e.y < H*0.52) {
+      const diveChance = 0.00002 * (1 + wave * 0.45);
+      if (waveGrace <= 0 && !e.diving && e.type !== "BOSS" && Math.random() < diveChance && e.y < H*0.52) {
         e.diving = true;
       }
     }
@@ -662,6 +666,7 @@ function update(dt) {
     e.fireTick -= ms;
     if (e.fireTick <= 0) {
       e.fireTick = e.fireRate + Math.random() * (e.fireRate * 0.5);
+      if (waveGrace > 0) continue;
 
       // ── Front-row-only fire rule (Space Invaders authentic) ──
       // An enemy can only fire if no other enemy is directly below it in the same column
@@ -677,8 +682,8 @@ function update(dt) {
 
       if (e.type === "BOSS") {
         // Boss ignores column rule
-        const bspd = 3.5 + wave * 0.18;
-        for (let a = -0.35; a <= 0.36; a += 0.175) {
+        const bspd = 3.0 + wave * 0.15;
+        for (let a = -0.26; a <= 0.27; a += 0.26) {
           eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*3.5, vy:bspd, col:"#00ff88" });
         }
         if (e.phase2) {
@@ -687,21 +692,21 @@ function update(dt) {
         }
       } else if (isColumnFront && bulletCap) {
         // Bullet speed scales with wave — slow and readable early, faster later
-        const bspd = 2.2 + wave * 0.22;  // wave 1: 2.44, wave 5: 3.3, wave 10: 4.4
+        const bspd = 1.9 + wave * 0.18;
         if (e.type === "GUNSHIP") {
           // Only spread on wave 3+, single shot before that
-          if (wave >= 3) {
+          if (wave >= 5) {
             for (let a = -0.18; a <= 0.19; a += 0.18) {
-              eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*2, vy:bspd, col:"#ff8c00" });
+              eBullets.push({ x:e.x, y:e.y+e.r, vx:Math.sin(a)*1.5, vy:bspd, col:"#ff8c00" });
             }
           } else {
             eBullets.push({ x:e.x, y:e.y+e.r, vx:0, vy:bspd, col:"#ff8c00" });
           }
         } else if (e.type === "ELITE") {
           // Aimed only on wave 4+, straight drop before that
-          if (wave >= 4) {
+          if (wave >= 6) {
             const dx=P.x-e.x, dy=P.y-e.y, d=Math.hypot(dx,dy)||1;
-            eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*bspd*0.35, vy:bspd, col:"#aa66ff" });
+            eBullets.push({ x:e.x, y:e.y+e.r, vx:(dx/d)*bspd*0.25, vy:bspd, col:"#aa66ff" });
           } else {
             eBullets.push({ x:e.x, y:e.y+e.r, vx:0, vy:bspd, col:"#aa66ff" });
           }
@@ -781,7 +786,7 @@ function update(dt) {
   /* ── Enemy bullet vs player ── */
   if (P.flash <= 0) {
     for (const eb of eBullets) {
-      if (Math.hypot(eb.x-P.x, eb.y-P.y) < 16) {
+      if (Math.hypot(eb.x-P.x, eb.y-P.y) < 13.5) {
         eBullets.splice(eBullets.indexOf(eb), 1);
         if (shielded) {
           // Shield absorbs the hit
@@ -794,6 +799,10 @@ function update(dt) {
           P.flash = 1800;
           shakeT = 400; shakeAmt = 9;
           explosion(P.x, P.y, "#00f5ff", 24, true);
+          // Mercy clear: remove nearby enemy bullets to avoid chained deaths
+          eBullets = eBullets.filter(b => Math.hypot(b.x - P.x, b.y - P.y) > 120);
+          // Nudge player to center after hit for breathing room
+          P.x = W * 0.5;
           if (lives <= 0) { gameOver(); return; }
         }
         break;
@@ -842,10 +851,11 @@ function update(dt) {
   const mult = Math.min(8, 1 + Math.floor(combo/4));
   hScore.textContent = "SCORE " + score;
   hWave.textContent  = "WAVE " + wave + (wave%5===0 ? " ⚠ BOSS" : "");
-  hInfo.textContent  = "HULL " + "♥".repeat(Math.max(0,lives)) + "♡".repeat(Math.max(0,3-lives))
+  hInfo.textContent  = "HULL " + "♥".repeat(Math.max(0,lives)) + "♡".repeat(Math.max(0,MAX_LIVES-lives))
     + "  ×" + mult
     + (dualShot  ? "  ⚡DUAL" : "")
-    + (shielded  ? "  🛡" : "");
+    + (shielded  ? "  🛡" : "")
+    + (waveGrace > 0 ? "  READY" : "");
 }
 
 /* ══════════════════════════════════════════════════

@@ -79,7 +79,7 @@ const COMBO_ADD = [0,  50, 100, 150, 200, 250, 300];
 
 /* ══ LAYOUT VARS ══ (recalculated on resize) */
 let W = 800, H = 600;
-let cell = 28, ox = 200, oy = 20, sideW = 120;
+let cell = 28, ox = 200, oy = 20, sideW = 96, panelGap = 10;
 
 /* ══ GAME STATE — initialized immediately so render never sees undefined ══ */
 let board  = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
@@ -104,10 +104,33 @@ function resize() {
   W = Math.max(400, Math.floor(r.width));
   H = Math.max(400, Math.floor(r.height));
   cv.width  = W; cv.height = H;
-  cell  = Math.max(18, Math.min(36, Math.floor(Math.min((H-50)/ROWS, (W*0.44)/COLS))));
-  ox    = Math.floor(W/2 - (COLS*cell)/2);
-  oy    = Math.floor((H - ROWS*cell)/2);
-  sideW = Math.floor(cell * 4.4);
+
+  // Give the gameplay grid priority so pieces stay readable.
+  // We solve for largest cell size that still fits side panels.
+  const minCell = 20;
+  const maxCell = 52;
+  const minPanel = 74;
+  let chosenCell = minCell;
+  let chosenPanel = minPanel;
+
+  for (let c = Math.min(maxCell, Math.floor((H - 16) / ROWS)); c >= minCell; c--) {
+    const p = Math.max(minPanel, Math.floor(c * 2.55));
+    const totalW = (COLS * c) + (p * 2) + (panelGap * 2) + 20;
+    if (totalW <= W) {
+      chosenCell = c;
+      chosenPanel = p;
+      break;
+    }
+  }
+
+  cell = chosenCell;
+  sideW = chosenPanel;
+
+  const boardW = COLS * cell;
+  const totalLayoutW = boardW + sideW * 2 + panelGap * 2;
+  const leftStart = Math.floor((W - totalLayoutW) / 2);
+  ox = leftStart + sideW + panelGap;
+  oy = Math.max(8, Math.floor((H - ROWS * cell) / 2));
 }
 
 /* ══ BAG SYSTEM — double bag for 3-piece look-ahead ══ */
@@ -479,9 +502,9 @@ function render() {
   }
 
   /* ── RIGHT PANEL ── */
-  const rp=ox+COLS*cell+14;
+  const rp=ox+COLS*cell+panelGap;
   const pw=sideW;
-  const miniSz=Math.min(cell-2,17);
+  const miniSz=Math.min(cell-2,22);
   const preview=peekNext(3);
 
   // NEXT queue (3 pieces)
@@ -495,7 +518,7 @@ function render() {
   if(!canHold){ctx.fillStyle="rgba(0,0,0,.5)";ctx.fillRect(rp,holdY,pw,cell*4.2);}
 
   /* ── LEFT PANEL ── */
-  const lp=ox-pw-14;
+  const lp=ox-pw-panelGap;
   const sH=cell*2.8;
 
   // SCORE

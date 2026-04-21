@@ -353,6 +353,47 @@ Entry - 2026-04-21 (v0.0.23 - Multi-game overhaul: Stack Drop DX + Galaxy Swarm 
   - v0.0.20: Full DK-style rebuild with platform-aware barrel cascade, authenticated Kong
 - Bumped PIXEL-NET/version.json to 0.0.23
 
+Entry - 2026-04-21 (v0.0.24 - Tower Rush high-detail Donkey Kong mechanics boost)
+- PIXEL-NET/games/orbit-siege/game.html:
+  - Added oil-drum fireball enemies with platform movement, edge falls, and ladder-climb attempts
+  - Added hammer pickups (two per stage) with timed power state (9.5s)
+  - Hammer mode now allows smashing barrels and fireballs for score bonuses
+  - Added blue barrel variant (faster + higher jump/smash score)
+  - Enabled hammer restrictions inspired by arcade behavior (no jump/climb while active)
+  - Added detailed fireball rendering and hammer pickup visuals
+  - Added hammer glow + held-hammer animation on player sprite
+  - Updated HUD to show hammer timer alongside bonus countdown
+  - Updated start instructions to teach hammer mechanic
+- Bumped PIXEL-NET/version.json to 0.0.24
+
+Entry - 2026-04-21 (v0.0.25 - Galaxy Swarm early-wave difficulty rebalance)
+- PIXEL-NET/games/galaxy-swarm-2084/game.html:
+  - Increased starting lives to 4 (MAX_LIVES) and updated HUD hearts accordingly
+  - Added wave grace timer (`waveGrace`) so enemies do not fire/dive immediately on spawn
+  - Reduced early formation speed and softened acceleration curve as enemies are thinned
+  - Reduced on-screen enemy bullet cap to 1 on wave 1, then scales gradually by wave
+  - Increased bunker segment HP on early waves (wave 1-3) for better defensive uptime
+  - Slowed enemy dive speed and reduced dive trigger chance on early waves
+  - Delayed advanced enemy fire behaviors:
+    - Gunship spread now starts at wave 5 (single shot before that)
+    - Elite aimed shots now start at wave 6 (straight shots before that)
+  - Reduced enemy bullet size and eased bullet speed scaling for better readability
+  - Added mercy behavior after player hit:
+    - clears nearby enemy bullets
+    - nudges player back to screen center for recovery
+  - Increased player fire cadence (faster shots) to improve agency under pressure
+  - Added HUD READY indicator during wave grace
+- Bumped PIXEL-NET/version.json to 0.0.25
+
+Entry - 2026-04-21 (v0.0.26 - Stack Drop DX readability/scale pass)
+- PIXEL-NET/games/circuit-salvager/game.html:
+  - Reworked resize/layout math to prioritize gameplay board size over side panel width
+  - Increased practical max block scale by using dynamic fit computation per viewport
+  - Reduced panel spacing and re-centered layout to reclaim board area
+  - Increased mini preview block size cap for better visibility
+  - Result: noticeably larger active gameplay area and easier piece readability
+- Bumped PIXEL-NET/version.json to 0.0.26
+
 Entry - 2026-04-21 (Tower Rush full DK-style rewrite)
 - Completely rewrote PIXEL-NET/games/orbit-siege/game.html:
   - Drew gorilla at summit with animated throw arm + red glowing eyes
