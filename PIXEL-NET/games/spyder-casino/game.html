@@ -215,6 +215,41 @@ body:not(.casino) .chip-row{
   outline:none;
 }
 #termSelection:focus{border-color:#00ff41;}
+.term-bet,.term-act{display:none;}
+body:not(.casino) .term-bet,
+body:not(.casino) .term-act{display:block;}
+body:not(.casino) .chip-row,
+body:not(.casino) #bjDealBtn,
+body:not(.casino) #bjActionBtns > button{
+  display:none !important;
+}
+body:not(.casino) #bjActionBtns{
+  justify-content:flex-start;
+}
+.term-line{
+  font-size:12px;
+  color:#00ff41;
+  letter-spacing:.5px;
+  margin:6px 0;
+}
+.term-inline{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.term-input{
+  width:240px;
+  background:#000;
+  color:#00ff41;
+  border:1px solid #00cc33;
+  border-radius:0;
+  font-family:inherit;
+  font-size:12px;
+  padding:6px 8px;
+  outline:none;
+}
+.term-input:focus{border-color:#00ff41;}
 .btn:hover{background:rgba(0,255,65,.1);border-color:var(--g);}
 .btn.pri{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.15);}
 .btn.red{color:var(--red);border-color:var(--red);}
@@ -560,6 +595,14 @@ Select a game:
       <div class="sec-lbl">PLACE YOUR BET</div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
         <div class="bet-disp">$<span id="bjBetAmt">0</span></div>
+        <div class="term-bet" id="bjTermBetWrap">
+          <div class="term-line">Enter Bet (Min $5 or 'q' to cash out):</div>
+          <div class="term-inline">
+            <input class="term-input" id="bjTermBetInp" placeholder="e.g. 25" />
+            <button class="btn pri" onclick="bjSubmitTerminalBet()">ENTER BET</button>
+          </div>
+          <div class="term-line" id="bjTermBetMsg"></div>
+        </div>
         <div class="chip-row">
           <div class="chip c5"   onclick="bjAddBet(5)">$5</div>
           <div class="chip c10"  onclick="bjAddBet(10)">$10</div>
@@ -574,6 +617,14 @@ Select a game:
       </div>
     </div>
     <div class="br" id="bjActionBtns" style="display:none">
+      <div class="term-act" id="bjTermActWrap">
+        <div class="term-line" id="bjTermActLine">Action Hand 1 [(H)it, (S)tay]:</div>
+        <div class="term-inline">
+          <input class="term-input" id="bjTermActInp" placeholder="h / s / d / p" />
+          <button class="btn pri" onclick="bjSubmitTerminalAction()">SUBMIT ACTION</button>
+        </div>
+        <div class="term-line" id="bjTermActMsg"></div>
+      </div>
       <button class="btn pri" id="bjHit"    onclick="bjHit()">HIT</button>
       <button class="btn"     id="bjStay"   onclick="bjStay()">STAY</button>
       <button class="btn amb" id="bjDouble" onclick="bjDouble()">DOUBLE</button>
@@ -862,6 +913,7 @@ let bjDeck=[], bjRC=0, bjBank=BJ_START, bjBet=0, bjHands=[], bjHandIdx=0, bjDeal
 
 function bjRC_val(c) { if(c.value<=6) return 1; if(c.value===10||c.rank==='A') return -1; return 0; }
 function bjHV(cards) { let v=0,a=0; for(const c of cards){v+=c.value;if(c.rank==='A')a++;} while(v>21&&a){v-=10;a--;} return v; }
+function bjIsTerminal(){ return visualStyle === 'terminal'; }
 function bjPop() { if(bjDeck.length<BJ_THRESH){bjDeck=buildDeck();bjRC=0;} return bjDeck.pop(); }
 function bjCount(c) { if(bjMode==='ANALYSIS') bjRC+=bjRC_val(c); }
 function bjTrueCount() { return (bjRC/Math.max(1,bjDeck.length/52)).toFixed(1); }
@@ -886,6 +938,12 @@ function bjReset() {
   document.getElementById('bjDealerSec').style.display='none';
   document.getElementById('bjDealerCards').innerHTML='';
   document.getElementById('bjDealerTot').textContent='';
+  const bInp=document.getElementById('bjTermBetInp'), bMsg=document.getElementById('bjTermBetMsg');
+  if(bInp){ bInp.value=''; if(bjIsTerminal()) setTimeout(()=>bInp.focus(), 0); }
+  if(bMsg) bMsg.textContent='';
+  const aInp=document.getElementById('bjTermActInp'), aMsg=document.getElementById('bjTermActMsg');
+  if(aInp) aInp.value='';
+  if(aMsg) aMsg.textContent='';
   bjUpdateHUD();
 }
 function bjAddBet(amt) {
@@ -897,6 +955,42 @@ function bjAddBet(amt) {
   document.getElementById('bjDealBtn').disabled=bjBet<BJ_MIN;
 }
 function bjClearBet() { bjBet=0;document.getElementById('bjBetAmt').textContent='0';document.getElementById('bjDealBtn').disabled=true; }
+function bjSubmitTerminalBet(){
+  if(!bjIsTerminal() || bjPhase!=='bet') return;
+  const inp=document.getElementById('bjTermBetInp');
+  const msg=document.getElementById('bjTermBetMsg');
+  if(!inp) return;
+  const raw=(inp.value||'').trim().toLowerCase();
+  if(raw==='q'){ bjCashOut(); return; }
+  const bet=Number(raw);
+  if(!Number.isFinite(bet)){ if(msg) msg.textContent='Please enter a number.'; return; }
+  if(bet < BJ_MIN || bet > bjBank){ if(msg) msg.textContent=`Invalid bet. Must be between $${BJ_MIN} and $${bjBank.toFixed(2)}.`; return; }
+  bjBet=Math.floor(bet);
+  document.getElementById('bjBetAmt').textContent=bjBet;
+  document.getElementById('bjDealBtn').disabled=false;
+  if(msg) msg.textContent='';
+  inp.value='';
+  bjDeal();
+}
+function bjSubmitTerminalAction(){
+  if(!bjIsTerminal() || bjPhase!=='play') return;
+  const inp=document.getElementById('bjTermActInp');
+  const msg=document.getElementById('bjTermActMsg');
+  if(!inp) return;
+  const h=bjCurH(); if(!h) return;
+  const pv=bjHV(h.cards);
+  const canD=h.cards.length===2&&bjBank>=h.bet&&pv<21;
+  const srk=h.cards.length===2&&h.cards[0].rank===h.cards[1].rank;
+  const svl=h.cards.length===2&&h.cards[0].value===h.cards[1].value;
+  const canSp=(srk||svl)&&bjBank>=h.bet&&bjHands.length<4&&h.cards.length===2;
+  const raw=(inp.value||'').trim().toLowerCase();
+  const k = raw==='hit'?'h':raw==='stay'||raw==='stand'?'s':raw==='double'?'d':raw==='split'?'p':raw;
+  if(k==='h'){ bjHit(); inp.value=''; if(msg) msg.textContent=''; return; }
+  if(k==='s'){ bjStay(); inp.value=''; if(msg) msg.textContent=''; return; }
+  if(k==='d' && canD){ bjDouble(); inp.value=''; if(msg) msg.textContent=''; return; }
+  if(k==='p' && canSp){ bjSplit(); inp.value=''; if(msg) msg.textContent=''; return; }
+  if(msg) msg.textContent='Invalid action for current hand.';
+}
 function bjUpdateHUD() {
   document.getElementById('bjBank').textContent=bjBank.toFixed(2);
   if(bjMode==='ANALYSIS'){document.getElementById('bjCount').textContent=bjRC;document.getElementById('bjTrue').textContent=bjTrueCount();}
@@ -1033,6 +1127,13 @@ function bjRenderActions() {
   const canSp=(srk||svl)&&bjBank>=h.bet&&bjHands.length<4&&h.cards.length===2;
   document.getElementById('bjDouble').disabled=!canD;
   document.getElementById('bjSplit').disabled=!canSp;
+  if(bjIsTerminal()){
+    const line=document.getElementById('bjTermActLine');
+    const inp=document.getElementById('bjTermActInp');
+    const opts=['(H)it','(S)tay']; if(canD) opts.push('(D)ouble'); if(canSp) opts.push('S(p)lit');
+    if(line) line.textContent=`Action Hand ${bjHandIdx+1} [${opts.join(', ')}]:`;
+    if(inp) setTimeout(()=>inp.focus(), 0);
+  }
 }
 function bjRunProb() {
   const sec=document.getElementById('bjProbSec');
@@ -1645,6 +1746,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+  const betInp = document.getElementById('bjTermBetInp');
+  if (betInp) {
+    betInp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        bjSubmitTerminalBet();
+        e.preventDefault();
+      }
+    });
+  }
+  const actInp = document.getElementById('bjTermActInp');
+  if (actInp) {
+    actInp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        bjSubmitTerminalAction();
+        e.preventDefault();
+      }
+    });
+  }
 });
 goLobby();
 </script>
