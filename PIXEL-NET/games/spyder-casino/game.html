@@ -233,6 +233,18 @@ body:not(.casino) .he-hud,
 body:not(.casino) .mode-hint{
   display:none !important;
 }
+body:not(.casino) #bjDealerSec,
+body:not(.casino) #bjPlayerSecs,
+body:not(.casino) #bjProbSec,
+body:not(.casino) #bjBetZone,
+body:not(.casino) #bjResultBanner,
+body:not(.casino) #bjActionBtns,
+body:not(.casino) #bjNextBtns,
+body:not(.casino) #heBotsRow,
+body:not(.casino) .comm-area,
+body:not(.casino) #hePlayerArea{
+  display:none !important;
+}
 .term-line{
   font-size:12px;
   color:#00ff41;
@@ -399,6 +411,15 @@ body.casino .bj-container{
     inset 0 0 0 10px rgba(212,168,67,.16),
     0 18px 34px rgba(0,0,0,.44);
 }
+body.casino .bj-container::before{
+  content:'';
+  position:absolute;
+  inset:10px 18px;
+  border-radius:220px / 125px;
+  border:3px solid rgba(70,45,20,.35);
+  pointer-events:none;
+}
+body.casino .bj-container{position:relative;}
 body.casino #bjDealerSec,
 body.casino #bjPlayerSecs .section,
 body.casino #bjBetZone{
@@ -465,6 +486,15 @@ body.casino .table-wrap{
     inset 0 0 0 10px rgba(212,168,67,.16),
     0 18px 34px rgba(0,0,0,.44);
   padding:14px 16px 16px 16px;
+  position:relative;
+}
+body.casino .table-wrap::before{
+  content:'';
+  position:absolute;
+  inset:10px 20px;
+  border-radius:220px / 130px;
+  border:3px solid rgba(70,45,20,.35);
+  pointer-events:none;
 }
 .bots-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;flex-shrink:0;}
 .bot-panel{border:1px solid rgba(0,255,65,.18);border-radius:5px;padding:5px 7px;
@@ -486,7 +516,7 @@ body.casino .comm-area{
   border:2px dashed rgba(255,224,102,.28);
   border-radius:18px;
   margin:8px 30px;
-  background:rgba(0,0,0,.18);
+  background:radial-gradient(ellipse at center, rgba(0,0,0,.14), rgba(0,0,0,.26));
 }
 .stage-lbl{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--g2);opacity:.65;}
 .pot-disp{font-size:13px;color:var(--amb);font-weight:bold;}
@@ -518,6 +548,9 @@ body.casino .player-area-he{
   border-radius:16px;
   margin:8px 20px 2px 20px;
   background:linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.5));
+}
+body.casino .chip{
+  box-shadow:0 6px 14px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.12);
 }
 .p-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
 .p-info{flex:1;}
