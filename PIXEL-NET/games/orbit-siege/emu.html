@@ -6,14 +6,36 @@
 <title>Donkey Kong — PIXEL-NET</title>
 <style>
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
-  #game{width:100%;height:100%;display:block}
-  #notice{position:fixed;left:8px;bottom:8px;font-size:11px;color:#ffd66b;text-shadow:0 0 6px #000;pointer-events:none;opacity:.85}
+  html,body{margin:0;height:100%;width:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
+  #game{width:100%;height:100%}
+  #topbar{position:fixed;top:6px;left:6px;right:6px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50;gap:10px}
+  #hint{background:rgba(0,0,0,.7);border:1px solid rgba(255,112,67,.45);color:#ff9d66;padding:6px 10px;border-radius:4px;font-size:11px;max-width:64%;pointer-events:auto;transition:opacity .4s}
+  #hint.dim{opacity:.25}
+  #submit{background:#2a130a;border:2px solid #ff7043;color:#ffb38a;font:inherit;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;pointer-events:auto;font-size:12px}
+  #submit:hover{background:#3d1a0f}
+  #submit:disabled{opacity:.7;cursor:default}
+  #startOv{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer}
+  #startOv.hidden{display:none}
+  #startOv .card{background:#2a130a;border:2px solid #ff7043;border-radius:8px;padding:22px 28px;text-align:center;max-width:440px}
+  #startOv h1{margin:0 0 8px;color:#ff9d66;font-size:22px;letter-spacing:2px}
+  #startOv p{margin:6px 0;font-size:13px;color:#ffd9c2}
+  kbd{background:#4a2418;padding:2px 6px;border-radius:3px;font-size:11px;margin:0 1px}
 </style>
 </head>
-<body>
+<body tabindex="0">
+<div id="startOv">
+  <div class="card">
+    <h1>DONKEY KONG (ARCADE)</h1>
+    <p>Insert coin: <kbd>5</kbd>  Start 1P: <kbd>1</kbd></p>
+    <p>Move: <kbd>ARROWS</kbd>  Jump: <kbd>SPACE</kbd> or <kbd>CTRL</kbd></p>
+    <p style="color:#ff9d66;margin-top:12px"><b>CLICK TO START</b></p>
+  </div>
+</div>
+<div id="topbar">
+  <div id="hint">Coin: 5 &nbsp;|&nbsp; Start 1P: 1 &nbsp;|&nbsp; Move: ARROWS &nbsp;|&nbsp; Jump: SPACE</div>
+  <button id="submit">SUBMIT SCORE</button>
+</div>
 <div id="game"></div>
-<div id="notice">ARCADE MODE (MAME) — use Insert Coin / Start (5/1) then controls</div>
 <script>
   window.EJS_player = '#game';
   window.EJS_core = 'mame2003';
@@ -22,10 +44,9 @@
   window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#ff7043';
-  window.addEventListener('beforeunload', () => {
-    try { window.parent.postMessage({ type: 'GAME_OVER_SCORE', score: 0 }, '*'); } catch(_) {}
-  });
+  window.EJS_volume = 0.45;
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+<script src="../_shared/emu-controls.js"></script>
 </body>
 </html>

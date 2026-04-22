@@ -6,14 +6,36 @@
 <title>Dig Dug — PIXEL-NET</title>
 <style>
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
-  #game{width:100%;height:100%;display:block}
-  #notice{position:fixed;left:8px;bottom:8px;font-size:11px;color:#ffd66b;text-shadow:0 0 6px #000;pointer-events:none;opacity:.85}
+  html,body{margin:0;height:100%;width:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
+  #game{width:100%;height:100%}
+  #topbar{position:fixed;top:6px;left:6px;right:6px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50;gap:10px}
+  #hint{background:rgba(0,0,0,.7);border:1px solid rgba(255,221,102,.45);color:#ffdd66;padding:6px 10px;border-radius:4px;font-size:11px;max-width:60%;pointer-events:auto;transition:opacity .4s}
+  #hint.dim{opacity:.25}
+  #submit{background:#10253d;border:2px solid #5de0ff;color:#5de0ff;font:inherit;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;pointer-events:auto;font-size:12px}
+  #submit:hover{background:#1a375a}
+  #submit:disabled{opacity:.7;cursor:default}
+  #startOv{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer}
+  #startOv.hidden{display:none}
+  #startOv .card{background:#0b1b30;border:2px solid #ffdd66;border-radius:8px;padding:22px 28px;text-align:center;max-width:420px}
+  #startOv h1{margin:0 0 8px;color:#ffdd66;font-size:22px;letter-spacing:2px}
+  #startOv p{margin:6px 0;font-size:13px;color:#d9eeff}
+  kbd{background:#1a375a;padding:2px 6px;border-radius:3px;font-size:11px;margin:0 1px}
 </style>
 </head>
-<body>
+<body tabindex="0">
+<div id="startOv">
+  <div class="card">
+    <h1>DIG DUG (NES)</h1>
+    <p>Move: <kbd>ARROWS</kbd>  Pump: <kbd>Z</kbd></p>
+    <p>Start: <kbd>ENTER</kbd>  Select: <kbd>SHIFT</kbd></p>
+    <p style="color:#ffdd66;margin-top:12px"><b>CLICK TO START</b></p>
+  </div>
+</div>
+<div id="topbar">
+  <div id="hint">Move: ARROWS &nbsp;|&nbsp; Pump: Z &nbsp;|&nbsp; Start: ENTER</div>
+  <button id="submit">SUBMIT SCORE</button>
+</div>
 <div id="game"></div>
-<div id="notice">ARCADE MODE (emulator) — controls follow the original game</div>
 <script>
   window.EJS_player = '#game';
   window.EJS_core = 'nes';
@@ -21,11 +43,10 @@
   window.EJS_gameName = 'Dig Dug';
   window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
   window.EJS_startOnLoaded = true;
-  window.EJS_color = '#ffd66b';
-  window.addEventListener('beforeunload', () => {
-    try { window.parent.postMessage({ type: 'GAME_OVER_SCORE', score: 0 }, '*'); } catch(_) {}
-  });
+  window.EJS_color = '#ffdd66';
+  window.EJS_volume = 0.45;
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+<script src="../_shared/emu-controls.js"></script>
 </body>
 </html>

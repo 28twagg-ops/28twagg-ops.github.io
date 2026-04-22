@@ -6,14 +6,37 @@
 <title>Kangaroo — PIXEL-NET</title>
 <style>
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
-  #game{width:100%;height:100%;display:block}
-  #notice{position:fixed;left:8px;bottom:8px;font-size:11px;color:#ffbf66;text-shadow:0 0 6px #000;pointer-events:none;opacity:.85}
+  html,body{margin:0;height:100%;width:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
+  #game{width:100%;height:100%}
+  #topbar{position:fixed;top:6px;left:6px;right:6px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50;gap:10px}
+  #hint{background:rgba(0,0,0,.7);border:1px solid rgba(255,191,102,.45);color:#ffd799;padding:6px 10px;border-radius:4px;font-size:11px;max-width:64%;pointer-events:auto;transition:opacity .4s}
+  #hint.dim{opacity:.25}
+  #submit{background:#2d1a09;border:2px solid #ffbf66;color:#ffd799;font:inherit;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;pointer-events:auto;font-size:12px}
+  #submit:hover{background:#3e240e}
+  #submit:disabled{opacity:.7;cursor:default}
+  #startOv{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer}
+  #startOv.hidden{display:none}
+  #startOv .card{background:#2d1a09;border:2px solid #ffbf66;border-radius:8px;padding:22px 28px;text-align:center;max-width:460px}
+  #startOv h1{margin:0 0 8px;color:#ffd799;font-size:22px;letter-spacing:2px}
+  #startOv p{margin:6px 0;font-size:13px;color:#ffe5c7}
+  kbd{background:#4a2e14;padding:2px 6px;border-radius:3px;font-size:11px;margin:0 1px}
 </style>
 </head>
-<body>
+<body tabindex="0">
+<div id="startOv">
+  <div class="card">
+    <h1>KANGAROO (ATARI 8-BIT PROTO)</h1>
+    <p>Move: <kbd>ARROWS</kbd>  Jump / Punch: <kbd>SPACE</kbd></p>
+    <p>Reset: <kbd>F2</kbd>  Select: <kbd>F3</kbd></p>
+    <p>Disk may take a few seconds to load. If game doesn't start, click the Atari button on the emulator's control bar.</p>
+    <p style="color:#ffd799;margin-top:12px"><b>CLICK TO START</b></p>
+  </div>
+</div>
+<div id="topbar">
+  <div id="hint">Move: ARROWS &nbsp;|&nbsp; Action: SPACE &nbsp;|&nbsp; Reset: F2</div>
+  <button id="submit">SUBMIT SCORE</button>
+</div>
 <div id="game"></div>
-<div id="notice">ARCADE MODE (Atari 8-bit prototype disk)</div>
 <script>
   window.EJS_player = '#game';
   window.EJS_core = 'atari5200';
@@ -22,10 +45,9 @@
   window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#ffbf66';
-  window.addEventListener('beforeunload', () => {
-    try { window.parent.postMessage({ type: 'GAME_OVER_SCORE', score: 0 }, '*'); } catch(_) {}
-  });
+  window.EJS_volume = 0.45;
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+<script src="../_shared/emu-controls.js"></script>
 </body>
 </html>

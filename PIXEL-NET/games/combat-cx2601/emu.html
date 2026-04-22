@@ -6,14 +6,38 @@
 <title>Combat — PIXEL-NET</title>
 <style>
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
-  #game{width:100%;height:100%;display:block}
-  #notice{position:fixed;left:8px;bottom:8px;font-size:11px;color:#ffdd66;text-shadow:0 0 6px #000;pointer-events:none;opacity:.85}
+  html,body{margin:0;height:100%;width:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
+  #game{width:100%;height:100%}
+  #topbar{position:fixed;top:6px;left:6px;right:6px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50;gap:10px}
+  #hint{background:rgba(0,0,0,.7);border:1px solid rgba(255,221,102,.45);color:#ffe69c;padding:6px 10px;border-radius:4px;font-size:11px;max-width:66%;pointer-events:auto;transition:opacity .4s}
+  #hint.dim{opacity:.25}
+  #submit{background:#2a2209;border:2px solid #ffdd66;color:#ffe69c;font:inherit;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;pointer-events:auto;font-size:12px}
+  #submit:hover{background:#3b300e}
+  #submit:disabled{opacity:.7;cursor:default}
+  #startOv{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer}
+  #startOv.hidden{display:none}
+  #startOv .card{background:#2a2209;border:2px solid #ffdd66;border-radius:8px;padding:22px 28px;text-align:center;max-width:460px}
+  #startOv h1{margin:0 0 8px;color:#ffe69c;font-size:22px;letter-spacing:2px}
+  #startOv p{margin:6px 0;font-size:13px;color:#fff0c2}
+  kbd{background:#4a3b0f;padding:2px 6px;border-radius:3px;font-size:11px;margin:0 1px}
 </style>
 </head>
-<body>
+<body tabindex="0">
+<div id="startOv">
+  <div class="card">
+    <h1>COMBAT (ATARI 2600)</h1>
+    <p>Select game: <kbd>F3</kbd>  Start / Reset: <kbd>F2</kbd></p>
+    <p>P1 Move: <kbd>ARROWS</kbd>  P1 Fire: <kbd>SPACE</kbd></p>
+    <p>P2 Move: <kbd>WASD</kbd>  P2 Fire: <kbd>Q</kbd></p>
+    <p>(configurable via emulator menu)</p>
+    <p style="color:#ffe69c;margin-top:12px"><b>CLICK TO START</b></p>
+  </div>
+</div>
+<div id="topbar">
+  <div id="hint">Select: F3 &nbsp;|&nbsp; Reset/Start: F2 &nbsp;|&nbsp; P1: ARROWS+SPACE &nbsp;|&nbsp; P2: WASD+Q</div>
+  <button id="submit">SUBMIT SCORE</button>
+</div>
 <div id="game"></div>
-<div id="notice">ARCADE MODE (Atari 2600) — best played with 2 controllers or shared keyboard</div>
 <script>
   window.EJS_player = '#game';
   window.EJS_core = 'atari2600';
@@ -22,10 +46,9 @@
   window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#ffdd66';
-  window.addEventListener('beforeunload', () => {
-    try { window.parent.postMessage({ type: 'GAME_OVER_SCORE', score: 0 }, '*'); } catch(_) {}
-  });
+  window.EJS_volume = 0.45;
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+<script src="../_shared/emu-controls.js"></script>
 </body>
 </html>

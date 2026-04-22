@@ -68,8 +68,8 @@ Entry - 2026-04-21 (Poker Project alignment pass)
 
 Entry - 2026-04-21 (Spyder Casino classic/polished toggle + AI/leaderboard updates)
 - Added a separate UI mode switch in `PIXEL-NET/games/spyder-casino/game.html`:
-  - `CLASSIC â†” POLISHED` toggle (saved in localStorage key `SC_UI_MODE`)
-  - This is independent from the existing `TERMINAL â†” CASINO` style switch.
+  - `CLASSIC â?? POLISHED` toggle (saved in localStorage key `SC_UI_MODE`)
+  - This is independent from the existing `TERMINAL â?? CASINO` style switch.
 - Implemented visual fallback behavior so users can revert to classic/original presentation:
   - Classic mode removes lobby card hover polish and the Hold'em boxed chatter panel.
   - Polished mode keeps enhanced card/lobby/chatter presentation.
@@ -85,7 +85,7 @@ Entry - 2026-04-21 (Remaining fixes completed and prepared for push)
   - Ensured controls work immediately after start/focus (keyboard and touch controls now trigger start if needed).
 - Updated `PIXEL-NET/games/logic-bomb-v2/game.html`:
   - Rebalanced early difficulty with explicit level config function.
-  - Levels 1â€“3 now ramp in enemy count/speed more gradually.
+  - Levels 1â??3 now ramp in enemy count/speed more gradually.
 - Updated `PIXEL-NET/games.json`:
   - Added tags for multiple games to improve home-page search discoverability (including classic-name aliases like pacman/pac-man mapping to Neon Chase).
   - Resolved a lingering merge marker conflict in the Millipede entry safely.
@@ -104,7 +104,7 @@ Entry - 2026-04-21 (Final competitive atmosphere completion)
   - Knight Flight wrapper entry points to `game.html`.
   - Millipede firing SFX present and gated by user interaction.
   - Featured-game fallback + search aliases/tags + reset-initials hardening present.
-  - Logic Bomb level 1â€“3 easing present.
+  - Logic Bomb level 1â??3 easing present.
 - Validation:
   - Lints/diagnostics for updated `index.html`: no errors reported.
 
@@ -187,7 +187,7 @@ Entry - 2026-04-21 (Instruction layout loosening + Spyder record holders)
 - Updated `PIXEL-NET/wrapper/shell.js` and `PIXEL-NET/wrapper/shell.css`:
   - Instruction UI no longer renders as rigid single-column blocks only.
   - Cards now flow in a wrapped layout for faster scanning.
-  - Added lightweight icon cues (`ðŸŽ®`, `âš¡`, `ðŸŽ¯`, `ðŸ†`) and directional diagram emphasis cards.
+  - Added lightweight icon cues (`ð??®`, `â?¡`, `ð??¯`, `ð??`) and directional diagram emphasis cards.
 - Seeded current Spyder leaderboard holders (Firebase backend unchanged):
   - `lb/spyder-blackjack`: ACE, 420
   - `lb/spyder-holdem`: BOT, 260
@@ -248,7 +248,7 @@ Entry - 2026-04-21 (Version format guard: enforce 0.0.x display)
   - Homepage and wrappers consistently display `0.0.x` formatting even if a prefixed value is accidentally committed later.
 
 Entry - 2026-04-21 (Hit-style pivot pass: puzzle/climber/shooter)
-- Repurposed the 3 newly-added slots into clearer â€œhit-styleâ€ loops with original branding:
+- Repurposed the 3 newly-added slots into clearer â??hit-styleâ? loops with original branding:
   - `circuit-salvager` folder now ships **Stack Drop DX** (falling block line-clear loop).
   - `orbit-siege` folder now ships **Tower Rush** (platform climber with rolling hazards).
   - `neon-driftline` folder now ships **Galaxy Swarm 2084** (formation space shooter).
@@ -329,18 +329,18 @@ Entry - 2026-04-21 (v0.0.23 - Multi-game overhaul: Stack Drop DX + Galaxy Swarm 
 - PIXEL-NET/games/circuit-salvager/game.html (Stack Drop DX):
   - ROOT CRASH BUG FIXED: board/score/piece were undefined on page load; now initialized at declaration time
   - Added 3-piece preview queue (double-bag system, shows next 3 pieces)
-  - Added Back-to-Back (B2B) tracker: consecutive TETRIS/T-spins earn Ã—1.5 score, shown in HUD
+  - Added Back-to-Back (B2B) tracker: consecutive TETRIS/T-spins earn Ã?1.5 score, shown in HUD
   - Added Perfect Clear detection: empty board after clear = +2000pts + full screen flash
   - Added T-Spin detection: T-piece locked against 3 corners earns T-SPIN bonus
   - Added Danger Zone overlay: top rows pulse red when board is >70% full
   - Added Garbage rows (level 5+): partial filled rows rise from bottom every 20s
   - Added per-piece inner glyph designs (I, O, T, J, L, S, Z characters drawn inside each block)
-  - Upgraded DAS/ARR: 133ms delay, 10ms repeat â€” proper guideline Tetris feel
+  - Upgraded DAS/ARR: 133ms delay, 10ms repeat â?? proper guideline Tetris feel
   - Added floating text color variants per clear type
   - Level-up visual: screen flash on multi-line clears
 - PIXEL-NET/games/galaxy-swarm-2084/game.html (Galaxy Swarm 2084):
   - FORMATION MOVEMENT FIXED: Enemies now march as one synchronized grid (true Space Invaders style)
-  - Shared formDx/formDir/formSpd state â€” all non-diving enemies move together as a unit
+  - Shared formDx/formDir/formSpd state â?? all non-diving enemies move together as a unit
   - Formation steps down when any edge enemy hits wall boundary, speeds up each step
   - Boss Phase 2: at 50% HP boss speeds up + gains aimed shots + screen shake + float text
   - Added Shield power-up (8s): absorbs one hit, visual bubble around player ship
@@ -348,7 +348,7 @@ Entry - 2026-04-21 (v0.0.23 - Multi-game overhaul: Stack Drop DX + Galaxy Swarm 
   - Improved GUNSHIP: now fires 3-way spread shot
   - Improved ELITE: now fires aimed shot at player
   - Boss fires extra aimed shot in phase 2
-  - HUD shows shield status (ðŸ›¡)
+  - HUD shows shield status (ð??¡)
 - PIXEL-NET/games/orbit-siege/game.html (Tower Rush):
   - v0.0.20: Full DK-style rebuild with platform-aware barrel cascade, authenticated Kong
 - Bumped PIXEL-NET/version.json to 0.0.23
@@ -525,6 +525,25 @@ Entry - 2026-04-21 (v0.0.42 - Combat 2600 ROM wired)
 - Updated PIXEL-NET/games/combat-cx2601/wrapper-v2.html entry -> ./emu.html (game.html untouched)
 - Bumped PIXEL-NET/version.json to 0.0.42
 
+Entry - 2026-04-21 (v0.0.44 - emulator input, leaderboard submit, aspect alignment)
+- Rewrote all six emulator loader pages so they actually route keyboard input and provide leaderboard hooks:
+  - PIXEL-NET/games/dig-dug-delve/emu.html
+  - PIXEL-NET/games/orbit-siege/emu.html
+  - PIXEL-NET/games/jungle-jr-rescue/emu.html
+  - PIXEL-NET/games/kangaroo-climb/emu.html
+  - PIXEL-NET/games/track-field-blitz/emu.html
+  - PIXEL-NET/games/combat-cx2601/emu.html
+- Added shared script PIXEL-NET/games/_shared/emu-controls.js:
+  - Click-to-start overlay dismissal
+  - Forces focus into the emulator canvas on click/touch/window-focus
+  - Per-game control hint overlay (auto-dims after 9s, re-shows on hover)
+  - SUBMIT SCORE button that prompts for a numeric score and posts
+    { type: 'GAME_OVER_SCORE', score } to the parent wrapper
+    (since ROMs cannot be score-scraped reliably)
+- Aspect ratios confirmed as "4/3" on all 6 wrappers (matches Knight Flight / Galaxy Swarm / Neon Driftline arcade format).
+- Existing game.html files for all six games were NOT modified per user request.
+- Bumped PIXEL-NET/version.json to 0.0.44
+
 Entry - 2026-04-21 (v0.0.40 - Track Field Blitz implementation)
 - Source archive inspected: d64_Track_Field_1983_Konami.zip
   - Archive contains a D64 image/screenshots metadata pack, so gameplay was implemented in-house in PIXEL-NET style.
@@ -552,7 +571,7 @@ Entry - 2026-04-21 (0.0.43)
     - 'c' / 'cancel' returns to the action prompt; 'f' / 'fold' folds.
   - One-shot shortcuts still work:  80, et 25, $40, or bare 40 during action.
 - Added heCommitRaise(total) helper that opens the raise UI, clamps to [min, all-in],
-  and confirms — replacing the previous fragile setTimeout retry dance.
+  and confirms ? replacing the previous fragile setTimeout retry dance.
 - Cleared heAwaitingRaiseAmount on hand end, next hand, quit, and lobby return so stale
   state never leaks between rounds.
 - heSubmitTerminalAction now just routes through heRunTerminalCommand so both inputs
