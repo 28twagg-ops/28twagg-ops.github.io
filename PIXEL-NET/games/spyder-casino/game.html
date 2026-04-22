@@ -1768,17 +1768,55 @@ const HE_CHATTER=[
   "ACE: 'Classic trap. Classic victim.'",
   "NO-LIMIT NATE: 'What's the point of chips you don't shove?'"
 ];
-// Reactions keyed on user tendencies / events (short, kept above the bot panel)
+// Reactions keyed on user tendencies / events — fire at key moments only
 const HE_QUICK_QUIPS = {
-  userFoldsALot: ["This guy folds like origami.","Call one for a change, champ.","You pay the rake to WATCH?"],
-  userNeverFolds: ["You never fold? Noted.","Calling station open 24/7.","I love bingo night."],
-  userRaises: ["Big bet, bigger fish.","Careful, you'll hurt yourself.","Oh, we're doing this?"],
-  userBluffs: ["Smells like air from here.","I'll pay to see it, thanks.","That move again? Seriously?"],
-  userAllIn: ["Shove city. Population: you.","Brave. Or bored. Or broke.","Hold my coffee."],
-  userChecks: ["Checking in. Checking out.","Living the passive dream.","You plan to ever bet?"],
-  userWins: ["Lucky deck, not lucky player.","Enjoy it. It's temporary.","River rat strikes again."],
-  userLoses: ["Tough hand. Worse call.","That's a fold next time.","Play money, real lessons."],
+  userFoldsBig: [
+    "All that money just to peek? Generous.",
+    "Invested like a pro, bailed like a tourist.",
+    "The rake thanks you for your donation.",
+    "Hands like that deserve a eulogy, not a fold."
+  ],
+  userAllIn: [
+    "Shove city. Population: you.",
+    "Brave. Or bored. Or broke.",
+    "Hold my coffee.",
+    "Oh we're doing this now.",
+    "You really want to die on this hand?"
+  ],
+  userWins: [
+    "Lucky deck, not lucky player.",
+    "Enjoy it. It's temporary.",
+    "River rat strikes again.",
+    "That was a gift. Ungrateful of you to accept it."
+  ],
+  userLoses: [
+    "Tough hand. Worse call.",
+    "That's a fold next time.",
+    "Play money, real lessons."
+  ],
 };
+// Dealer street announcements (with the revealed cards appended by heDealerAnnounce)
+const HE_DEALER_LINES = {
+  FLOP: [
+    "Flop is out","Three on the felt","Community reveals","Here comes the truth","Action on the flop"
+  ],
+  TURN: [
+    "Turn card","Fourth street","The narrative shifts","Turn changes the math","One more card to chew on"
+  ],
+  RIVER: [
+    "River","Fifth and final","No more excuses","Last card spoken for","River seals it"
+  ],
+};
+// Things a bot says only when they are actually shoving all-in
+const HE_SHOVE_LINES = [
+  "I'm all in. Have fun.",
+  "Let's end this right now.",
+  "Every chip. Your move.",
+  "Commit or quit, friend.",
+  "Can't win if you don't risk it.",
+  "Blessed are the shovers, for they inherit the pot.",
+  "This is the one, I can feel it.",
+];
 const HE_BOT_NAMES=["SLICK","BUBBA","PROF","MUMBLES","KNUCKLES","LUNCHBOX","MAVERICK","BANDIT","DEUCE","WILDCARD","REDLINE","TINY","JEFF","ACE","GRIT","NO-LIMIT NATE"];
 const HE_BOT_EXCUSES=["rage-quit after the river","bet the rent and lost","was dragged out by security","said 'BRB' and never came back"];
 // Pre-flop hand strength tiers (0=trash,1=weak,2=medium,3=strong,4=premium)
@@ -1796,8 +1834,12 @@ let heWaitResolve=null, heRaiseMin=0;
 // Side-pot breakdown computed on demand from player totalContrib totals.
 let heSidePotInfo=[];
 // Chatter hold-and-queue: messages linger long enough for the player to actually read them.
+// Messages are intentionally rare — only key moments (street reveal, all-ins, bust, winner).
 let heChatMsg='', heChatUntil=0, heChatQueue=[], heChatTimer=null;
-const HE_CHAT_HOLD_MS=2800;
+const HE_CHAT_HOLD_MS=4200;
+// Lines we've already shown this hand, so quips stay unique
+let heChatUsedThisHand=new Set();
+let heUserAllInThisHand=false;
 let heUserRaisedPreflop=false;
 const heUserModel={hands:0,preflopRaises:0,showdowns:0,strongShowdowns:0,bluffsSeen:0,folds:0,calls:0,checks:0};
 function heAdaptiveLine(){
@@ -2012,6 +2054,9 @@ async function hePlayRound(){
   }
 
   heDeck=buildDeck();heCommunity=[];hePot=0;heSidePotInfo=[];
+  // Reset per-hand chatter state so quips stay unique within the hand
+  heChatUsedThisHand=new Set();
+  heUserAllInThisHand=false;
   const num=hePlayers.length;
   const sbI=(heDealerIdx+1)%num,bbI=(heDealerIdx+2)%num;
 
@@ -2029,8 +2074,19 @@ async function hePlayRound(){
   const phases=['PRE-FLOP','FLOP','TURN','RIVER'];
   for(const phase of phases){
     heStageName=phase;
-    if(phase==='FLOP'){heDeck.pop();for(let i=0;i<3;i++)heCommunity.push(heDeck.pop());}
-    else if(phase==='TURN'||phase==='RIVER'){heCommunity.push(heDeck.pop());}
+    if(phase==='FLOP'){
+      heDeck.pop();
+      for(let i=0;i<3;i++)heCommunity.push(heDeck.pop());
+      heDealerAnnounce('FLOP', heCommunity.slice(0,3));
+    }
+    else if(phase==='TURN'){
+      heCommunity.push(heDeck.pop());
+      heDealerAnnounce('TURN', [heCommunity[3]]);
+    }
+    else if(phase==='RIVER'){
+      heCommunity.push(heDeck.pop());
+      heDealerAnnounce('RIVER', [heCommunity[4]]);
+    }
     if(phase!=='PRE-FLOP') for(const p of hePlayers) p.roundBet=0;
     heCurrentBet=phase==='PRE-FLOP'?HE_BB:0;
     heRenderAll(false);
@@ -2041,7 +2097,6 @@ async function hePlayRound(){
     // If everyone left is all-in, skip remaining action and go straight to showdown
     // after dealing remaining streets.
     const anyCanAct=active.some(p=>p.chips>0);
-    if(Math.random()<0.35)heSetChatter(HE_CHATTER[Math.floor(Math.random()*HE_CHATTER.length)]);
     if(!anyCanAct) continue; // next loop will still deal TURN / RIVER cards
   }
 
@@ -2189,31 +2244,56 @@ function heQueueBotQuip(key){
   if(!pool||!pool.length) return;
   const bots=hePlayers.filter(p=>p.style!=='HUMAN'&&p.status!=='FOLDED');
   const speaker=bots.length?bots[Math.floor(Math.random()*bots.length)]:null;
-  const quip=pool[Math.floor(Math.random()*pool.length)];
-  heSetChatter(speaker?`${speaker.name}: "${quip}"`:`Dealer: '${quip}'`);
+  // Favor a line not yet used this hand
+  let quip=null;
+  const fresh=pool.filter(q=>!heChatUsedThisHand.has(q));
+  if(fresh.length) quip=fresh[Math.floor(Math.random()*fresh.length)];
+  else quip=pool[Math.floor(Math.random()*pool.length)];
+  heChatUsedThisHand.add(quip);
+  heSetChatter(speaker?`${speaker.name}: "${quip}"`:`Dealer: "${quip}"`, 4200);
+}
+// Pick a dialogue line for a specific bot from a category bank.
+function heQueueBotLine(p, bank){
+  if(!p||!bank||!bank.length) return;
+  const fresh=bank.filter(q=>!heChatUsedThisHand.has(q));
+  const quip=(fresh.length?fresh:bank)[Math.floor(Math.random()*(fresh.length?fresh.length:bank.length))];
+  heChatUsedThisHand.add(quip);
+  heSetChatter(`${p.name}: "${quip}"`, 4200);
+}
+// Dealer announces a street. Include the revealed cards in the line.
+function heDealerAnnounce(stage, cards){
+  const fmt=(c)=>c?`${c.rank}${SUIT_SYM[c.suit]}`:'?';
+  const cardStr=cards.map(fmt).join(' ');
+  const line=HE_DEALER_LINES[stage][Math.floor(Math.random()*HE_DEALER_LINES[stage].length)];
+  heSetChatter(`Dealer: "${line} — ${cardStr}"`, 4500);
+}
+// Only jab at the user when they fold AFTER already investing in the hand.
+function heMaybeFoldJab(p){
+  const invested=(p.totalContrib||0) - (p.roundBet||0);  // chips committed BEFORE this street
+  if(invested>=HE_BB*3 && Math.random()<0.55) heQueueBotQuip('userFoldsBig');
 }
 
 async function heBotTurn(p,phase){
   const toCall=heCurrentBet-p.roundBet;
   const allIn=hePlayers.filter(x=>x!==p&&x.status!=='FOLDED').every(x=>x.chips===0);
-  // Short hold for the "thinking" beat so the actual action line has room to breathe.
-  heSetChatter(`${p.name} thinking...`, 700);
-  await sleep(250+Math.random()*350);
+  // Brief thinking beat (no chatter spam) — just visual timing.
+  await sleep(280+Math.random()*380);
   const intended=heBotDecision(p,phase,toCall,hePot,heCommunity,allIn);
+  const prevPot=hePot;
   if(intended===-1){p.status='FOLDED';p.lastAction='FOLD';}
   else{
     const cost=Math.max(0,Math.min(intended-p.roundBet,p.chips));
     p.chips-=cost;p.roundBet+=cost;p.totalContrib+=cost;hePot+=cost;
     if(p.roundBet>heCurrentBet)heCurrentBet=p.roundBet;
-    const allInTag=p.chips===0&&cost>0?' (ALL-IN)':'';
+    const wentAllIn=p.chips===0&&cost>0;
+    const allInTag=wentAllIn?' (ALL-IN)':'';
     p.lastAction=(p.roundBet>(heCurrentBet-cost)?`RAISE $${p.roundBet}`:cost===0?'CHECK':'CALL')+allInTag;
+    // Only key action triggers chatter — going all-in.
+    if(wentAllIn) heQueueBotLine(p, HE_SHOVE_LINES);
   }
-  let line=`${p.name} → ${p.lastAction}`;
-  const adap=heAdaptiveLine();
-  if(adap&&Math.random()<0.28) line=`${line}\n${adap}`;
-  if(Math.random()<0.55) p.remark=heBotRemark(p);
-  heSetChatter(line);
-  heRenderAll(false);await sleep(200);
+  // Bot remark is the little snarky bubble ABOVE the bot panel — keep that, it's local.
+  if(Math.random()<0.45) p.remark=heBotRemark(p);
+  heRenderAll(false);await sleep(180);
 }
 
 function heUserTurn(p){
@@ -2246,7 +2326,7 @@ function heUserTurn(p){
     }
     // Fold
     const fb=document.createElement('button');fb.className='btn red';fb.textContent='FOLD';
-    fb.onclick=()=>{heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heQueueBotQuip('userFoldsALot');heWaitResolve=null;heRenderAll(false);res();};
+    fb.onclick=()=>{heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heMaybeFoldJab(p);heWaitResolve=null;heRenderAll(false);res();};
     az.appendChild(fb);
     // Keyboard actions for terminal-style play
     heKeyActions = {
@@ -2255,7 +2335,7 @@ function heUserTurn(p){
         const oppAllInNow=hePlayers.filter(x=>x!==p&&x.status!=='FOLDED').every(x=>x.chips===0);
         if(!oppAllInNow) heShowRaise(p,res);
       },
-      fold: () => { heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heQueueBotQuip('userFoldsALot');heWaitResolve=null;heRenderAll(false);res(); },
+      fold: () => { heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heMaybeFoldJab(p);heWaitResolve=null;heRenderAll(false);res(); },
       confirmRaise: () => {
         const rz = document.getElementById('heRaiseZ');
         if (rz.classList.contains('show')) heConfirmRaise();
@@ -2279,8 +2359,10 @@ function heActCall(p,res){
   if(p.style==='HUMAN'){
     if(pay===0) heUserModel.checks++;
     else heUserModel.calls++;
-    if(p.chips===0&&pay>0) heQueueBotQuip('userAllIn');
-    else if(pay===0 && Math.random()<0.20) heQueueBotQuip('userChecks');
+    if(p.chips===0&&pay>0 && !heUserAllInThisHand){
+      heUserAllInThisHand=true;
+      heQueueBotQuip('userAllIn');
+    }
   }
   heWaitResolve=null;heClearAct();heRenderAll(false);res();
 }
@@ -2306,8 +2388,10 @@ function heConfirmRaise(){
       heUserRaisedPreflop=true;
       heUserModel.preflopRaises++;
     }
-    if(p.chips===0&&cost>0) heQueueBotQuip('userAllIn');
-    else heQueueBotQuip('userRaises');
+    if(p.chips===0&&cost>0 && !heUserAllInThisHand){
+      heUserAllInThisHand=true;
+      heQueueBotQuip('userAllIn');
+    }
   }
   heHideRaise();heWaitResolve=null;heClearAct();heRenderAll(false);res();
 }

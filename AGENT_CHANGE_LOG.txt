@@ -646,3 +646,30 @@ Entry - 2026-04-21 (0.0.47)
   line of the preformatted banner is horizontally centered within the lobby
   container. Legends block, menu, and selection row stay left-aligned.
 - PIXEL-NET/version.json bumped to 0.0.47.
+
+Entry - 2026-04-21 (0.0.49)
+Hold'em TABLE TALK rework - key moments only, unique per hand:
+- Removed noisy chatter sources:
+  - No more 'NAME thinking...' beat.
+  - No more 'NAME -> ACTION' line on every bot action.
+  - No more random 35% street filler quip.
+  - No more per-check / per-raise / per-fold user quips.
+- Chatter now fires ONLY on key moments:
+  - Dealer announces each street reveal with the new cards:
+    'Dealer: "Flop is out - A# 7! K\"'
+    'Dealer: "Turn card - 2&"'
+    'Dealer: "River seals it - Q#"'
+    (via HE_DEALER_LINES + heDealerAnnounce)
+  - Bot going all-in: random HE_SHOVE_LINES spoken by that bot.
+  - User going all-in (first time this hand): HE_QUICK_QUIPS.userAllIn.
+  - User folding AFTER investing 3+ BB: HE_QUICK_QUIPS.userFoldsBig.
+  - Side-pot summary still shows when multiple pots resolved.
+  - Bot replacement line still fires when someone busts.
+- Per-hand uniqueness: heChatUsedThisHand tracks lines already spoken so the
+  same quip doesn't repeat within a single hand (pool refreshes next hand).
+- heUserAllInThisHand prevents double-quipping if the user shoves multiple times
+  in the same hand (rare edge).
+- HE_CHAT_HOLD_MS bumped to 4200ms so the reader has time to actually read the line.
+- Bot remarks (the small line ABOVE each bot panel) still fire independently at
+  ~45% per bot turn - those are local to the bot panel, not the chat box.
+- PIXEL-NET/version.json bumped to 0.0.49.
