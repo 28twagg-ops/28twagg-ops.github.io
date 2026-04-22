@@ -342,7 +342,15 @@
   <script>
     let allGames = [];
     let featuredGame = null;
+    let siteVersion = String(Date.now());
     const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
+
+    function withVersion(url){
+      if(!url) return url;
+      if(/^https?:\/\//i.test(url)) return url;
+      const sep = url.includes("?") ? "&" : "?";
+      return `${url}${sep}v=${encodeURIComponent(siteVersion)}`;
+    }
 
     // Robust base URL (fixes GH Pages /PIXEL-NET vs /PIXEL-NET/ issues)
     const __basePath = (() => {
@@ -379,6 +387,7 @@
         const data = await res.json();
         const raw = (data && data.version) ? String(data.version).trim() : "unknown";
         const normalized = raw.replace(/^v/i, "");
+        siteVersion = normalized || siteVersion;
         el.textContent = `version: ${normalized}`;
       } catch(_) {
         el.textContent = "version: unavailable";
@@ -398,7 +407,7 @@
       document.getElementById("featuredMeta").textContent = featuredGame.featured
         ? "Featured by config in games.json"
         : "Featured by latest upload order (last item in games.json)";
-      document.getElementById("featuredImage").style.backgroundImage = `url('${normalizePath(featuredGame.thumb)}')`;
+      document.getElementById("featuredImage").style.backgroundImage = `url('${withVersion(normalizePath(featuredGame.thumb))}')`;
       document.getElementById("featuredPlayBtn").onclick = () => {
         if(featuredGame.path) window.location.href = normalizePath(featuredGame.path);
       };
@@ -532,7 +541,7 @@
         const card = document.createElement("div");
         card.className = "game-card";
         card.innerHTML = `
-          <div class="game-thumbnail" style="background-image:url('${normalizePath(game.thumb)}')"></div>
+          <div class="game-thumbnail" style="background-image:url('${withVersion(normalizePath(game.thumb))}')"></div>
           <div class="game-title"><h4>${game.name || "GAME"}</h4></div>
         `;
         card.addEventListener("click", () => {

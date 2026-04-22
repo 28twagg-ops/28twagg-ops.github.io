@@ -5,6 +5,20 @@ Purpose:
 - Persistent handoff log so another AI (or human) can see exactly what was changed.
 - This file will be updated after each meaningful change I make from now on.
 
+Entry - 2026-04-21 (v0.0.48)
+- Fixed stale-thumbnail issue on the home grid and Featured tile.
+- Root cause: thumbnails were rendered via `background-image: url(...)` with no cache buster.
+  Browsers and the GitHub Pages CDN were serving older cached PNGs even after a fresh push
+  (confirmed Spyder Casino blob SHA matches locally and on origin/main, so the pixels were correct
+  on disk ? only the browser cache was stale).
+- Fix in PIXEL-NET/index.html:
+  - Added a `siteVersion` global (seeded with Date.now() until version.json loads).
+  - `loadVersionTag()` now stores the fetched version into `siteVersion` so later renders can use it.
+  - New `withVersion(url)` helper appends `?v=<version>` to same-origin URLs.
+  - Featured image and every game card thumbnail now wrap their URL with `withVersion(...)`, so each
+    site version bump automatically invalidates every cached thumbnail.
+- Bumped version.json to 0.0.48 so the new cache-busting query immediately produces a fresh fetch.
+
 Entry - 2026-04-21
 - Verified GitHub remote configuration:
   - origin -> https://github.com/28twagg-ops/28twagg-ops.github.io.git
