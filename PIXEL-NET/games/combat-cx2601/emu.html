@@ -47,6 +47,11 @@
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#ffdd66';
   window.EJS_volume = 0.45;
+  // Auto-enter gameplay: Atari 2600 Combat starts when the Reset switch (F2) is pulsed.
+  window.EMU_AUTOSTART_INIT = 2400;
+  window.EMU_AUTOSTART = [
+    { key: "F2", code: "F2", keyCode: 113, delay: 800, hold: 200 }
+  ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
 <script src="../_shared/emu-controls.js"></script>

@@ -47,6 +47,18 @@
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#5de0ff';
   window.EJS_volume = 0.45;
+  // Ask VICE core to autostart the disk, so gameplay is reached without LOAD/RUN typing
+  window.EJS_defaultOptions = Object.assign({}, window.EJS_defaultOptions || {}, {
+    "vice_autostart": "enabled",
+    "vice_drive_true_emulation": "disabled",
+    "vice_warp_boost": "enabled"
+  });
+  // Backup: after load, fire key to kick off game from menu
+  window.EMU_AUTOSTART_INIT = 6000;
+  window.EMU_AUTOSTART = [
+    { key: " ", code: "Space", keyCode: 32, delay: 800, hold: 180 },
+    { key: "Enter", code: "Enter", keyCode: 13, delay: 1400, hold: 180 }
+  ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
 <script src="../_shared/emu-controls.js"></script>

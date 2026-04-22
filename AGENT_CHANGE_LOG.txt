@@ -544,6 +544,19 @@ Entry - 2026-04-21 (v0.0.44 - emulator input, leaderboard submit, aspect alignme
 - Existing game.html files for all six games were NOT modified per user request.
 - Bumped PIXEL-NET/version.json to 0.0.44
 
+Entry - 2026-04-21 (v0.0.45 - emulator auto-entry into gameplay)
+- PIXEL-NET/games/_shared/emu-controls.js:
+  - Added dispatchKey/pressKey helpers that dispatch synthetic KeyboardEvents to document/window/canvas/body.
+  - Added runAutoStart() gated on overlay-dismiss AND emulator-ready, with configurable EMU_AUTOSTART_INIT delay.
+- Per-game auto-start sequences added in each emu.html so the game lands in real gameplay after the user clicks START:
+  - dig-dug-delve (NES):    Enter (title), Enter (begin)
+  - orbit-siege (MAME dkong):    5 (coin), 5 (coin), 1 (start 1P)
+  - jungle-jr-rescue (MAME dkongjr): 5 (coin), 5 (coin), 1 (start 1P)
+  - kangaroo-climb (Atari 8-bit proto):    Space, Enter
+  - track-field-blitz (C64 VICE): vice_autostart=enabled + Space/Enter fallback
+  - combat-cx2601 (Atari 2600):    F2 (Reset switch -> begins game)
+- Bumped PIXEL-NET/version.json to 0.0.45
+
 Entry - 2026-04-21 (v0.0.40 - Track Field Blitz implementation)
 - Source archive inspected: d64_Track_Field_1983_Konami.zip
   - Archive contains a D64 image/screenshots metadata pack, so gameplay was implemented in-house in PIXEL-NET style.

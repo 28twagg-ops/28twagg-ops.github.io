@@ -45,6 +45,13 @@
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#ff7043';
   window.EJS_volume = 0.45;
+  // Auto-enter gameplay: insert coin (5), then press start 1P (1)
+  window.EMU_AUTOSTART_INIT = 3500;
+  window.EMU_AUTOSTART = [
+    { key: "5", code: "Digit5", keyCode: 53, delay: 800, hold: 180 },
+    { key: "5", code: "Digit5", keyCode: 53, delay: 500, hold: 180 },
+    { key: "1", code: "Digit1", keyCode: 49, delay: 1000, hold: 200 }
+  ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
 <script src="../_shared/emu-controls.js"></script>

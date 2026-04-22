@@ -45,6 +45,12 @@
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#ffdd66';
   window.EJS_volume = 0.45;
+  // Auto-enter gameplay: press Start on title, then Start again to begin
+  window.EMU_AUTOSTART_INIT = 2800;
+  window.EMU_AUTOSTART = [
+    { key: "Enter", code: "Enter", keyCode: 13, delay: 600, hold: 150 },
+    { key: "Enter", code: "Enter", keyCode: 13, delay: 1600, hold: 150 }
+  ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
 <script src="../_shared/emu-controls.js"></script>
