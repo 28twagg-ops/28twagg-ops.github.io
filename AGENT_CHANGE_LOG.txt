@@ -541,3 +541,20 @@ Entry - 2026-04-21 (v0.0.40 - Track Field Blitz implementation)
 - Updated PIXEL-NET/games.json:
   - Registered TRACK FIELD BLITZ entry (slug/path/thumb/tags/aliases)
 - Bumped PIXEL-NET/version.json to 0.0.40
+
+Entry - 2026-04-21 (0.0.43)
+- Fixed Hold'em terminal betting/raising so players can actually type their amount.
+- New two-step flow matches Poker Project:
+  - Step 1: type 'r', 'b', 'raise', or 'bet' alone -> terminal view re-renders with
+    >>> ENTER TOTAL BET <<< including Min and Max (all-in) totals and "(or 'c' to cancel)".
+  - Step 2: next input is parsed as the amount (number, optional leading $).
+    - Empty Enter uses the min raise.
+    - 'c' / 'cancel' returns to the action prompt; 'f' / 'fold' folds.
+  - One-shot shortcuts still work:  80, et 25, $40, or bare 40 during action.
+- Added heCommitRaise(total) helper that opens the raise UI, clamps to [min, all-in],
+  and confirms — replacing the previous fragile setTimeout retry dance.
+- Cleared heAwaitingRaiseAmount on hand end, next hand, quit, and lobby return so stale
+  state never leaks between rounds.
+- heSubmitTerminalAction now just routes through heRunTerminalCommand so both inputs
+  share one code path.
+- PIXEL-NET/version.json bumped to 0.0.43.

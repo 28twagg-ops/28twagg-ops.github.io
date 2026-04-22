@@ -979,6 +979,7 @@ let endGameSlug = '', endGameMode = '';
 let heKeyActions = null;
 let heTermHandlers = null;
 let heTerminalResult = null;  // holds {winners,reason} after a HE hand ends in terminal mode
+let heAwaitingRaiseAmount = false; // two-step raise flow: after "r"/"b", next input is amount
 let bjBankBefore = 200;       // bankroll at start of current round (before bet deducted)
 let lobbyBjRows = [];
 let lobbyHeRows = [];
@@ -1030,6 +1031,7 @@ function goLobby() {
   refreshLobbyBoards();
   heKeyActions = null;
   heTermHandlers = null;
+  heAwaitingRaiseAmount = false;
   const sel = document.getElementById('termSelection');
   if (sel && visualStyle === 'terminal') { sel.value=''; sel.focus(); }
 }
@@ -2232,7 +2234,14 @@ function heRenderTerminalView(){
     const toCall=heTermHandlers.toCall;
     const sep='-'.repeat(40);
     out.push(sep);
-    if(user&&toCall>user.chips){
+    if(heAwaitingRaiseAmount){
+      const minR = heRaiseMin || (heCurrentBet + HE_BB);
+      const maxR = user ? (user.roundBet + user.chips) : minR;
+      out.push(ctr(`>>> ENTER TOTAL BET <<<`,40));
+      out.push(sep);
+      out.push(`Min $${minR}  |  Max (all-in) $${maxR}`);
+      out.push(`Type amount and press ENTER (or 'c' to cancel):`);
+    } else if(user&&toCall>user.chips){
       out.push(ctr(`>>> COST: $${toCall} — YOU ONLY HAVE $${user.chips} <<<`,40));
       out.push(ctr('>>> NO SIDE POTS — YOU MUST FOLD <<<',40));
       out.push(sep);
@@ -2255,24 +2264,27 @@ function heRenderTerminalView(){
   const inp=document.getElementById('heTermCmdInp');
   if(inp) setTimeout(()=>inp.focus(),0);
 }
-function heTriggerRaiseFromTerminal(totalText){
-  if(!heTermHandlers) return;
-  const ri=document.getElementById('heRaiseInp');
-  const nextTotal = String(totalText || Math.max(HE_BB, heCurrentBet + HE_BB));
-  if(ri) ri.value = nextTotal;
+// Commit a raise with a specific total (amount the player's roundBet should equal).
+// Opens the hidden raise UI, plants the value, and confirms — mirrors Poker Project flow.
+function heCommitRaise(totalNum){
+  if(!heTermHandlers) return false;
+  // Open the raise zone so heConfirmRaise has p/res references
   heTermHandlers.raise();
-  // Confirm on next tick and once more shortly after, so it works even if the raise UI
-  // needs a frame to attach player/resolve references.
-  setTimeout(()=>{
-    if(ri) ri.value = nextTotal;
-    heConfirmRaise();
-  },0);
-  setTimeout(()=>{
-    if(ri && document.getElementById('heRaiseZ')?.classList.contains('show')){
-      ri.value = nextTotal;
-      heConfirmRaise();
-    }
-  },60);
+  const ri=document.getElementById('heRaiseInp');
+  if(!ri || !ri._p){
+    // raise UI didn't open (e.g., opponent all-in): bail
+    return false;
+  }
+  const minR = heRaiseMin || (heCurrentBet + HE_BB);
+  const p = ri._p;
+  const maxR = p.roundBet + p.chips;
+  let total = Math.floor(Number(totalNum));
+  if(!Number.isFinite(total)) total = minR;
+  if(total < minR) total = minR;
+  if(total > maxR) total = maxR;
+  ri.value = String(total);
+  heConfirmRaise();
+  return true;
 }
 function heRunTerminalCommand(raw){
   if(visualStyle!=='terminal') return;
@@ -2283,18 +2295,51 @@ function heRunTerminalCommand(raw){
     if(s===''||s==='n'||s==='next'||s==='enter'){heNextHand();return;}
     return;
   }
-  if(!s) return;
   if(!heTermHandlers) return;
-  if(s==='c'||s==='k'||s==='call'||s==='check'){heTermHandlers.call();return;}
-  if(s==='f'||s==='fold'){heTermHandlers.fold();return;}
-  if(s==='r'||s==='b'||s==='raise'||s==='bet'){
-    heTriggerRaiseFromTerminal(String(Math.max(HE_BB, heCurrentBet + HE_BB)));
+
+  // Step 2 of raise: awaiting amount
+  if(heAwaitingRaiseAmount){
+    if(s==='c'||s==='cancel'||s==='fold'||s==='f'){
+      heAwaitingRaiseAmount=false;
+      if(s==='f'||s==='fold'){heTermHandlers.fold();return;}
+      heRenderTerminalView();
+      return;
+    }
+    // Accept empty Enter as "use min", or any number (with optional $)
+    let amt;
+    if(s===''){ amt = heRaiseMin; }
+    else {
+      const m = s.match(/^\$?\s*(\d+)$/);
+      if(!m){ heRenderTerminalView(); return; }
+      amt = parseInt(m[1],10);
+    }
+    heAwaitingRaiseAmount=false;
+    heCommitRaise(amt);
     return;
   }
-  // Raise: accept "b <amt>", "r <amt>", "raise <amt>", "bet <amt>", "$amt"
-  const m=s.match(/^(?:b|bet|r|raise)\s*\$?\s*(\d+)$/);
+
+  if(!s) return;
+  if(s==='c'||s==='k'||s==='call'||s==='check'){heTermHandlers.call();return;}
+  if(s==='f'||s==='fold'){heTermHandlers.fold();return;}
+
+  // Single-letter raise initiator → enter amount-prompt mode
+  if(s==='r'||s==='b'||s==='raise'||s==='bet'){
+    // Compute min raise without opening the UI yet
+    heRaiseMin = heCurrentBet + HE_BB;
+    heAwaitingRaiseAmount = true;
+    heRenderTerminalView();
+    return;
+  }
+  // One-shot raise: "b 80", "r 80", "raise 80", "bet 80", "$80"
+  const m = s.match(/^(?:b|bet|r|raise)\s*\$?\s*(\d+)$/);
   if(m){
-    heTriggerRaiseFromTerminal(m[1]);
+    heCommitRaise(parseInt(m[1],10));
+    return;
+  }
+  // Pure number while action is live → treat as bet amount shortcut
+  const n = s.match(/^\$?\s*(\d+)$/);
+  if(n){
+    heCommitRaise(parseInt(n[1],10));
     return;
   }
 }
@@ -2304,18 +2349,8 @@ function heSubmitTerminalAction() {
   const msg = document.getElementById('heTermActMsg');
   if (!inp) return;
   const k = (inp.value || '').trim().toLowerCase();
-  if (k === 'c' || k === 'k' || k === 'call' || k === 'check') { heTermHandlers.call(); inp.value=''; if(msg) msg.textContent=''; return; }
-  if (k === 'r' || k === 'raise' || k === 'b' || k === 'bet') {
-    heTriggerRaiseFromTerminal(String(Math.max(HE_BB, heCurrentBet + HE_BB)));
-    inp.value=''; if(msg) msg.textContent=''; return;
-  }
-  const m = k.match(/^(?:b|bet|r|raise)\s*\$?\s*(\d+)$/);
-  if(m){
-    heTriggerRaiseFromTerminal(m[1]);
-    inp.value=''; if(msg) msg.textContent=''; return;
-  }
-  if (k === 'f' || k === 'fold') { heTermHandlers.fold(); inp.value=''; if(msg) msg.textContent=''; return; }
-  if (msg) msg.textContent = 'Invalid action.';
+  heRunTerminalCommand(k);
+  inp.value=''; if(msg) msg.textContent='';
 }
 
 async function heShowResult(winners,reason){
@@ -2331,6 +2366,7 @@ async function heShowResult(winners,reason){
   if(visualStyle==='terminal'){
     // Terminal mode: display result in heTermView instead of overlay
     heTermHandlers=null;
+    heAwaitingRaiseAmount=false;
     heTerminalResult={winners,reason};
     heRenderTerminalView();
     return;
@@ -2356,6 +2392,7 @@ async function heShowResult(winners,reason){
 }
 function heNextHand(){
   heTerminalResult=null;
+  heAwaitingRaiseAmount=false;
   document.getElementById('heResOverlay').classList.remove('show');
   heClearAct();
   heDealerIdx=(heDealerIdx+1)%hePlayers.length; heRoundNum++;
@@ -2364,6 +2401,7 @@ function heNextHand(){
 }
 function heQuit(){
   heTerminalResult=null;
+  heAwaitingRaiseAmount=false;
   document.getElementById('heResOverlay').classList.remove('show');
   heEndGame();
 }
