@@ -2249,6 +2249,25 @@ function heRenderTerminalView(){
   const inp=document.getElementById('heTermCmdInp');
   if(inp) setTimeout(()=>inp.focus(),0);
 }
+function heTriggerRaiseFromTerminal(totalText){
+  if(!heTermHandlers) return;
+  const ri=document.getElementById('heRaiseInp');
+  const nextTotal = String(totalText || Math.max(HE_BB, heCurrentBet + HE_BB));
+  if(ri) ri.value = nextTotal;
+  heTermHandlers.raise();
+  // Confirm on next tick and once more shortly after, so it works even if the raise UI
+  // needs a frame to attach player/resolve references.
+  setTimeout(()=>{
+    if(ri) ri.value = nextTotal;
+    heConfirmRaise();
+  },0);
+  setTimeout(()=>{
+    if(ri && document.getElementById('heRaiseZ')?.classList.contains('show')){
+      ri.value = nextTotal;
+      heConfirmRaise();
+    }
+  },60);
+}
 function heRunTerminalCommand(raw){
   if(visualStyle!=='terminal') return;
   const s=(raw||'').trim().toLowerCase();
@@ -2263,20 +2282,13 @@ function heRunTerminalCommand(raw){
   if(s==='c'||s==='k'||s==='call'||s==='check'){heTermHandlers.call();return;}
   if(s==='f'||s==='fold'){heTermHandlers.fold();return;}
   if(s==='r'||s==='b'||s==='raise'||s==='bet'){
-    const ri=document.getElementById('heRaiseInp');
-    const minTotal=Math.max(HE_BB, heCurrentBet + HE_BB);
-    if(ri) ri.value=String(minTotal);
-    heTermHandlers.raise();
-    setTimeout(()=>heConfirmRaise(),0);
+    heTriggerRaiseFromTerminal(String(Math.max(HE_BB, heCurrentBet + HE_BB)));
     return;
   }
-  // Raise: accept "b <amt>", "r <amt>", "raise <amt>", "bet <amt>"
-  const m=s.match(/^(?:b|r|raise|bet)\s+(\d+)$/);
+  // Raise: accept "b <amt>", "r <amt>", "raise <amt>", "bet <amt>", "$amt"
+  const m=s.match(/^(?:b|bet|r|raise)\s*\$?\s*(\d+)$/);
   if(m){
-    const ri=document.getElementById('heRaiseInp');
-    if(ri) ri.value=m[1];
-    heTermHandlers.raise();
-    setTimeout(()=>heConfirmRaise(),0);
+    heTriggerRaiseFromTerminal(m[1]);
     return;
   }
 }
@@ -2287,7 +2299,15 @@ function heSubmitTerminalAction() {
   if (!inp) return;
   const k = (inp.value || '').trim().toLowerCase();
   if (k === 'c' || k === 'k' || k === 'call' || k === 'check') { heTermHandlers.call(); inp.value=''; if(msg) msg.textContent=''; return; }
-  if (k === 'r' || k === 'raise' || k === 'bet') { heTermHandlers.raise(); inp.value=''; if(msg) msg.textContent=''; return; }
+  if (k === 'r' || k === 'raise' || k === 'b' || k === 'bet') {
+    heTriggerRaiseFromTerminal(String(Math.max(HE_BB, heCurrentBet + HE_BB)));
+    inp.value=''; if(msg) msg.textContent=''; return;
+  }
+  const m = k.match(/^(?:b|bet|r|raise)\s*\$?\s*(\d+)$/);
+  if(m){
+    heTriggerRaiseFromTerminal(m[1]);
+    inp.value=''; if(msg) msg.textContent=''; return;
+  }
   if (k === 'f' || k === 'fold') { heTermHandlers.fold(); inp.value=''; if(msg) msg.textContent=''; return; }
   if (msg) msg.textContent = 'Invalid action.';
 }
@@ -2564,6 +2584,18 @@ document.addEventListener('DOMContentLoaded', () => {
     heInp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         heSubmitTerminalAction();
+        e.preventDefault();
+      }
+    });
+  }
+  const heRaise = document.getElementById('heRaiseInp');
+  if (heRaise) {
+    heRaise.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        heConfirmRaise();
+        e.preventDefault();
+      } else if (e.key === 'Escape') {
+        heHideRaise();
         e.preventDefault();
       }
     });
