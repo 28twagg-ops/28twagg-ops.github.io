@@ -518,6 +518,13 @@ Entry - 2026-04-21 (v0.0.41 - real ROM games via EmulatorJS)
   - AtariForceComicBookCollection.zip is comic books, not a game. No emulator wiring possible.
 - Bumped PIXEL-NET/version.json to 0.0.41
 
+Entry - 2026-04-21 (v0.0.42 - Combat 2600 ROM wired)
+- User provided Combat (NA).a26 (Atari 2600, 2048 bytes, correct size).
+- Added PIXEL-NET/games/combat-cx2601/rom/combat.a26
+- Added PIXEL-NET/games/combat-cx2601/emu.html (core: atari2600, rom: ./rom/combat.a26)
+- Updated PIXEL-NET/games/combat-cx2601/wrapper-v2.html entry -> ./emu.html (game.html untouched)
+- Bumped PIXEL-NET/version.json to 0.0.42
+
 Entry - 2026-04-21 (v0.0.40 - Track Field Blitz implementation)
 - Source archive inspected: d64_Track_Field_1983_Konami.zip
   - Archive contains a D64 image/screenshots metadata pack, so gameplay was implemented in-house in PIXEL-NET style.

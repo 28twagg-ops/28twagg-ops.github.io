@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Combat — PIXEL-NET</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
+  #game{width:100%;height:100%;display:block}
+  #notice{position:fixed;left:8px;bottom:8px;font-size:11px;color:#ffdd66;text-shadow:0 0 6px #000;pointer-events:none;opacity:.85}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="notice">ARCADE MODE (Atari 2600) — best played with 2 controllers or shared keyboard</div>
+<script>
+  window.EJS_player = '#game';
+  window.EJS_core = 'atari2600';
+  window.EJS_gameUrl = './rom/combat.a26';
+  window.EJS_gameName = 'Combat';
+  window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+  window.EJS_startOnLoaded = true;
+  window.EJS_color = '#ffdd66';
+  window.addEventListener('beforeunload', () => {
+    try { window.parent.postMessage({ type: 'GAME_OVER_SCORE', score: 0 }, '*'); } catch(_) {}
+  });
+</script>
+<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+</body>
+</html>
