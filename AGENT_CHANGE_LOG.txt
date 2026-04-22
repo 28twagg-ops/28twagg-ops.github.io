@@ -590,3 +590,38 @@ Entry - 2026-04-21 (0.0.43)
 - heSubmitTerminalAction now just routes through heRunTerminalCommand so both inputs
   share one code path.
 - PIXEL-NET/version.json bumped to 0.0.43.
+
+Entry - 2026-04-21 (0.0.46)
+Spyder Casino - Hold'em upgrades:
+- SIDE POTS! When a player can't cover the full call they now go all-in
+  and the pot automatically splits into main + side pots.
+  - heComputeSidePots() builds tiered pots from each player's totalContrib.
+  - heAwardSidePots() awards each pot to the best eligible hand (excluding folded players).
+  - heActCall / heBotTurn / heConfirmRaise now track totalContrib per hand and tag
+    lastAction with ' (ALL-IN)' when chips hit zero.
+  - Removed the old "NO SIDE POTS - YOU MUST FOLD" gate. User can now call all-in.
+  - End-of-hand block lists each pot with its winner and amount.
+- POT DISPLAY:
+  - Terminal header now shows 'POT:   |  MAIN   |  SIDE ' when side pots exist.
+  - Casino HUD + pot disp show same breakdown inline.
+- BIGGER, MORE READABLE TERMINAL:
+  - .term-screen uses max-width: min(98vw, 1180px) centered.
+  - .term-view and .term-cmd font-size scaled via clamp(13px, 1.55vmin, 17px) so cards
+    and text grow to fit the screen without altering the original ASCII artwork.
+- TABLE TALK BOX (funny NPC replies):
+  - New hold+queue chatter system (heChatMsg / heChatUntil / heChatQueue / heChatTimer).
+  - Each quip lingers at least HE_CHAT_HOLD_MS (2.8s) before the next one replaces it.
+    "Thinking..." beats use a shorter 700ms hold so they don't block action lines.
+  - Terminal view now renders a bordered TABLE TALK frame with word-wrapped quips.
+  - Expanded HE_CHATTER to include bot-voiced one-liners (SLICK, BUBBA, PROF, MUMBLES, etc.).
+  - New HE_QUICK_QUIPS keyed on user tendencies (folds, raises, all-in, checks, bluffs).
+  - heQueueBotQuip(key) triggers a random bot saying a themed quip, fired from:
+    - User fold (any path), user raise/confirm, user all-in call, and ~20% on user checks.
+- Raise UX hardening:
+  - heConfirmRaise() now clamps total to [heRaiseMin, p.roundBet + p.chips] (all-in cap).
+  - heRunTerminalCommand single-letter raise path gates against short-stacks that can't
+    legally raise (it tells the player to call all-in or fold).
+  - User-turn RAISE button is hidden when p.chips===0 or a legal raise isn't possible.
+- Pre-existing bug fixed: betting-round early-out no longer causes the pot to evaporate.
+  Replaced 'if(early) return;' with a proper flow that still reaches showdown/award.
+- PIXEL-NET/version.json bumped to 0.0.46.

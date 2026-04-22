@@ -273,16 +273,22 @@ body:not(.casino) #hePlayerArea{
 .term-screen{
   display:none;
   border:1px solid #00cc33;
-  padding:10px 12px;
+  padding:12px 14px;
   background:#000;
+  /* Scale the terminal viewport to use available screen real estate while
+     preserving the original fixed-width ASCII artwork. */
+  max-width:min(98vw, 1180px);
+  margin:0 auto;
 }
 body:not(.casino) .term-screen{display:block;}
 .term-view{
   white-space:pre;
-  font-size:12px;
-  line-height:1.25;
+  /* Original artwork, just drawn a tick larger so cards are easier to read. */
+  font-size:clamp(13px, 1.55vmin, 17px);
+  line-height:1.28;
   color:#00ff41;
-  min-height:320px;
+  min-height:360px;
+  overflow-x:auto;
 }
 .term-cmd{
   margin-top:0;
@@ -298,7 +304,7 @@ body:not(.casino) .term-screen{display:block;}
   outline:none;
   border-radius:0;
   font-family:inherit;
-  font-size:12px;
+  font-size:clamp(13px, 1.55vmin, 17px);
   padding:6px 10px;
   caret-color:#00ff41;
 }
@@ -1736,10 +1742,39 @@ const HE_CHATTER=[
   "Dealer: 'Chips in. Feelings out.'",
   "Dealer: 'The river giveth and taketh.'",
   "Dealer: 'Bold raise. Questionable strategy.'",
-  "Dealer: 'No side pots. Pay up or fold up.'",
   "Dealer: 'Play the hand, not the ego.'",
-  "Dealer: 'House rule: pressure reveals truth.'"
+  "Dealer: 'House rule: pressure reveals truth.'",
+  "Dealer: 'Check if you must. Raise if you dare.'",
+  "Dealer: 'I've seen pocket kings lose to sevens. Strange game.'",
+  "Dealer: 'Shuffle up and deal the regret.'",
+  "SLICK: 'My grandma plays tighter than this table.'",
+  "SLICK: 'Call it. I dare you.'",
+  "BUBBA: 'I had a read. Lost it somewhere on the flop.'",
+  "BUBBA: 'Alright alright alright, here we go.'",
+  "PROF: 'By my count, you have exactly zero outs.'",
+  "PROF: 'Pot odds don't care about your feelings.'",
+  "MUMBLES: '...alright, whatever, I'm in.'",
+  "MUMBLES: '...seen worse. Not much.'",
+  "KNUCKLES: 'Stop thinking. It's not helping you.'",
+  "KNUCKLES: 'You fold again and I'll bring a book.'",
+  "MAVERICK: 'All gas, no brakes. Let's gamble.'",
+  "BANDIT: 'I haven't bluffed in... three hands. Maybe.'",
+  "DEUCE: 'Seven-deuce offsuit is a lifestyle.'",
+  "WILDCARD: 'You'll never see this coming. Probably.'",
+  "ACE: 'Classic trap. Classic victim.'",
+  "NO-LIMIT NATE: 'What's the point of chips you don't shove?'"
 ];
+// Reactions keyed on user tendencies / events (short, kept above the bot panel)
+const HE_QUICK_QUIPS = {
+  userFoldsALot: ["This guy folds like origami.","Call one for a change, champ.","You pay the rake to WATCH?"],
+  userNeverFolds: ["You never fold? Noted.","Calling station open 24/7.","I love bingo night."],
+  userRaises: ["Big bet, bigger fish.","Careful, you'll hurt yourself.","Oh, we're doing this?"],
+  userBluffs: ["Smells like air from here.","I'll pay to see it, thanks.","That move again? Seriously?"],
+  userAllIn: ["Shove city. Population: you.","Brave. Or bored. Or broke.","Hold my coffee."],
+  userChecks: ["Checking in. Checking out.","Living the passive dream.","You plan to ever bet?"],
+  userWins: ["Lucky deck, not lucky player.","Enjoy it. It's temporary.","River rat strikes again."],
+  userLoses: ["Tough hand. Worse call.","That's a fold next time.","Play money, real lessons."],
+};
 const HE_BOT_NAMES=["SLICK","BUBBA","PROF","MUMBLES","KNUCKLES","LUNCHBOX","MAVERICK","BANDIT","DEUCE","WILDCARD","REDLINE","TINY","JEFF","ACE","GRIT","NO-LIMIT NATE"];
 const HE_BOT_EXCUSES=["rage-quit after the river","bet the rent and lost","was dragged out by security","said 'BRB' and never came back"];
 // Pre-flop hand strength tiers (0=trash,1=weak,2=medium,3=strong,4=premium)
@@ -1754,6 +1789,11 @@ const HAND_NAMES=['High Card','Pair','Two Pair','Trips','Straight','Flush','Full
 
 let hePlayers=[], hePot=0, heCommunity=[], heDeck=[], heDealerIdx=0, heRoundNum=1, heCurrentBet=0, heStageName='', heMode='STANDARD';
 let heWaitResolve=null, heRaiseMin=0;
+// Side-pot breakdown computed on demand from player totalContrib totals.
+let heSidePotInfo=[];
+// Chatter hold-and-queue: messages linger long enough for the player to actually read them.
+let heChatMsg='', heChatUntil=0, heChatQueue=[], heChatTimer=null;
+const HE_CHAT_HOLD_MS=2800;
 let heUserRaisedPreflop=false;
 const heUserModel={hands:0,preflopRaises:0,showdowns:0,strongShowdowns:0,bluffsSeen:0,folds:0,calls:0,checks:0};
 function heAdaptiveLine(){
@@ -1942,11 +1982,12 @@ function startHE(mode){
   heMode=normMode(mode);heRoundNum=1;heDealerIdx=0;
   document.getElementById('heModeTag').textContent=heMode;
   hePlayers=[
-    {name:'THE ROCK',    chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'CONSERVATIVE',remark:''},
-    {name:'VIPER',       chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'AGGRESSIVE',remark:''},
-    {name:'LOOSE CANNON',chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'BALANCED',remark:''},
-    {name:'YOU',         chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:'HUMAN',remark:''},
+    {name:'THE ROCK',    chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,totalContrib:0,style:'CONSERVATIVE',remark:''},
+    {name:'VIPER',       chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,totalContrib:0,style:'AGGRESSIVE',remark:''},
+    {name:'LOOSE CANNON',chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,totalContrib:0,style:'BALANCED',remark:''},
+    {name:'YOU',         chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,totalContrib:0,style:'HUMAN',remark:''},
   ];
+  heSidePotInfo=[];
   showScreen('heScreen');
   setTimeout(()=>hePlayRound(),150);
 }
@@ -1961,21 +2002,21 @@ async function hePlayRound(){
     if(hePlayers[i].chips<HE_BB){
       const newName=HE_BOT_NAMES[Math.floor(Math.random()*HE_BOT_NAMES.length)];
       heSetChatter(`${hePlayers[i].name} ${HE_BOT_EXCUSES[Math.floor(Math.random()*HE_BOT_EXCUSES.length)]}. ${newName} joins!`);
-      hePlayers[i]={name:newName,chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,style:['CONSERVATIVE','AGGRESSIVE','BALANCED'][Math.floor(Math.random()*3)]};
+      hePlayers[i]={name:newName,chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,totalContrib:0,style:['CONSERVATIVE','AGGRESSIVE','BALANCED'][Math.floor(Math.random()*3)]};
       await sleep(700);
     }
   }
 
-  heDeck=buildDeck();heCommunity=[];hePot=0;
+  heDeck=buildDeck();heCommunity=[];hePot=0;heSidePotInfo=[];
   const num=hePlayers.length;
   const sbI=(heDealerIdx+1)%num,bbI=(heDealerIdx+2)%num;
 
-  for(const p of hePlayers){p.roundBet=0;p.role='';p.lastAction='';p.hand=[];p.status='ACTIVE';p.remark='';}
+  for(const p of hePlayers){p.roundBet=0;p.totalContrib=0;p.role='';p.lastAction='';p.hand=[];p.status='ACTIVE';p.remark='';}
   hePlayers[heDealerIdx].role='(D)';hePlayers[sbI].role='(SB)';hePlayers[bbI].role='(BB)';
 
   for(const[idx,amt] of[[sbI,HE_SB],[bbI,HE_BB]]){
     const p=hePlayers[idx];const pay=Math.min(amt,p.chips);
-    p.chips-=pay;p.roundBet=pay;hePot+=pay;p.lastAction=`POST ${pay}`;
+    p.chips-=pay;p.roundBet=pay;p.totalContrib+=pay;hePot+=pay;p.lastAction=`POST ${pay}`;
   }
   for(let d=0;d<2;d++) for(const p of hePlayers) p.hand.push(heDeck.pop());
 
@@ -1989,25 +2030,36 @@ async function hePlayRound(){
     if(phase!=='PRE-FLOP') for(const p of hePlayers) p.roundBet=0;
     heCurrentBet=phase==='PRE-FLOP'?HE_BB:0;
     heRenderAll(false);
-    const early=await heBetRound(phase,bbI,heDealerIdx);
-    if(early)return;
+    await heBetRound(phase,bbI,heDealerIdx);
     const active=hePlayers.filter(p=>p.status!=='FOLDED');
+    // Early out: only one non-folded player left — they take everything.
     if(active.length===1){active[0].chips+=hePot;await heShowResult(active,'Everyone folded');return;}
-    if(Math.random()<0.3)heSetChatter(HE_CHATTER[Math.floor(Math.random()*HE_CHATTER.length)]);
+    // If everyone left is all-in, skip remaining action and go straight to showdown
+    // after dealing remaining streets.
+    const anyCanAct=active.some(p=>p.chips>0);
+    if(Math.random()<0.35)heSetChatter(HE_CHATTER[Math.floor(Math.random()*HE_CHATTER.length)]);
+    if(!anyCanAct) continue; // next loop will still deal TURN / RIVER cards
   }
 
-  // SHOWDOWN
+  // SHOWDOWN — compute side pots and award each pot to its best eligible hand.
   heStageName='SHOWDOWN';heRenderAll(true);await sleep(300);
-  const active=hePlayers.filter(p=>p.status!=='FOLDED');
-  let bestS=null,winners=[];
-  for(const p of active){
-    const[s]=hBest(p.hand,heCommunity);
-    if(!bestS||hCmp(s,bestS)>0){bestS=s;winners=[p];}
-    else if(hCmp(s,bestS)===0)winners.push(p);
+  const potResults=heAwardSidePots();
+  heSidePotInfo=potResults;
+  // Primary "winners" line still reflects the MAIN pot winner(s) for the result banner.
+  const mainWinners=potResults.length?potResults[0].winners:[];
+  const reason=potResults.length>1
+    ? `Showdown — ${potResults.length} pots awarded`
+    : 'Showdown';
+  // Build chatter summary if side pots were in play
+  if(potResults.length>1){
+    const lines=potResults.map(r=>{
+      if(!r.winners.length) return `${r.label}: $${r.amount} — (no eligible players)`;
+      const names=r.winners.map(w=>w.name).join(' & ');
+      return `${r.label}: ${names} wins $${r.amount}`;
+    });
+    heSetChatter(`Dealer: '${lines.join('  |  ')}'`, 5500);
   }
-  const base=Math.floor(hePot/winners.length),rem=hePot%winners.length;
-  winners.forEach((w,i)=>w.chips+=base+(i<rem?1:0));
-  await heShowResult(winners,'Showdown');
+  await heShowResult(mainWinners, reason);
 }
 
 async function heBetRound(phase,bbI,dI){
@@ -2036,18 +2088,121 @@ async function heBetRound(phase,bbI,dI){
   return false;
 }
 
+// ── SIDE POT COMPUTATION ──────────────────────────────────────
+// Returns an array of {amount, eligible:[players]} representing the main pot
+// and any side pots in deal order (smallest all-in level first).
+function heComputeSidePots(){
+  const plist=hePlayers.filter(p=>p.totalContrib>0);
+  if(!plist.length) return [];
+  const levels=[...new Set(plist.map(p=>p.totalContrib))].sort((a,b)=>a-b);
+  const pots=[];
+  let prev=0;
+  for(const lvl of levels){
+    const tier=lvl-prev;
+    const contribs=plist.filter(p=>p.totalContrib>=lvl);
+    const amt=tier*contribs.length;
+    const eligible=contribs.filter(p=>p.status!=='FOLDED');
+    if(amt>0) pots.push({amount:amt, eligible, level:lvl});
+    prev=lvl;
+  }
+  return pots;
+}
+// Human-readable breakdown for terminal header (only shows side pots when present)
+function hePotBreakdown(){
+  const pots=heComputeSidePots();
+  if(pots.length<=1) return `POT: $${hePot}`;
+  const main=pots[0];
+  const sides=pots.slice(1);
+  const sideTotal=sides.reduce((s,p)=>s+p.amount,0);
+  return `POT: $${hePot}  |  MAIN $${main.amount}  |  SIDE $${sideTotal}`;
+}
+// Award pots at showdown (main + side pots). Returns [{winners, amount, label}].
+function heAwardSidePots(){
+  const pots=heComputeSidePots();
+  const results=[];
+  pots.forEach((pot,idx)=>{
+    const label=idx===0?'Main pot':`Side pot ${idx}`;
+    if(pot.eligible.length===0){
+      results.push({winners:[], amount:pot.amount, label});
+      return;
+    }
+    if(pot.eligible.length===1){
+      pot.eligible[0].chips+=pot.amount;
+      results.push({winners:[pot.eligible[0]], amount:pot.amount, label});
+      return;
+    }
+    let bestS=null, winners=[];
+    for(const p of pot.eligible){
+      const[s]=hBest(p.hand,heCommunity);
+      if(!bestS||hCmp(s,bestS)>0){bestS=s;winners=[p];}
+      else if(hCmp(s,bestS)===0) winners.push(p);
+    }
+    const base=Math.floor(pot.amount/winners.length), rem=pot.amount%winners.length;
+    winners.forEach((w,i)=>w.chips+=base+(i<rem?1:0));
+    results.push({winners, amount:pot.amount, label});
+  });
+  return results;
+}
+
+// ── CHATTER QUEUE (hold each line long enough to read) ────────
+function heChatterTick(){
+  if(heChatTimer) return;
+  heChatTimer=setInterval(()=>{
+    const now=Date.now();
+    if(now<heChatUntil) return;
+    if(heChatQueue.length){
+      const next=heChatQueue.shift();
+      heChatMsg=next.msg;
+      heChatUntil=now+(next.hold||HE_CHAT_HOLD_MS);
+      const el=document.getElementById('heChatter');
+      if(el) el.textContent=heChatMsg;
+      if(visualStyle==='terminal') heRenderTerminalView();
+    } else {
+      // Queue drained; let existing message linger but stop ticking.
+      clearInterval(heChatTimer);heChatTimer=null;
+    }
+  },120);
+}
+function heSetChatter(msg, minMs){
+  const hold=minMs||HE_CHAT_HOLD_MS;
+  const now=Date.now();
+  if(now>=heChatUntil){
+    heChatMsg=msg;
+    heChatUntil=now+hold;
+    const el=document.getElementById('heChatter');
+    if(el) el.textContent=heChatMsg;
+    if(visualStyle==='terminal') heRenderTerminalView();
+  } else {
+    // Don't pile up identical consecutive messages
+    const last=heChatQueue[heChatQueue.length-1];
+    if(!last||last.msg!==msg) heChatQueue.push({msg, hold});
+  }
+  heChatterTick();
+}
+// Trigger a snarky quip tied to the user's behavior. Picks a random bot as speaker.
+function heQueueBotQuip(key){
+  const pool=HE_QUICK_QUIPS[key];
+  if(!pool||!pool.length) return;
+  const bots=hePlayers.filter(p=>p.style!=='HUMAN'&&p.status!=='FOLDED');
+  const speaker=bots.length?bots[Math.floor(Math.random()*bots.length)]:null;
+  const quip=pool[Math.floor(Math.random()*pool.length)];
+  heSetChatter(speaker?`${speaker.name}: "${quip}"`:`Dealer: '${quip}'`);
+}
+
 async function heBotTurn(p,phase){
   const toCall=heCurrentBet-p.roundBet;
   const allIn=hePlayers.filter(x=>x!==p&&x.status!=='FOLDED').every(x=>x.chips===0);
-  heSetChatter(`${p.name} thinking...`);
+  // Short hold for the "thinking" beat so the actual action line has room to breathe.
+  heSetChatter(`${p.name} thinking...`, 700);
   await sleep(250+Math.random()*350);
   const intended=heBotDecision(p,phase,toCall,hePot,heCommunity,allIn);
   if(intended===-1){p.status='FOLDED';p.lastAction='FOLD';}
   else{
     const cost=Math.max(0,Math.min(intended-p.roundBet,p.chips));
-    p.chips-=cost;p.roundBet+=cost;hePot+=cost;
+    p.chips-=cost;p.roundBet+=cost;p.totalContrib+=cost;hePot+=cost;
     if(p.roundBet>heCurrentBet)heCurrentBet=p.roundBet;
-    p.lastAction=p.roundBet>(heCurrentBet-cost)?`RAISE $${p.roundBet}`:cost===0?'CHECK':'CALL';
+    const allInTag=p.chips===0&&cost>0?' (ALL-IN)':'';
+    p.lastAction=(p.roundBet>(heCurrentBet-cost)?`RAISE $${p.roundBet}`:cost===0?'CHECK':'CALL')+allInTag;
   }
   let line=`${p.name} → ${p.lastAction}`;
   const adap=heAdaptiveLine();
@@ -2065,33 +2220,38 @@ function heUserTurn(p){
     document.getElementById('heRbetInfo').textContent=toCall>0?`To call: $${toCall}`:heCurrentBet>0?`Current bet: $${heCurrentBet}`:'';
     heRenderAll(false);
 
-    // Check / Call
+    // Check / Call (short-stack calls go all-in into a side pot)
     const canCall=toCall<=p.chips;
-    if(toCall<=0||canCall){
+    {
       const cb=document.createElement('button');
-      cb.className='btn pri';cb.textContent=toCall<=0?'CHECK':`CALL $${toCall}`;
+      cb.className='btn pri';
+      cb.textContent = toCall<=0
+        ? 'CHECK'
+        : (canCall ? `CALL $${toCall}` : `CALL ALL-IN $${p.chips}`);
       cb.onclick=()=>{heHideRaise();heActCall(p,res);};az.appendChild(cb);
-    } else {
-      document.getElementById('heRbetInfo').textContent=`Can't cover $${toCall} — must fold`;
+      if(!canCall && toCall>0){
+        document.getElementById('heRbetInfo').textContent=`Short on chips — calling puts you all-in for $${p.chips}`;
+      }
     }
-    // Raise
+    // Raise (only if the player actually has enough for a legal raise)
     const oppAllIn=hePlayers.filter(x=>x!==p&&x.status!=='FOLDED').every(x=>x.chips===0);
-    if(!oppAllIn){
+    const minR=heCurrentBet+HE_BB, maxR=p.roundBet+p.chips;
+    if(!oppAllIn && maxR>=minR && p.chips>0){
       const rb=document.createElement('button');rb.className='btn amb';rb.textContent=toCall>0?'RAISE':'BET';
       rb.onclick=()=>heShowRaise(p,res);az.appendChild(rb);
     }
     // Fold
     const fb=document.createElement('button');fb.className='btn red';fb.textContent='FOLD';
-    fb.onclick=()=>{heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heWaitResolve=null;heRenderAll(false);res();};
+    fb.onclick=()=>{heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heQueueBotQuip('userFoldsALot');heWaitResolve=null;heRenderAll(false);res();};
     az.appendChild(fb);
     // Keyboard actions for terminal-style play
     heKeyActions = {
-      call: () => (toCall<=0||canCall) ? (heHideRaise(), heActCall(p,res)) : null,
+      call: () => { heHideRaise(); heActCall(p,res); },
       raise: () => {
         const oppAllInNow=hePlayers.filter(x=>x!==p&&x.status!=='FOLDED').every(x=>x.chips===0);
         if(!oppAllInNow) heShowRaise(p,res);
       },
-      fold: () => { heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heWaitResolve=null;heRenderAll(false);res(); },
+      fold: () => { heHideRaise();p.status='FOLDED';p.lastAction='FOLD';heUserModel.folds++;heQueueBotQuip('userFoldsALot');heWaitResolve=null;heRenderAll(false);res(); },
       confirmRaise: () => {
         const rz = document.getElementById('heRaiseZ');
         if (rz.classList.contains('show')) heConfirmRaise();
@@ -2109,11 +2269,14 @@ function heUserTurn(p){
 }
 function heActCall(p,res){
   const toCall=heCurrentBet-p.roundBet,pay=Math.min(toCall,p.chips);
-  p.chips-=pay;p.roundBet+=pay;hePot+=pay;
-  p.lastAction=pay===0?'CHECK':'CALL';
+  p.chips-=pay;p.roundBet+=pay;p.totalContrib+=pay;hePot+=pay;
+  const allInTag=p.chips===0&&pay>0?' (ALL-IN)':'';
+  p.lastAction=(pay===0?'CHECK':(pay<toCall?`CALL $${pay}`:'CALL'))+allInTag;
   if(p.style==='HUMAN'){
     if(pay===0) heUserModel.checks++;
     else heUserModel.calls++;
+    if(p.chips===0&&pay>0) heQueueBotQuip('userAllIn');
+    else if(pay===0 && Math.random()<0.20) heQueueBotQuip('userChecks');
   }
   heWaitResolve=null;heClearAct();heRenderAll(false);res();
 }
@@ -2127,13 +2290,20 @@ function heHideRaise(){document.getElementById('heRaiseZ').classList.remove('sho
 function heConfirmRaise(){
   const ri=document.getElementById('heRaiseInp');const p=ri._p,res=ri._res;
   let total=parseInt(ri.value)||heRaiseMin;if(total<heRaiseMin)total=heRaiseMin;
+  const maxTotal=p.roundBet+p.chips;
+  if(total>maxTotal) total=maxTotal;
   const cost=Math.min(total-p.roundBet,p.chips);
-  p.chips-=cost;p.roundBet+=cost;hePot+=cost;
+  p.chips-=cost;p.roundBet+=cost;p.totalContrib+=cost;hePot+=cost;
   if(p.roundBet>heCurrentBet)heCurrentBet=p.roundBet;
-  p.lastAction=`RAISE $${p.roundBet}`;
-  if(p.style==='HUMAN'&&heStageName==='PRE-FLOP'&&cost>0){
-    heUserRaisedPreflop=true;
-    heUserModel.preflopRaises++;
+  const allInTag=p.chips===0&&cost>0?' (ALL-IN)':'';
+  p.lastAction=`RAISE $${p.roundBet}`+allInTag;
+  if(p.style==='HUMAN'){
+    if(heStageName==='PRE-FLOP'&&cost>0){
+      heUserRaisedPreflop=true;
+      heUserModel.preflopRaises++;
+    }
+    if(p.chips===0&&cost>0) heQueueBotQuip('userAllIn');
+    else heQueueBotQuip('userRaises');
   }
   heHideRaise();heWaitResolve=null;heClearAct();heRenderAll(false);res();
 }
@@ -2163,9 +2333,27 @@ function heRenderTerminalView(){
 
   // ── Header ──
   out.push('='.repeat(W));
-  out.push(ctr(` TEXAS HOLD'EM - POT: $${hePot} (${heStageName||'PRE-FLOP'}) `));
+  out.push(ctr(` TEXAS HOLD'EM — ${heStageName||'PRE-FLOP'} `));
+  out.push(ctr(hePotBreakdown()));
   out.push('='.repeat(W));
   out.push(ctr(`MODE: ${heMode}`));
+  // ── Table-talk box (funny NPC quips, held long enough to read) ──
+  if(heChatMsg){
+    out.push('');
+    out.push(ctr('┌─ TABLE TALK ─────────────────────────────────────────────────────────────┐'.slice(0,W)));
+    // word-wrap the quip so long lines don't blow out the card columns
+    const wrap=(s, n)=>{
+      const words=s.split(/\s+/); const lines=[]; let cur='';
+      for(const w of words){
+        if((cur+' '+w).trim().length>n){ if(cur) lines.push(cur); cur=w; }
+        else cur=(cur?cur+' ':'')+w;
+      }
+      if(cur) lines.push(cur);
+      return lines;
+    };
+    for(const ln of wrap(heChatMsg, W-6)) out.push(ctr(ln));
+    out.push(ctr('└──────────────────────────────────────────────────────────────────────────┘'.slice(0,W)));
+  }
   out.push('');
 
   // ── Three bot columns (26 chars each) ──
@@ -2222,7 +2410,16 @@ function heRenderTerminalView(){
     out.push('-'.repeat(W));
     out.push(ctr(`END OF HAND — ${reason}`));
     out.push('-'.repeat(W));
-    if(winners&&winners.length){
+    if(heSidePotInfo && heSidePotInfo.length>1){
+      heSidePotInfo.forEach(r=>{
+        if(!r.winners.length){
+          out.push(ctr(`${r.label}: $${r.amount} — (no eligible players)`));
+        } else {
+          const names=r.winners.map(w=>w.name).join(' & ');
+          out.push(ctr(`${r.label}: ${names} wins $${r.amount}`));
+        }
+      });
+    } else if(winners&&winners.length){
       if(winners.length===1) out.push(ctr(`WINNER: ${winners[0].name}`));
       else out.push(ctr(`SPLIT POT: ${winners.map(w=>w.name).join(', ')}`));
     }
@@ -2242,10 +2439,10 @@ function heRenderTerminalView(){
       out.push(`Min $${minR}  |  Max (all-in) $${maxR}`);
       out.push(`Type amount and press ENTER (or 'c' to cancel):`);
     } else if(user&&toCall>user.chips){
-      out.push(ctr(`>>> COST: $${toCall} — YOU ONLY HAVE $${user.chips} <<<`,40));
-      out.push(ctr('>>> NO SIDE POTS — YOU MUST FOLD <<<',40));
+      out.push(ctr(`>>> COST TO CALL: $${toCall} — YOU ONLY HAVE $${user.chips} <<<`,40));
+      out.push(ctr('>>> CALL ALL-IN FOR $'+user.chips+' (SIDE POT) OR FOLD <<<',40));
       out.push(sep);
-      out.push('Action [(F)old]:');
+      out.push(`Action [(C)all all-in $${user.chips}, (F)old]:`);
     } else if(toCall===0){
       out.push(ctr('>>> YOU CAN CHECK ($0) <<<',40));
       out.push(sep);
@@ -2324,8 +2521,18 @@ function heRunTerminalCommand(raw){
 
   // Single-letter raise initiator → enter amount-prompt mode
   if(s==='r'||s==='b'||s==='raise'||s==='bet'){
-    // Compute min raise without opening the UI yet
-    heRaiseMin = heCurrentBet + HE_BB;
+    const user = heUser();
+    // If user can't afford a legal raise, ignore (they can still CALL all-in)
+    if(!user || user.chips<=0) return;
+    const minR = heCurrentBet + HE_BB;
+    const maxR = user.roundBet + user.chips;
+    if(maxR < minR){
+      // Short-stack can only shove (call all-in). Tell them via the chatter.
+      heSetChatter(`Dealer: 'Too short to raise — you can CALL all-in or fold.'`, 2000);
+      heRenderTerminalView();
+      return;
+    }
+    heRaiseMin = minR;
     heAwaitingRaiseAmount = true;
     heRenderTerminalView();
     return;
@@ -2413,10 +2620,22 @@ function heEndGame(){
 // HE RENDER
 function heRenderAll(showdown){
   const u=heUser();
-  document.getElementById('hePot').textContent=hePot;
+  // Pot HUD includes side-pot breakdown when we actually have side pots
+  const pots=heComputeSidePots();
+  const potEl=document.getElementById('hePot');
+  const potDisp=document.getElementById('hePotDisp');
+  if(pots.length>1){
+    const main=pots[0].amount;
+    const side=pots.slice(1).reduce((s,p)=>s+p.amount,0);
+    const txt=`${hePot} (MAIN $${main} · SIDE $${side})`;
+    potEl.textContent=txt;
+    potDisp.textContent=txt;
+  } else {
+    potEl.textContent=hePot;
+    potDisp.textContent=hePot;
+  }
   document.getElementById('heRound').textContent=heRoundNum;
   document.getElementById('heChipsHud').textContent=u.chips;
-  document.getElementById('hePotDisp').textContent=hePot;
   document.getElementById('heStageLbl').textContent=heStageName||'';
   document.getElementById('hePlayerChips').textContent=u.chips;
 
@@ -2463,7 +2682,6 @@ function heRenderAll(showdown){
   }
   heRenderTerminalView();
 }
-function heSetChatter(msg){document.getElementById('heChatter').textContent=msg;}
 
 // ════════════════════════════════════════════
 // END SCREEN (shared)
