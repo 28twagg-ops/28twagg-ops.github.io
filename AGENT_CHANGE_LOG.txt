@@ -625,3 +625,10 @@ Spyder Casino - Hold'em upgrades:
 - Pre-existing bug fixed: betting-round early-out no longer causes the pot to evaporate.
   Replaced 'if(early) return;' with a proper flow that still reaches showdown/award.
 - PIXEL-NET/version.json bumped to 0.0.46.
+
+Entry - 2026-04-21 (0.0.47)
+- Center the SPYDER ASCII banner on the terminal lobby screen.
+  Added '#terminalBanner { text-align:center; margin:0 auto 4px auto; }' so each
+  line of the preformatted banner is horizontally centered within the lobby
+  container. Legends block, menu, and selection row stay left-aligned.
+- PIXEL-NET/version.json bumped to 0.0.47.
