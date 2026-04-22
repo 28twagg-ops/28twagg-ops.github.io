@@ -4,38 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dig Dug — PIXEL-NET</title>
+<link rel="stylesheet" href="../_shared/emu-shell.css">
 <style>
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%;width:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
-  #game{width:100%;height:100%}
-  #topbar{position:fixed;top:6px;left:6px;right:6px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50;gap:10px}
-  #hint{background:rgba(0,0,0,.7);border:1px solid rgba(255,221,102,.45);color:#ffdd66;padding:6px 10px;border-radius:4px;font-size:11px;max-width:60%;pointer-events:auto;transition:opacity .4s}
-  #hint.dim{opacity:.25}
-  #submit{background:#10253d;border:2px solid #5de0ff;color:#5de0ff;font:inherit;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;pointer-events:auto;font-size:12px}
-  #submit:hover{background:#1a375a}
-  #submit:disabled{opacity:.7;cursor:default}
-  #startOv{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer}
-  #startOv.hidden{display:none}
-  #startOv .card{background:#0b1b30;border:2px solid #ffdd66;border-radius:8px;padding:22px 28px;text-align:center;max-width:420px}
-  #startOv h1{margin:0 0 8px;color:#ffdd66;font-size:22px;letter-spacing:2px}
-  #startOv p{margin:6px 0;font-size:13px;color:#d9eeff}
-  kbd{background:#1a375a;padding:2px 6px;border-radius:3px;font-size:11px;margin:0 1px}
+  :root{ --hero:#ffdd66; --ink:#ffe99c; }
 </style>
 </head>
 <body tabindex="0">
-<div id="startOv">
-  <div class="card">
-    <h1>DIG DUG (NES)</h1>
-    <p>Move: <kbd>ARROWS</kbd>  Pump: <kbd>Z</kbd></p>
-    <p>Start: <kbd>ENTER</kbd>  Select: <kbd>SHIFT</kbd></p>
-    <p style="color:#ffdd66;margin-top:12px"><b>CLICK TO START</b></p>
-  </div>
-</div>
+<div id="game"></div>
+
 <div id="topbar">
   <div id="hint">Move: ARROWS &nbsp;|&nbsp; Pump: Z &nbsp;|&nbsp; Start: ENTER</div>
   <button id="submit">SUBMIT SCORE</button>
 </div>
-<div id="game"></div>
+
+<div id="actions">
+  <button data-act="start">START</button>
+  <button data-act="select">SELECT</button>
+  <button data-act="pump">PUMP (B)</button>
+  <button data-act="a">A</button>
+</div>
+
+<div id="errorOv" class="hidden">
+  <div class="card">
+    <h1>EMULATOR COULDN'T BOOT</h1>
+    <p class="msg"></p>
+    <p class="tip">The NES ROM should be compatible. Check your connection to <kbd>cdn.emulatorjs.org</kbd>.</p>
+  </div>
+</div>
+
 <script>
   window.EJS_player = '#game';
   window.EJS_core = 'nes';
@@ -45,11 +41,20 @@
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#ffdd66';
   window.EJS_volume = 0.45;
-  // Auto-enter gameplay: press Start on title, then Start again to begin
-  window.EMU_AUTOSTART_INIT = 2800;
+
+  // libretro joypad: 0=B, 2=SELECT, 3=START, 8=A
+  window.EMU_ACTIONS = {
+    start:  { btn: 3, hold: 180, key: "Enter", code: "Enter", keyCode: 13 },
+    select: { btn: 2, hold: 180, key: "Shift", code: "ShiftRight", keyCode: 16 },
+    pump:   { btn: 0, hold: 160, key: "z",     code: "KeyZ", keyCode: 90 },
+    a:      { btn: 8, hold: 160, key: "x",     code: "KeyX", keyCode: 88 }
+  };
+
+  // Auto-entry: press START twice to skip title / attract mode.
+  window.EMU_AUTOSTART_INIT = 3200;
   window.EMU_AUTOSTART = [
-    { key: "Enter", code: "Enter", keyCode: 13, delay: 600, hold: 150 },
-    { key: "Enter", code: "Enter", keyCode: 13, delay: 1600, hold: 150 }
+    window.EMU_ACTIONS.start,
+    window.EMU_ACTIONS.start
   ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>

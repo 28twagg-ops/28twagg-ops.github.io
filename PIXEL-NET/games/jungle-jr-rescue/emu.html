@@ -4,43 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Donkey Kong Jr — PIXEL-NET</title>
+<link rel="stylesheet" href="../_shared/emu-shell.css">
 <style>
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%;width:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
-  #game{width:100%;height:100%}
-  #topbar{position:fixed;top:6px;left:6px;right:6px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50;gap:10px}
-  #hint{background:rgba(0,0,0,.7);border:1px solid rgba(88,228,119,.45);color:#9cf4b0;padding:6px 10px;border-radius:4px;font-size:11px;max-width:64%;pointer-events:auto;transition:opacity .4s}
-  #hint.dim{opacity:.25}
-  #submit{background:#0e2a18;border:2px solid #58e477;color:#9cf4b0;font:inherit;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;pointer-events:auto;font-size:12px}
-  #submit:hover{background:#143d23}
-  #submit:disabled{opacity:.7;cursor:default}
-  #startOv{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer}
-  #startOv.hidden{display:none}
-  #startOv .card{background:#0e2a18;border:2px solid #58e477;border-radius:8px;padding:22px 28px;text-align:center;max-width:440px}
-  #startOv h1{margin:0 0 8px;color:#9cf4b0;font-size:22px;letter-spacing:2px}
-  #startOv p{margin:6px 0;font-size:13px;color:#d5f3df}
-  kbd{background:#1c4729;padding:2px 6px;border-radius:3px;font-size:11px;margin:0 1px}
+  :root{ --hero:#58e477; --ink:#d5f3df; }
 </style>
 </head>
 <body tabindex="0">
-<div id="startOv">
-  <div class="card">
-    <h1>DONKEY KONG JR (ARCADE)</h1>
-    <p>Insert coin: <kbd>5</kbd>  Start 1P: <kbd>1</kbd></p>
-    <p>Move / climb: <kbd>ARROWS</kbd>  Jump: <kbd>SPACE</kbd> or <kbd>CTRL</kbd></p>
-    <p style="color:#9cf4b0;margin-top:12px"><b>CLICK TO START</b></p>
-  </div>
-</div>
+<div id="game"></div>
+
 <div id="topbar">
-  <div id="hint">Coin: 5 &nbsp;|&nbsp; Start 1P: 1 &nbsp;|&nbsp; Move: ARROWS &nbsp;|&nbsp; Jump: SPACE</div>
+  <div id="hint">Move: ARROWS &nbsp;|&nbsp; Jump: SPACE &nbsp;|&nbsp; Coin: 5 &nbsp;|&nbsp; Start: 1</div>
   <button id="submit">SUBMIT SCORE</button>
 </div>
-<div id="game"></div>
+
+<div id="actions">
+  <button data-act="coin">COIN</button>
+  <button data-act="start1p">START 1P</button>
+  <button data-act="jump">JUMP</button>
+  <button data-act="reset">RESET</button>
+</div>
+
+<div id="errorOv" class="hidden">
+  <div class="card">
+    <h1>EMULATOR COULDN'T BOOT</h1>
+    <p class="msg"></p>
+    <p class="tip">If the ROM is incompatible, swap <kbd>dkongjr.zip</kbd> for an FBNeo-compatible DK Jr set.</p>
+  </div>
+</div>
+
 <script>
   window.EJS_player = '#game';
-  // mame2003_plus handles Donkey Kong Jr romsets more reliably than
-  // the older mame2003 core, which is very strict about CRC hashes.
-  window.EJS_core = 'mame2003_plus';
+  window.EJS_core = 'arcade';
   window.EJS_gameUrl = './rom/dkongjr.zip';
   window.EJS_gameName = 'Donkey Kong Jr';
   window.EJS_gameID = 'dkongjr';
@@ -48,12 +42,19 @@
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#58e477';
   window.EJS_volume = 0.45;
-  // Coin (5) x2, then Start 1P (1). If auto-enter misses, press 5 then 1 by hand.
+
+  window.EMU_ACTIONS = {
+    coin:    { btn: 2, hold: 220, key: "5",  code: "Digit5", keyCode: 53 },
+    start1p: { btn: 3, hold: 220, key: "1",  code: "Digit1", keyCode: 49 },
+    jump:    { btn: 0, hold: 160, key: " ",  code: "Space",  keyCode: 32 },
+    reset:   { btn: 9, hold: 180, key: "F2", code: "F2",     keyCode: 113 }
+  };
+
   window.EMU_AUTOSTART_INIT = 4500;
   window.EMU_AUTOSTART = [
-    { key: "5", code: "Digit5", keyCode: 53, delay: 800, hold: 220 },
-    { key: "5", code: "Digit5", keyCode: 53, delay: 600, hold: 220 },
-    { key: "1", code: "Digit1", keyCode: 49, delay: 1200, hold: 220 }
+    window.EMU_ACTIONS.coin,
+    window.EMU_ACTIONS.coin,
+    window.EMU_ACTIONS.start1p
   ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>

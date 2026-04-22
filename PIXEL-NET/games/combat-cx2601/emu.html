@@ -4,40 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Combat — PIXEL-NET</title>
+<link rel="stylesheet" href="../_shared/emu-shell.css">
 <style>
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%;width:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
-  #game{width:100%;height:100%}
-  #topbar{position:fixed;top:6px;left:6px;right:6px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50;gap:10px}
-  #hint{background:rgba(0,0,0,.7);border:1px solid rgba(255,221,102,.45);color:#ffe69c;padding:6px 10px;border-radius:4px;font-size:11px;max-width:66%;pointer-events:auto;transition:opacity .4s}
-  #hint.dim{opacity:.25}
-  #submit{background:#2a2209;border:2px solid #ffdd66;color:#ffe69c;font:inherit;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;pointer-events:auto;font-size:12px}
-  #submit:hover{background:#3b300e}
-  #submit:disabled{opacity:.7;cursor:default}
-  #startOv{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer}
-  #startOv.hidden{display:none}
-  #startOv .card{background:#2a2209;border:2px solid #ffdd66;border-radius:8px;padding:22px 28px;text-align:center;max-width:460px}
-  #startOv h1{margin:0 0 8px;color:#ffe69c;font-size:22px;letter-spacing:2px}
-  #startOv p{margin:6px 0;font-size:13px;color:#fff0c2}
-  kbd{background:#4a3b0f;padding:2px 6px;border-radius:3px;font-size:11px;margin:0 1px}
+  :root{ --hero:#ffdd66; --ink:#fff0c2; }
 </style>
 </head>
 <body tabindex="0">
-<div id="startOv">
-  <div class="card">
-    <h1>COMBAT (ATARI 2600)</h1>
-    <p>Select game: <kbd>F3</kbd>  Start / Reset: <kbd>F2</kbd></p>
-    <p>P1 Move: <kbd>ARROWS</kbd>  P1 Fire: <kbd>SPACE</kbd></p>
-    <p>P2 Move: <kbd>WASD</kbd>  P2 Fire: <kbd>Q</kbd></p>
-    <p>(configurable via emulator menu)</p>
-    <p style="color:#ffe69c;margin-top:12px"><b>CLICK TO START</b></p>
-  </div>
-</div>
+<div id="game"></div>
+
 <div id="topbar">
-  <div id="hint">Select: F3 &nbsp;|&nbsp; Reset/Start: F2 &nbsp;|&nbsp; P1: ARROWS+SPACE &nbsp;|&nbsp; P2: WASD+Q</div>
+  <div id="hint">P1: ARROWS + SPACE &nbsp;|&nbsp; P2: WASD + Q &nbsp;|&nbsp; Reset: F2</div>
   <button id="submit">SUBMIT SCORE</button>
 </div>
-<div id="game"></div>
+
+<div id="actions">
+  <button data-act="reset">RESET (F2)</button>
+  <button data-act="select">SELECT (F3)</button>
+  <button data-act="fire">FIRE</button>
+</div>
+
+<div id="errorOv" class="hidden">
+  <div class="card">
+    <h1>EMULATOR COULDN'T BOOT</h1>
+    <p class="msg"></p>
+    <p class="tip">The 2600 ROM should be compatible. Check your connection to <kbd>cdn.emulatorjs.org</kbd>.</p>
+  </div>
+</div>
+
 <script>
   window.EJS_player = '#game';
   window.EJS_core = 'atari2600';
@@ -47,10 +40,17 @@
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#ffdd66';
   window.EJS_volume = 0.45;
-  // Auto-enter gameplay: Atari 2600 Combat starts when the Reset switch (F2) is pulsed.
-  window.EMU_AUTOSTART_INIT = 2400;
+
+  // Atari 2600 libretro: 0=B (fire), 2=SELECT (GAME SELECT), 3=START (RESET)
+  window.EMU_ACTIONS = {
+    reset:  { btn: 3, hold: 200, key: "F2", code: "F2", keyCode: 113 },
+    select: { btn: 2, hold: 200, key: "F3", code: "F3", keyCode: 114 },
+    fire:   { btn: 0, hold: 160, key: " ",  code: "Space", keyCode: 32 }
+  };
+
+  window.EMU_AUTOSTART_INIT = 2800;
   window.EMU_AUTOSTART = [
-    { key: "F2", code: "F2", keyCode: 113, delay: 800, hold: 200 }
+    window.EMU_ACTIONS.reset
   ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>

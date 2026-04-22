@@ -1,0 +1,151 @@
+/* ---------------------------------------------------------------
+   Shared CSS for every emu.html loader inside PIXEL-NET.
+   Kept separate so tweaks to the emulator chrome propagate to
+   every game at once.
+----------------------------------------------------------------*/
+
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  height:100%;
+  width:100%;
+  background:#000;
+  overflow:hidden;
+  font-family:ui-monospace,Consolas,monospace;
+  color:#fff;
+}
+
+/* The #game container holds whatever DOM EmulatorJS injects. We make
+   sure both the container and the canvas inside stretch to fill the
+   full iframe, so the game doesn't render as a small box floating
+   inside a huge black frame. */
+#game,
+#game > div,
+#game > div > div{
+  width:100% !important;
+  height:100% !important;
+}
+#game canvas{
+  width:100% !important;
+  height:100% !important;
+  display:block !important;
+  object-fit:contain !important;
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+  outline:none;
+}
+
+/* Top UI (controls hint, submit score) - fixed, small, transparent. */
+#topbar{
+  position:fixed;
+  top:6px;
+  left:6px;
+  right:6px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  pointer-events:none;
+  z-index:50;
+  gap:10px;
+}
+#hint{
+  background:rgba(0,0,0,.7);
+  border:1px solid var(--hero,#5de0ff);
+  color:var(--ink,#cfeaff);
+  padding:6px 10px;
+  border-radius:4px;
+  font-size:11px;
+  max-width:64%;
+  pointer-events:auto;
+  transition:opacity .4s;
+}
+#hint.dim{opacity:.25}
+#submit{
+  background:#0e1a2e;
+  border:2px solid var(--hero,#5de0ff);
+  color:var(--ink,#cfeaff);
+  font:inherit;
+  font-weight:700;
+  padding:6px 12px;
+  border-radius:4px;
+  cursor:pointer;
+  pointer-events:auto;
+  font-size:12px;
+}
+#submit:hover{filter:brightness(1.2)}
+#submit:disabled{opacity:.7;cursor:default}
+
+/* On-screen virtual action bar (coin / start / reset / fire etc). */
+#actions{
+  position:fixed;
+  bottom:8px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:6px;
+  z-index:60;
+  pointer-events:auto;
+}
+#actions button{
+  background:rgba(10,14,22,.85);
+  border:2px solid var(--hero,#5de0ff);
+  color:var(--ink,#cfeaff);
+  font-family:inherit;
+  font-weight:700;
+  font-size:11px;
+  letter-spacing:.1em;
+  padding:7px 12px;
+  border-radius:4px;
+  cursor:pointer;
+  transition:transform .12s, filter .12s;
+}
+#actions button:hover{filter:brightness(1.25)}
+#actions button.pressed{
+  transform:translateY(2px);
+  filter:brightness(0.7);
+}
+
+/* Error overlay: shown only if the emulator fails to boot. */
+#errorOv{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.92);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:200;
+  text-align:center;
+  padding:20px;
+}
+#errorOv.hidden{display:none}
+#errorOv .card{
+  background:#1a0b0b;
+  border:2px solid #ff5a5a;
+  border-radius:8px;
+  padding:22px 28px;
+  max-width:520px;
+}
+#errorOv h1{
+  margin:0 0 10px;
+  color:#ff9999;
+  font-size:18px;
+  letter-spacing:2px;
+}
+#errorOv .msg{
+  color:#ffc9c9;
+  font-size:13px;
+  line-height:1.45;
+  margin:0 0 8px;
+}
+#errorOv .tip{
+  color:#ffb6b6;
+  font-size:11px;
+  opacity:.9;
+}
+kbd{
+  background:#1a375a;
+  padding:2px 6px;
+  border-radius:3px;
+  font-size:11px;
+  margin:0 1px;
+}

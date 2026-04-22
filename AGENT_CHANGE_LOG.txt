@@ -5,6 +5,48 @@ Purpose:
 - Persistent handoff log so another AI (or human) can see exactly what was changed.
 - This file will be updated after each meaningful change I make from now on.
 
+Entry - 2026-04-21 (v0.0.52) ? emulator rewrite: scaling + FBNeo + on-screen controls
+- User report: nothing runs, same issues as before, plus scaling is still wrong.
+
+- Root changes in this pass:
+  1. Switched Tower Rush (Donkey Kong) and Jungle Jr Rescue (DK Jr) from
+     `mame2003_plus` to the `arcade` core (FBNeo). FBNeo uses its own romset
+     manifest with much looser CRC checks than any MAME 2003 variant, and
+     typically boots modern `dkong.zip` / `dkongjr.zip` directly.
+  2. Created PIXEL-NET/games/_shared/emu-shell.css ? a shared stylesheet
+     consumed by every emu.html. Key rule: `#game canvas { width:100% !important;
+     height:100% !important; object-fit:contain }`, with the same rules cascading
+     to EmulatorJS's injected wrapper divs. This fixes the "tiny canvas floating
+     in a huge black frame" scaling issue that applied to all emulated titles.
+  3. Removed the blocking "CLICK TO START" overlay on every emu.html. The
+     emulator now auto-boots with `EJS_startOnLoaded = true` and focus is
+     aggressively maintained by emu-controls.js, so the overlay was just in
+     the way.
+  4. Added a shared on-screen action bar (#actions) to every emu.html. The
+     buttons call `EJS_emulator.gameManager.simulateInput(player, button, value)`
+     directly, which bypasses the libretro core's `isTrusted` event check that
+     can cause synthetic `KeyboardEvent`s to be silently ignored. Each button
+     also falls back to a synthetic keypress so it still does something even
+     on cores that don't expose simulateInput (e.g. VICE).
+       * Tower Rush / Jungle Jr: COIN, START 1P, JUMP, RESET
+       * Dig Dug Delve: START, SELECT, PUMP (B), A
+       * Combat 77 Arena: RESET (F2), SELECT (F3), FIRE
+       * Track Field Blitz: RUN (ENTER), SPACE, RESET
+  5. Added an error overlay (#errorOv) that appears after 25s if EJS fails to
+     boot (canvas never appears) and tells the user what's wrong ? e.g. an
+     incompatible ROM ? instead of leaving them to stare at a blank screen.
+
+- emu-controls.js rewritten again to host the shared logic:
+  * `simulateButton(btn, duration)` ? tries EJS internal input first.
+  * `triggerAction(action)` ? simulate if `btn` is set, otherwise dispatch
+     keyboard events (single key or an ordered `keys` array).
+  * Action bar click handler resolves `data-act` into an `EMU_ACTIONS[name]`
+     entry that each page defines.
+  * Kept: EJS_ready / EJS_onGameStart chaining, capture-phase focus listeners,
+     1.5s idle re-focus interval, SUBMIT SCORE postMessage wiring.
+
+- Version bumped to 0.0.52.
+
 Entry - 2026-04-21 (v0.0.51) - Spyder Casino escalating-humor arcs + adaptiveness polish
 
 - User feedback: "are some of the lines pretty funny here and there, also maybe we

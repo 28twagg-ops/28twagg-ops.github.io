@@ -4,40 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Track &amp; Field — PIXEL-NET</title>
+<link rel="stylesheet" href="../_shared/emu-shell.css">
 <style>
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%;width:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
-  #game{width:100%;height:100%}
-  #topbar{position:fixed;top:6px;left:6px;right:6px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50;gap:10px}
-  #hint{background:rgba(0,0,0,.7);border:1px solid rgba(93,224,255,.45);color:#a8ecff;padding:6px 10px;border-radius:4px;font-size:11px;max-width:64%;pointer-events:auto;transition:opacity .4s}
-  #hint.dim{opacity:.25}
-  #submit{background:#10253d;border:2px solid #5de0ff;color:#5de0ff;font:inherit;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;pointer-events:auto;font-size:12px}
-  #submit:hover{background:#1a375a}
-  #submit:disabled{opacity:.7;cursor:default}
-  #startOv{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer}
-  #startOv.hidden{display:none}
-  #startOv .card{background:#0b1b30;border:2px solid #5de0ff;border-radius:8px;padding:22px 28px;text-align:center;max-width:480px}
-  #startOv h1{margin:0 0 8px;color:#5de0ff;font-size:22px;letter-spacing:2px}
-  #startOv p{margin:6px 0;font-size:13px;color:#d9eeff}
-  kbd{background:#1a375a;padding:2px 6px;border-radius:3px;font-size:11px;margin:0 1px}
+  :root{ --hero:#5de0ff; --ink:#d9eeff; }
 </style>
 </head>
 <body tabindex="0">
-<div id="startOv">
-  <div class="card">
-    <h1>TRACK &amp; FIELD (C64)</h1>
-    <p>At the READY prompt, type <kbd>LOAD"*",8,1</kbd> then <kbd>RUN</kbd></p>
-    <p>Sprint: alternate <kbd>A</kbd> and <kbd>D</kbd></p>
-    <p>Jump / Throw: <kbd>SPACE</kbd></p>
-    <p>Use the emulator menu (bottom-right) to insert controllers or auto-load if needed.</p>
-    <p style="color:#5de0ff;margin-top:12px"><b>CLICK TO START</b></p>
-  </div>
-</div>
+<div id="game"></div>
+
 <div id="topbar">
-  <div id="hint">LOAD"*",8,1 then RUN &nbsp;|&nbsp; Sprint: A/D &nbsp;|&nbsp; Action: SPACE</div>
+  <div id="hint">Sprint: A/D &nbsp;|&nbsp; Action: SPACE &nbsp;|&nbsp; If stuck at READY, click RUN</div>
   <button id="submit">SUBMIT SCORE</button>
 </div>
-<div id="game"></div>
+
+<div id="actions">
+  <button data-act="run">RUN (ENTER)</button>
+  <button data-act="space">SPACE</button>
+  <button data-act="reset">RESET</button>
+</div>
+
+<div id="errorOv" class="hidden">
+  <div class="card">
+    <h1>EMULATOR COULDN'T BOOT</h1>
+    <p class="msg"></p>
+    <p class="tip">The C64 disk image should work with VICE. Check network access to <kbd>cdn.emulatorjs.org</kbd>.</p>
+  </div>
+</div>
+
 <script>
   window.EJS_player = '#game';
   window.EJS_core = 'c64';
@@ -47,26 +40,36 @@
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#5de0ff';
   window.EJS_volume = 0.45;
-  // VICE core options: autostart the first PRG, run the drive accurately
-  // (required for most copy-protected C64 games), and use warp speed during
-  // disk load so the ~60s real load completes in a few seconds.
+
+  // VICE options: true drive emulation + warp so the disk loads fast.
   window.EJS_defaultOptions = Object.assign({}, window.EJS_defaultOptions || {}, {
     "vice_autostart": "enabled",
     "vice_drive_true_emulation": "enabled",
     "vice_warp_boost": "enabled",
     "vice_autostart_warp": "enabled"
   });
-  // Fallback auto-entry: if VICE's built-in autostart doesn't RUN the
-  // loaded program, send RUN<ENTER> after the disk has had time to load.
-  // "R","U","N",Enter — typed with realistic delays.
-  window.EMU_AUTOSTART_INIT = 18000; // ~18s after ready = past LOADING
+
+  // On-screen buttons fall through to synthetic keypresses for the C64.
+  // VICE core doesn't expose simulateInput the same way as joypad cores,
+  // so these primarily rely on keyboard events.
+  window.EMU_ACTIONS = {
+    run: {
+      keys: [
+        { key: "r", code: "KeyR", keyCode: 82, delay: 180, hold: 120 },
+        { key: "u", code: "KeyU", keyCode: 85, delay: 180, hold: 120 },
+        { key: "n", code: "KeyN", keyCode: 78, delay: 180, hold: 120 },
+        { key: "Enter", code: "Enter", keyCode: 13, delay: 260, hold: 180 }
+      ]
+    },
+    space: { key: " ", code: "Space", keyCode: 32, hold: 180 },
+    reset: { key: "F2", code: "F2", keyCode: 113, hold: 200 }
+  };
+
+  // Auto-entry: wait past LOAD, then fire RUN+Enter, then SPACE after intro.
+  window.EMU_AUTOSTART_INIT = 16000;
   window.EMU_AUTOSTART = [
-    { key: "r", code: "KeyR", keyCode: 82, delay: 300, hold: 120 },
-    { key: "u", code: "KeyU", keyCode: 85, delay: 200, hold: 120 },
-    { key: "n", code: "KeyN", keyCode: 78, delay: 200, hold: 120 },
-    { key: "Enter", code: "Enter", keyCode: 13, delay: 400, hold: 180 },
-    // Final SPACE to skip any intro splash once the game starts.
-    { key: " ", code: "Space", keyCode: 32, delay: 6000, hold: 200 }
+    window.EMU_ACTIONS.run,
+    Object.assign({ delay: 6000 }, window.EMU_ACTIONS.space)
   ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
