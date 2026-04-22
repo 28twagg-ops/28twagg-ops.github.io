@@ -5,6 +5,66 @@ Purpose:
 - Persistent handoff log so another AI (or human) can see exactly what was changed.
 - This file will be updated after each meaningful change I make from now on.
 
+Entry - 2026-04-21 (v0.0.50) ? emulator usability fixes
+- User reported: none of the emulated games accepted keyboard input, Tower Rush and
+  Jungle Jr Rescue said "Failed to start game", Kangaroo Climb dropped into the
+  RetroArch main menu, and Track Field Blitz got stuck on `SEARCHING FOR *` / LOADING.
+
+- Root causes identified (one by one):
+  1. `mame2003` core is extremely strict about ROM CRC hashes. Modern dkong.zip /
+     dkongjr.zip romsets fail its verification, so the emulator aborts with
+     "Failed to start game". Switched both Donkey Kong (Tower Rush) and
+     Donkey Kong Jr (Jungle Jr Rescue) to `mame2003_plus`, which uses a modified
+     romset manifest and accepts more common dumps.
+  2. EmulatorJS has no Atari 8-bit (400/800/XL/XE) core. Its `atari5200` core
+     runs 5200 cartridges only and cannot boot a .atr disk image, which is why
+     Kangaroo Climb was falling through to the RetroArch main menu. Pointed the
+     Kangaroo wrapper back at the HTML5 `game.html` until a compatible ROM is
+     provided (arcade MAME `kangaroo.zip`, ColecoVision `.col`, or Atari 2600 `.a26`).
+     The .atr file and emu.html are kept in the repo for later.
+  3. Track & Field C64 was auto-loading via VICE but the `vice_drive_true_emulation`
+     option was `disabled`, which actually slows loading for many copy-protected
+     Konami C64 games. Also, after LOAD finishes, the disk's first PRG did not
+     autorun, leaving the user at the READY. prompt. Fixed by:
+       * Enabling `vice_drive_true_emulation`, `vice_warp_boost`, and
+         `vice_autostart_warp` so load completes in seconds.
+       * Scheduling a fallback `R`, `U`, `N`, Enter sequence ~18 seconds after
+         ready, followed by a SPACE press 6s later to skip the intro.
+  4. Keyboard input failing on games that DID boot (e.g. Dig Dug) was a canvas
+     focus problem: EJS's canvas never received focus inside the iframe, so
+     keypresses went to the wrapper document and the libretro core never saw them.
+
+- PIXEL-NET/games/_shared/emu-controls.js rewritten for robust focus:
+  * `tabindex=0` now forced on the emulator canvas the moment it exists.
+  * New canvas-first `findCanvas()` cache + `focusGame()` uses `focus({preventScroll:true})`.
+  * Chains `EJS_ready` and `EJS_onGameStart` callbacks so focus is re-applied the
+    instant EJS mounts its UI and again when the game starts.
+  * Global `pointerdown`/`click`/`touchstart` listeners (capture phase) re-focus
+    the canvas after any UI interaction (hint bar, submit button, etc).
+  * A 1.5s idle interval re-focuses the canvas whenever nothing interactive holds
+    focus, so the game can never "lose" keyboard input silently.
+  * Keeps manual SUBMIT SCORE button and the existing AUTOSTART key sequence
+    runner, now wired through the new focus/ready hooks.
+
+- PIXEL-NET/games/orbit-siege/emu.html (Tower Rush):
+  * `EJS_core` `mame2003` ? `mame2003_plus`.
+  * Added `EJS_gameID = 'dkong'`.
+  * Slightly longer `EMU_AUTOSTART_INIT` (4500ms) and longer key holds.
+
+- PIXEL-NET/games/jungle-jr-rescue/emu.html (Jungle Jr Rescue):
+  * Same `mame2003` ? `mame2003_plus` swap, `EJS_gameID = 'dkongjr'`.
+  * Matching autostart timing bump.
+
+- PIXEL-NET/games/kangaroo-climb/wrapper-v2.html:
+  * `entry: "./emu.html"` ? `entry: "./game.html"`.
+  * HTML5 Kangaroo comes back online immediately while we wait on a compatible ROM.
+
+- PIXEL-NET/games/track-field-blitz/emu.html:
+  * Full VICE option rewrite (enabled true drive emulation and warp autostart).
+  * Autostart now fires `RUN` + Enter after 18s, then SPACE 6s later.
+
+- Version bumped to 0.0.50.
+
 Entry - 2026-04-21 (v0.0.48)
 - Fixed stale-thumbnail issue on the home grid and Featured tile.
 - Root cause: thumbnails were rendered via `background-image: url(...)` with no cache buster.

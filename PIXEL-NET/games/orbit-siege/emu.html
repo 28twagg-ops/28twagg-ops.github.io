@@ -38,19 +38,24 @@
 <div id="game"></div>
 <script>
   window.EJS_player = '#game';
-  window.EJS_core = 'mame2003';
+  // mame2003_plus is much more forgiving with Donkey Kong romset CRCs
+  // than the bare-bones mame2003 core that ships with older libretro builds.
+  window.EJS_core = 'mame2003_plus';
   window.EJS_gameUrl = './rom/dkong.zip';
   window.EJS_gameName = 'Donkey Kong';
+  window.EJS_gameID = 'dkong';
   window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#ff7043';
   window.EJS_volume = 0.45;
-  // Auto-enter gameplay: insert coin (5), then press start 1P (1)
-  window.EMU_AUTOSTART_INIT = 3500;
+  // Press Coin (5) twice then Start 1P (1) after the ROM boots.
+  // NOTE: mame2003_plus sometimes rejects synthetic events — if the
+  // auto-enter misses, just press 5 then 1 yourself.
+  window.EMU_AUTOSTART_INIT = 4500;
   window.EMU_AUTOSTART = [
-    { key: "5", code: "Digit5", keyCode: 53, delay: 800, hold: 180 },
-    { key: "5", code: "Digit5", keyCode: 53, delay: 500, hold: 180 },
-    { key: "1", code: "Digit1", keyCode: 49, delay: 1000, hold: 200 }
+    { key: "5", code: "Digit5", keyCode: 53, delay: 800, hold: 220 },
+    { key: "5", code: "Digit5", keyCode: 53, delay: 600, hold: 220 },
+    { key: "1", code: "Digit1", keyCode: 49, delay: 1200, hold: 220 }
   ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>

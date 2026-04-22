@@ -47,17 +47,26 @@
   window.EJS_startOnLoaded = true;
   window.EJS_color = '#5de0ff';
   window.EJS_volume = 0.45;
-  // Ask VICE core to autostart the disk, so gameplay is reached without LOAD/RUN typing
+  // VICE core options: autostart the first PRG, run the drive accurately
+  // (required for most copy-protected C64 games), and use warp speed during
+  // disk load so the ~60s real load completes in a few seconds.
   window.EJS_defaultOptions = Object.assign({}, window.EJS_defaultOptions || {}, {
     "vice_autostart": "enabled",
-    "vice_drive_true_emulation": "disabled",
-    "vice_warp_boost": "enabled"
+    "vice_drive_true_emulation": "enabled",
+    "vice_warp_boost": "enabled",
+    "vice_autostart_warp": "enabled"
   });
-  // Backup: after load, fire key to kick off game from menu
-  window.EMU_AUTOSTART_INIT = 6000;
+  // Fallback auto-entry: if VICE's built-in autostart doesn't RUN the
+  // loaded program, send RUN<ENTER> after the disk has had time to load.
+  // "R","U","N",Enter — typed with realistic delays.
+  window.EMU_AUTOSTART_INIT = 18000; // ~18s after ready = past LOADING
   window.EMU_AUTOSTART = [
-    { key: " ", code: "Space", keyCode: 32, delay: 800, hold: 180 },
-    { key: "Enter", code: "Enter", keyCode: 13, delay: 1400, hold: 180 }
+    { key: "r", code: "KeyR", keyCode: 82, delay: 300, hold: 120 },
+    { key: "u", code: "KeyU", keyCode: 85, delay: 200, hold: 120 },
+    { key: "n", code: "KeyN", keyCode: 78, delay: 200, hold: 120 },
+    { key: "Enter", code: "Enter", keyCode: 13, delay: 400, hold: 180 },
+    // Final SPACE to skip any intro splash once the game starts.
+    { key: " ", code: "Space", keyCode: 32, delay: 6000, hold: 200 }
   ];
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
