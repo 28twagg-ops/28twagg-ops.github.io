@@ -49,6 +49,7 @@ body:not(.casino) .casino-only{display:none;}
   position:fixed;top:8px;right:10px;z-index:200;
   display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:1px;
 }
+#styleToggleBar{display:none !important;}
 #styleToggleBar span{opacity:.65;}
 .toggle-wrap{position:relative;width:42px;height:22px;cursor:pointer;}
 .toggle-wrap input{opacity:0;width:0;height:0;position:absolute;}
@@ -972,7 +973,7 @@ const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 const SUIT_SYM = {Hearts:'♥',Diamonds:'♦',Clubs:'♣',Spades:'♠'};
 const RED_S = new Set(['Hearts','Diamonds']);
 
-let visualStyle = (localStorage.getItem('SC_STYLE') || 'terminal').toLowerCase().trim(); // 'terminal'|'casino'
+let visualStyle = 'terminal'; // terminal-only by design (matches Poker Project flow)
 let userInitials = localStorage.getItem('PIXELNET_INITIALS') || localStorage.getItem('playerInitials') || '';
 let endGameSlug = '', endGameMode = '';
 let heKeyActions = null;
@@ -988,24 +989,29 @@ let lobbyHeAnRows = [];
 
 // ── STYLE TOGGLE ──────────────────────────────────────────────
 function applyStyle() {
-  if (visualStyle !== 'terminal' && visualStyle !== 'casino') visualStyle = 'terminal';
-  document.body.classList.toggle('casino', visualStyle === 'casino');
-  document.getElementById('knob').style.transform = visualStyle === 'casino' ? 'translateX(20px)' : 'translateX(0)';
-  document.getElementById('knob').style.background = visualStyle === 'casino' ? 'var(--gold)' : 'var(--g)';
-  document.documentElement.setAttribute('data-style', visualStyle);
+  visualStyle = 'terminal';
+  document.body.classList.remove('casino');
+  const knob = document.getElementById('knob');
+  if (knob) {
+    knob.style.transform = 'translateX(0)';
+    knob.style.background = 'var(--g)';
+  }
+  document.documentElement.setAttribute('data-style', 'terminal');
   document.querySelectorAll('.terminal-only').forEach((el) => {
-    el.style.setProperty('display', visualStyle === 'terminal' ? 'block' : 'none', 'important');
+    el.style.setProperty('display', 'block', 'important');
   });
   document.querySelectorAll('.casino-only').forEach((el) => {
-    el.style.setProperty('display', visualStyle === 'casino' ? 'block' : 'none', 'important');
+    el.style.setProperty('display', 'none', 'important');
   });
+  const toggle = document.getElementById('styleToggleBar');
+  if (toggle) toggle.style.display = 'none';
   // Clear any inline styles set by terminal prompt helpers so CSS rules take over
   const heTermWrap = document.getElementById('heTermActWrap');
   if (heTermWrap) heTermWrap.style.display = '';
 }
 function toggleStyle() {
-  visualStyle = visualStyle === 'terminal' ? 'casino' : 'terminal';
-  localStorage.setItem('SC_STYLE', visualStyle);
+  // terminal-only build: toggle disabled intentionally
+  visualStyle = 'terminal';
   applyStyle();
   // Re-render open game screens
   if (document.getElementById('bjScreen').classList.contains('active')) bjRenderAll();
