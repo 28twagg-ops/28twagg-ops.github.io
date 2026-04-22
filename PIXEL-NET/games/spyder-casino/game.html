@@ -1771,30 +1771,72 @@ const HE_CHATTER=[
 // Reactions keyed on user tendencies / events — fire at key moments only
 const HE_QUICK_QUIPS = {
   userFoldsBig: [
-    "All that money just to peek? Generous.",
+    "All that money just to peek. Generous of you.",
     "Invested like a pro, bailed like a tourist.",
-    "The rake thanks you for your donation.",
-    "Hands like that deserve a eulogy, not a fold."
+    "The rake thanks you for the donation.",
+    "That fold had more pot commitment than my marriage."
   ],
   userAllIn: [
     "Shove city. Population: you.",
-    "Brave. Or bored. Or broke.",
+    "Brave. Or bored. Or broke. Possibly all three.",
     "Hold my coffee.",
-    "Oh we're doing this now.",
-    "You really want to die on this hand?"
-  ],
-  userWins: [
-    "Lucky deck, not lucky player.",
-    "Enjoy it. It's temporary.",
-    "River rat strikes again.",
-    "That was a gift. Ungrateful of you to accept it."
-  ],
-  userLoses: [
-    "Tough hand. Worse call.",
-    "That's a fold next time.",
-    "Play money, real lessons."
+    "Oh we're doing THIS tonight.",
+    "You really want to die on this hand, huh?"
   ],
 };
+// ── ESCALATING ARCS ───────────────────────────────────────────
+// Each arc has ordered tiers. Tier N only fires after tier N-1 has fired
+// AND the threshold counter is reached. This produces callback-style humor
+// that gets funnier because it stacks.
+const HE_ARCS = {
+  // Triggered when user folds N hands in a row (any fold resets on non-fold)
+  foldStreak: [
+    { at: 3, line: `SLICK: "Hey — you still playing, or just here for the ambiance?"` },
+    { at: 5, line: `PROF: "Statistically, you cannot win this way. I checked."` },
+    { at: 7, line: `MUMBLES: "...I think we're playing alone at this point."` },
+    { at: 10, line: `Dealer: "We could have finished a chess match in the time you've folded."` },
+  ],
+  // Bots notice you can't stop winning
+  winStreak: [
+    { at: 2, line: `PROF: "Statistical noise. Ignore it."` },
+    { at: 3, line: `VIPER: "Hot streak detected. Tightening up, folks."` },
+    { at: 4, line: `ACE: "Okay, I'm sweating. I admit it."` },
+    { at: 5, line: `KNUCKLES: "Either you're cheating or God owes you money. Which is it?"` },
+    { at: 7, line: `Dealer: "I'm starting a tab for everyone BUT them."` },
+  ],
+  // Bots pile on the losing streak
+  lossStreak: [
+    { at: 3, line: `BUBBA: "Hang in there, champ. Ever considered go-fish?"` },
+    { at: 5, line: `SLICK: "The chips you've donated built my yacht. Thanks again."` },
+    { at: 7, line: `Dealer: "For legal reasons, we must pause and ask: are you okay?"` },
+  ],
+  // A specific bot keeps shoving (stored per-bot name under botShoves[name])
+  // The callback references WHOEVER is shoving repeatedly.
+  botShoveRepeat: [
+    { at: 2, line: (bot) => `Dealer: "${bot} again? I'm starting to memorize the distance."` },
+    { at: 3, line: (bot) => `SLICK: "${bot}. Blink twice if the button is stuck."` },
+    { at: 4, line: (bot) => `Dealer: "${bot} is now the sole owner of the all-in button. We're retiring it."` },
+  ],
+  // Dealer starts giving meta commentary the longer the session runs
+  sessionLength: [
+    { at: 5, line: `Dealer: "Five hands in. Nobody's folded with a smile yet."` },
+    { at: 10, line: `Dealer: "Ten hands. This officially counts as a lifestyle choice."` },
+    { at: 15, line: `Dealer: "Fifteen hands deep. Someone call everyone's families and let them know."` },
+    { at: 20, line: `Dealer: "Twenty hands. I'm contractually obligated to say go home."` },
+  ],
+  // User shows down bluffs repeatedly
+  bluffCaught: [
+    { at: 2, line: `PROF: "Noted. That's a pattern now."` },
+    { at: 3, line: `VIPER: "Three bluffs caught. I'm paying you off for free now."` },
+    { at: 5, line: `ACE: "At this point your bluffs are a public service."` },
+  ],
+  // User shows down premium holdings repeatedly
+  strongPattern: [
+    { at: 2, line: `MUMBLES: "...they only bet the nuts, huh..."` },
+    { at: 3, line: `SLICK: "If they raise, just fold. Trust me."` },
+  ],
+};
+// Dealer street announcements (with the revealed cards appended by heDealerAnnounce)
 // Dealer street announcements (with the revealed cards appended by heDealerAnnounce)
 const HE_DEALER_LINES = {
   FLOP: [
@@ -1842,6 +1884,48 @@ let heChatUsedThisHand=new Set();
 let heUserAllInThisHand=false;
 let heUserRaisedPreflop=false;
 const heUserModel={hands:0,preflopRaises:0,showdowns:0,strongShowdowns:0,bluffsSeen:0,folds:0,calls:0,checks:0};
+// ── NARRATIVE STATE (session-long running gags) ──────────────
+// Each arc remembers which tiers have already fired so the comedy escalates
+// instead of repeating. Reset at game start via heResetNarrative().
+const heNarrative = {
+  userFoldStreak: 0,
+  userWinStreak: 0,
+  userLossStreak: 0,
+  bluffsCaught: 0,
+  strongsShown: 0,
+  sessionHands: 0,
+  botShoves: {},        // { BOT_NAME: count }
+  firedTiers: {},       // { arcKey: Set(tierIndex) }
+};
+function heResetNarrative(){
+  heNarrative.userFoldStreak=0;
+  heNarrative.userWinStreak=0;
+  heNarrative.userLossStreak=0;
+  heNarrative.bluffsCaught=0;
+  heNarrative.strongsShown=0;
+  heNarrative.sessionHands=0;
+  heNarrative.botShoves={};
+  heNarrative.firedTiers={};
+}
+// Fire the next unspoken tier of an arc if the counter crossed the threshold.
+// `ctx` is an optional object forwarded to function-style lines (e.g. {bot:'SLICK'}).
+function heArcBeat(arcKey, counter, ctx){
+  const arc=HE_ARCS[arcKey];
+  if(!arc) return;
+  if(!heNarrative.firedTiers[arcKey]) heNarrative.firedTiers[arcKey]=new Set();
+  const fired=heNarrative.firedTiers[arcKey];
+  // Find the highest tier whose threshold is satisfied that we haven't fired yet.
+  let pick=-1;
+  for(let i=0;i<arc.length;i++){
+    if(counter>=arc[i].at && !fired.has(i)) pick=i;
+  }
+  if(pick<0) return;
+  fired.add(pick);
+  const tier=arc[pick];
+  const line=typeof tier.line==='function' ? tier.line(ctx&&ctx.bot) : tier.line;
+  // Arc beats get a slightly longer hold so the callback lands
+  heSetChatter(line, 5000);
+}
 function heAdaptiveLine(){
   const hands=Math.max(1,heUserModel.hands);
   const raiseRate=heUserModel.preflopRaises/hands;
@@ -2034,6 +2118,7 @@ function startHE(mode){
     {name:'YOU',         chips:HE_START,hand:[],status:'ACTIVE',lastAction:'',role:'',roundBet:0,totalContrib:0,style:'HUMAN',remark:''},
   ];
   heSidePotInfo=[];
+  heResetNarrative();
   showScreen('heScreen');
   setTimeout(()=>hePlayRound(),150);
 }
@@ -2042,7 +2127,10 @@ function heUser(){return hePlayers[3];}
 // ── PLAY ROUND ────────────────────────────────────────────────
 async function hePlayRound(){
   heUserModel.hands++;
+  heNarrative.sessionHands++;
   heUserRaisedPreflop=false;
+  // Dealer meta-commentary as the session drags on (5, 10, 15, 20 hands)
+  heArcBeat('sessionLength', heNarrative.sessionHands);
   // Replace broke bots
   for(let i=0;i<3;i++){
     if(hePlayers[i].chips<HE_BB){
@@ -2269,8 +2357,22 @@ function heDealerAnnounce(stage, cards){
 }
 // Only jab at the user when they fold AFTER already investing in the hand.
 function heMaybeFoldJab(p){
+  heNarrative.userFoldStreak++;
+  // Escalating "you fold too much" arc — fires at 3, 5, 7, 10 folds in a row
+  heArcBeat('foldStreak', heNarrative.userFoldStreak);
   const invested=(p.totalContrib||0) - (p.roundBet||0);  // chips committed BEFORE this street
-  if(invested>=HE_BB*3 && Math.random()<0.55) heQueueBotQuip('userFoldsBig');
+  // One-off jab for a big fold, but don't step on the arc beat if that just fired.
+  if(invested>=HE_BB*3 && Math.random()<0.5){
+    const arcFired=(heNarrative.firedTiers.foldStreak||new Set()).size;
+    // Skip the random jab right after an arc beat to avoid chatter collision
+    if(heNarrative.userFoldStreak!==3 && heNarrative.userFoldStreak!==5 && heNarrative.userFoldStreak!==7){
+      heQueueBotQuip('userFoldsBig');
+    }
+  }
+}
+// Called when the user does ANY non-fold action — breaks the fold-streak arc.
+function heBreakFoldStreak(){
+  if(heNarrative.userFoldStreak>0) heNarrative.userFoldStreak=0;
 }
 
 async function heBotTurn(p,phase){
@@ -2289,7 +2391,13 @@ async function heBotTurn(p,phase){
     const allInTag=wentAllIn?' (ALL-IN)':'';
     p.lastAction=(p.roundBet>(heCurrentBet-cost)?`RAISE $${p.roundBet}`:cost===0?'CHECK':'CALL')+allInTag;
     // Only key action triggers chatter — going all-in.
-    if(wentAllIn) heQueueBotLine(p, HE_SHOVE_LINES);
+    if(wentAllIn){
+      heQueueBotLine(p, HE_SHOVE_LINES);
+      // Repeat-shoving arc: after this bot's 2nd, 3rd, 4th shove, other players mock them
+      const key=p.name;
+      heNarrative.botShoves[key]=(heNarrative.botShoves[key]||0)+1;
+      heArcBeat('botShoveRepeat', heNarrative.botShoves[key], {bot:key});
+    }
   }
   // Bot remark is the little snarky bubble ABOVE the bot panel — keep that, it's local.
   if(Math.random()<0.45) p.remark=heBotRemark(p);
@@ -2359,6 +2467,7 @@ function heActCall(p,res){
   if(p.style==='HUMAN'){
     if(pay===0) heUserModel.checks++;
     else heUserModel.calls++;
+    heBreakFoldStreak();
     if(p.chips===0&&pay>0 && !heUserAllInThisHand){
       heUserAllInThisHand=true;
       heQueueBotQuip('userAllIn');
@@ -2384,6 +2493,7 @@ function heConfirmRaise(){
   const allInTag=p.chips===0&&cost>0?' (ALL-IN)':'';
   p.lastAction=`RAISE $${p.roundBet}`+allInTag;
   if(p.style==='HUMAN'){
+    heBreakFoldStreak();
     if(heStageName==='PRE-FLOP'&&cost>0){
       heUserRaisedPreflop=true;
       heUserModel.preflopRaises++;
@@ -2655,8 +2765,30 @@ async function heShowResult(winners,reason){
   if(user&&user.status!=='FOLDED'){
     heUserModel.showdowns++;
     const[uScore]=hBest(user.hand,heCommunity);
-    if(uScore&&uScore[0]>=1) heUserModel.strongShowdowns++;
-    else if(heUserRaisedPreflop) heUserModel.bluffsSeen++;
+    if(uScore&&uScore[0]>=1){
+      heUserModel.strongShowdowns++;
+      heNarrative.strongsShown++;
+      heArcBeat('strongPattern', heNarrative.strongsShown);
+    }
+    else if(heUserRaisedPreflop){
+      heUserModel.bluffsSeen++;
+      heNarrative.bluffsCaught++;
+      heArcBeat('bluffCaught', heNarrative.bluffsCaught);
+    }
+  }
+  // Track user win/loss streaks for the escalating arcs.
+  // If the user didn't reach showdown as a winner, it still counts as a loss for the streak.
+  const userWon = winners.some(w=>w.name==='YOU');
+  if(userWon){
+    heNarrative.userWinStreak++;
+    heNarrative.userLossStreak=0;
+    heArcBeat('winStreak', heNarrative.userWinStreak);
+  } else if(user && user.status==='FOLDED'){
+    // Folding alone shouldn't count toward the loss-streak arc (the fold arc handles that)
+  } else {
+    heNarrative.userLossStreak++;
+    heNarrative.userWinStreak=0;
+    heArcBeat('lossStreak', heNarrative.userLossStreak);
   }
   if(visualStyle==='terminal'){
     // Terminal mode: display result in heTermView instead of overlay

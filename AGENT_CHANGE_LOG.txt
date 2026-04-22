@@ -5,7 +5,55 @@ Purpose:
 - Persistent handoff log so another AI (or human) can see exactly what was changed.
 - This file will be updated after each meaningful change I make from now on.
 
-Entry - 2026-04-21 (v0.0.50) ? emulator usability fixes
+Entry - 2026-04-21 (v0.0.51) - Spyder Casino escalating-humor arcs + adaptiveness polish
+
+- User feedback: "are some of the lines pretty funny here and there, also maybe we
+  have some humor that builds like off over time like there's a certain order to it...
+  also the NPCs are adaptive to how they play right"
+- Goal: make Hold'em table talk actually have payoff / callback comedy instead of
+  isolated one-liners, and confirm the bots are genuinely adapting.
+
+PIXEL-NET/games/spyder-casino/game.html:
+- Added HE_ARCS (ordered callback banks) with six running "arcs" that escalate as
+  thresholds are crossed, so each later tier feels like a callback to the last:
+    foldStreak    -> SLICK -> PROF -> MUMBLES -> Dealer  (fires at 3/5/7/10)
+    winStreak     -> PROF -> VIPER -> ACE -> KNUCKLES -> Dealer  (2/3/4/5/7)
+    lossStreak    -> BUBBA -> SLICK -> Dealer  (3/5/7)
+    botShoveRepeat-> Dealer -> SLICK -> Dealer  (per-bot, 2/3/4 shoves, references
+                    the actual offending bot's name)
+    sessionLength -> Dealer meta-commentary at hands 5/10/15/20
+    bluffCaught   -> PROF -> VIPER -> ACE  (2/3/5 user bluffs)
+    strongPattern -> MUMBLES -> SLICK  (2/3 user showdowns with a made hand)
+- Added heNarrative state object (fold/win/loss streaks, bluff count, strong count,
+  session hands, per-bot shove count, per-arc fired-tiers Set) and heResetNarrative()
+  called from startHE() so every new sit-down starts with a clean slate.
+- Added heArcBeat(arcKey, counter, ctx): picks the highest unspoken tier whose
+  threshold is crossed, marks it fired, and queues the line with a longer hold
+  (5000ms) so the callback lands.
+- Wiring:
+  * hePlayRound() increments heNarrative.sessionHands and fires sessionLength.
+  * heMaybeFoldJab() now increments userFoldStreak and fires foldStreak; the
+    random "userFoldsBig" jab is suppressed on arc-beat hands to avoid collisions.
+  * heActCall() and heConfirmRaise() (for the HUMAN player) call heBreakFoldStreak()
+    so any non-fold action resets the streak - arc is truly consecutive-folds.
+  * heBotTurn() tracks botShoves[name]++ on each all-in and fires botShoveRepeat
+    with the bot's name injected into the line (functional line templates).
+  * heShowResult() increments strongsShown / bluffsCaught / userWinStreak /
+    userLossStreak appropriately, firing the matching arcs; folds don't count as
+    a "loss" toward the loss-streak arc (fold arc handles those).
+
+Adaptiveness confirmation:
+- heBotDecision() already consumes heUserModel and adapts callThresh/raiseThresh
+  mid-hand based on userStrongRate, userBluffRate, and userRaiseRate - bots
+  actively tighten vs a nit-showdowner, call lighter vs a bluffer, and defend
+  wider vs a frequent pre-flop raiser. No changes needed to the AI itself.
+- heBotRemark() and heAdaptiveLine() also already key off those rates; kept.
+
+PIXEL-NET/version.json:
+- Bumped to "0.0.51".
+
+---
+Entry - 2026-04-21 (v0.0.50) - emulator usability fixes
 - User reported: none of the emulated games accepted keyboard input, Tower Rush and
   Jungle Jr Rescue said "Failed to start game", Kangaroo Climb dropped into the
   RetroArch main menu, and Track Field Blitz got stuck on `SEARCHING FOR *` / LOADING.
