@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AtariForce Hyperlane</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:rgba(0,0,0,.5);color:#fff;font-size:13px;font-weight:700;text-shadow:0 0 6px #000;pointer-events:none}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82)}
+#overlay.hidden{display:none}
+.card{max-width:440px;background:rgba(8,10,26,.96);border:2px solid #ffd35c;border-radius:10px;padding:22px 26px;color:#dbe6ff;text-align:center}
+.card h1{margin:0 0 8px;color:#ffd35c;font-size:28px;letter-spacing:2px}
+.card p{margin:5px 0;font-size:13px}
+.card button{margin-top:12px;padding:10px 22px;border:2px solid #ffd35c;background:#2a1d05;color:#ffd35c;font:inherit;font-weight:700;border-radius:5px;cursor:pointer}
+.card button:hover{background:#3a2807}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="hScore">SCORE 0</div>
+  <div id="hWave">CHAPTER 1 • WAVE 1</div>
+  <div id="hInfo">HULL ♥♥♥  ×1</div>
+</div>
+<div id="overlay">
+  <div class="card">
+    <h1>ATARIFORCE HYPERLANE</h1>
+    <p>Fight through comic-space chapters and destroy invader fleets.</p>
+    <p>Move: Arrow keys / WASD • Fire: Space / Enter</p>
+    <p>Burst Dash: Shift (cooldown)</p>
+    <p>Collect comic shards to boost multiplier.</p>
+    <button id="btn">START CHAPTER</button>
+  </div>
+</div>
+<script>
+(() => {
+"use strict";
+const cv=document.getElementById("c"), cx=cv.getContext("2d");
+const overlay=document.getElementById("overlay"), btn=document.getElementById("btn");
+const hScore=document.getElementById("hScore"), hWave=document.getElementById("hWave"), hInfo=document.getElementById("hInfo");
+
+let W=900,H=600,last=0,running=false,posted=false;
+let score=0,lives=3,chapter=1,wave=1,mult=1,multT=0;
+let stars=[],bullets=[],eBullets=[],enemies=[],fx=[],shards=[];
+let keys={},fireCd=0,burstCd=0,waveIntro=0;
+
+const P={x:450,y:540,w:28,h:20,s:5,flash:0};
+
+function resize(){
+  const r=cv.getBoundingClientRect();
+  W=Math.max(560,Math.floor(r.width)); H=Math.max(400,Math.floor(r.height));
+  cv.width=W; cv.height=H;
+  P.y=H-56; P.x=Math.min(Math.max(30,P.x),W-30);
+  if(!stars.length){ for(let i=0;i<180;i++) stars.push({x:Math.random()*W,y:Math.random()*H,z:0.4+Math.random()*2,t:Math.random()*6.28}); }
+}
+
+function submit(){ if(posted) return; posted=true; try{window.parent.postMessage({type:"GAME_OVER_SCORE",score:Number(score)||0},"*");}catch(_){} }
+function gameOver(){ running=false; submit(); overlay.classList.remove("hidden"); btn.textContent="RESTART"; }
+
+function spawnWave(){
+  enemies=[]; bullets=[]; eBullets=[]; shards=[]; waveIntro=1100;
+  const rows=Math.min(5,2+Math.floor((wave+chapter)/2));
+  const cols=Math.min(11,6+Math.floor((wave+chapter)/2));
+  const sx=Math.min(58,Math.floor((W-120)/cols)), sy=44;
+  const x0=W/2-(cols-1)*sx/2, y0=64;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const tier=r===0?3:r===1?2:1;
+    enemies.push({x:x0+c*sx,y:y0+r*sy,bx:x0+c*sx,by:y0+r*sy,hp:tier,pts:tier*80,phase:Math.random()*6.28,dive:false,fire:700+Math.random()*1300,tier});
+  }
+}
+
+function resetGame(){
+  score=0;lives=3;chapter=1;wave=1;mult=1;multT=0;fireCd=0;burstCd=0;posted=false;fx=[];shards=[];P.flash=0;
+  spawnWave(); running=true; overlay.classList.add("hidden"); btn.textContent="RESTART";
+}
+
+function addScore(v,x,y){ score += Math.floor(v*mult); multT=2200; if(mult<6) mult += 0.12; fx.push({txt:"+"+Math.floor(v*mult),x,y,life:1,vy:-1,col:"#ffe08a"}); }
+function pop(x,y,col="#66d8ff",n=14){ for(let i=0;i<n;i++){const a=Math.random()*6.28,s=0.6+Math.random()*3;fx.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,col,p:true});}}
+
+function update(dt){
+  const ms=Math.min(dt,34);
+  if(multT>0){multT-=ms; if(multT<=0) mult=Math.max(1,mult-0.6);}
+  if(P.flash>0) P.flash-=ms;
+  if(waveIntro>0) waveIntro-=ms;
+  fireCd-=ms; burstCd-=ms;
+
+  if(keys["arrowleft"]||keys["a"]) P.x-=P.s;
+  if(keys["arrowright"]||keys["d"]) P.x+=P.s;
+  if(keys["arrowup"]||keys["w"]) P.y-=P.s*0.82;
+  if(keys["arrowdown"]||keys["s"]) P.y+=P.s*0.82;
+  P.x=Math.max(24,Math.min(W-24,P.x)); P.y=Math.max(44,Math.min(H-24,P.y));
+
+  if((keys[" "]||keys["enter"])&&fireCd<=0&&waveIntro<=0){
+    fireCd=120;
+    bullets.push({x:P.x,y:P.y-16,vx:0,vy:-9});
+  }
+  if((keys["shift"]||keys["shiftleft"]||keys["shiftright"])&&burstCd<=0&&waveIntro<=0){
+    burstCd=2600;
+    const bx=(keys["arrowleft"]||keys["a"])?-1:(keys["arrowright"]||keys["d"])?1:0;
+    const by=(keys["arrowup"]||keys["w"])?-1:(keys["arrowdown"]||keys["s"])?1:0;
+    P.x += (bx||1)*36; P.y += by*24;
+    P.x=Math.max(24,Math.min(W-24,P.x)); P.y=Math.max(44,Math.min(H-24,P.y));
+    pop(P.x,P.y,"#ffd35c",20);
+  }
+
+  for(const b of bullets){b.x+=b.vx;b.y+=b.vy;} bullets=bullets.filter(b=>b.y>-22);
+  for(const b of eBullets){b.x+=b.vx;b.y+=b.vy;} eBullets=eBullets.filter(b=>b.y<H+30&&b.x>-20&&b.x<W+20);
+
+  const alive=enemies.filter(e=>!e.dive);
+  if(alive.length){
+    const dir=Math.sin(Date.now()*0.0012)>0?1:-1;
+    for(const e of alive){
+      e.x=e.bx+Math.sin(Date.now()*0.0014+e.phase)*18;
+      e.y=e.by+Math.sin(Date.now()*0.002+e.phase)*4;
+      if(waveIntro<=0&&Math.random()<0.00012*(1+chapter*0.5+wave*0.35)&&e.y<H*0.5) e.dive=true;
+      e.fire-=ms;
+      if(e.fire<=0&&waveIntro<=0&&eBullets.length<Math.min(12,2+wave+chapter)){
+        e.fire=900+Math.random()*1300-Math.min(500,wave*60+chapter*70);
+        const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)||1,sp=3.2+wave*0.16+chapter*0.22;
+        eBullets.push({x:e.x,y:e.y+10,vx:(dx/d)*sp*0.22,vy:sp,col:e.tier===3?"#ff66dd":"#ff6677"});
+      }
+    }
+  }
+  for(const e of enemies){
+    if(e.dive){
+      const dx=P.x-e.x,dy=(P.y-40)-e.y,d=Math.hypot(dx,dy)||1,sp=3.2+wave*0.16+chapter*0.2;
+      e.x += (dx/d)*sp; e.y += (dy/d)*sp;
+      if(e.y>P.y+36) { e.dive=false; e.x=e.bx; e.y=e.by; }
+    }
+  }
+
+  for(let bi=bullets.length-1;bi>=0;bi--){
+    const b=bullets[bi];
+    for(let ei=enemies.length-1;ei>=0;ei--){
+      const e=enemies[ei];
+      if(Math.hypot(b.x-e.x,b.y-e.y)<10+e.tier*2){
+        bullets.splice(bi,1);
+        e.hp--; pop(e.x,e.y,e.tier===3?"#ff88ff":"#66d8ff",10);
+        if(e.hp<=0){
+          addScore(e.pts,e.x,e.y); enemies.splice(ei,1);
+          if(Math.random()<0.18) shards.push({x:e.x,y:e.y,vy:1.1,col:"#5ce1ff"});
+        }
+        break;
+      }
+    }
+  }
+
+  if(P.flash<=0){
+    for(const b of eBullets){
+      if(Math.hypot(b.x-P.x,b.y-P.y)<15){ lives--; P.flash=1600; pop(P.x,P.y,"#ff8877",18); eBullets=[]; if(lives<=0){gameOver();return;} break; }
+    }
+    for(const e of enemies){
+      if(Math.hypot(e.x-P.x,e.y-P.y)<18){ lives--; P.flash=1600; pop(P.x,P.y,"#ff8877",18); if(lives<=0){gameOver();return;} break; }
+    }
+  }
+
+  for(let i=shards.length-1;i>=0;i--){
+    const s=shards[i]; s.y+=s.vy;
+    if(Math.hypot(s.x-P.x,s.y-P.y)<16){ mult=Math.min(8,mult+0.5); multT=2600; addScore(40,s.x,s.y); shards.splice(i,1); continue; }
+    if(s.y>H+14) shards.splice(i,1);
+  }
+
+  for(let i=fx.length-1;i>=0;i--){
+    const f=fx[i];
+    if(f.p){ f.x+=f.vx; f.y+=f.vy; f.vy+=0.05; f.life-=0.03; }
+    else { f.y+=f.vy; f.life-=0.018; }
+    if(f.life<=0) fx.splice(i,1);
+  }
+
+  if(!enemies.length){
+    wave++;
+    if(wave>4){ wave=1; chapter++; }
+    score += 300 + chapter*120 + wave*50;
+    spawnWave();
+  }
+
+  hScore.textContent="SCORE "+score;
+  hWave.textContent="CHAPTER "+chapter+" • WAVE "+wave;
+  hInfo.textContent="HULL "+"♥".repeat(Math.max(0,lives))+"♡".repeat(Math.max(0,3-lives))+"  ×"+mult.toFixed(1)+(burstCd>0?"  BURST "+(burstCd/1000).toFixed(1):"");
+}
+
+function drawShip(x,y,col){
+  cx.save(); cx.translate(x,y);
+  cx.fillStyle=col;
+  cx.beginPath(); cx.moveTo(0,-14); cx.lineTo(11,10); cx.lineTo(0,5); cx.lineTo(-11,10); cx.closePath(); cx.fill();
+  cx.fillStyle="#102040"; cx.beginPath(); cx.arc(0,-4,4.5,0,Math.PI*2); cx.fill();
+  cx.restore();
+}
+
+function draw(){
+  cx.fillStyle="#020615"; cx.fillRect(0,0,W,H);
+  for(const s of stars){
+    s.y += s.z*0.45; s.t += 0.03;
+    if(s.y>H){s.y=-2;s.x=Math.random()*W;}
+    cx.fillStyle=`rgba(180,210,255,${(0.2+s.z*0.2+Math.sin(s.t)*0.1).toFixed(2)})`;
+    cx.fillRect(s.x,s.y,s.z>1.4?2:1,s.z>1.4?2:1);
+  }
+
+  // comic panel streaks
+  cx.strokeStyle="rgba(255,255,255,.05)";
+  for(let i=0;i<8;i++){ const y=(i/8)*H; cx.beginPath(); cx.moveTo(0,y+Math.sin(Date.now()*0.001+i)*8); cx.lineTo(W,y+14); cx.stroke(); }
+
+  for(const b of bullets){ cx.fillStyle="#ffe07d"; cx.shadowBlur=8; cx.shadowColor="#ffe07d"; cx.fillRect(b.x-2,b.y-8,4,12); cx.shadowBlur=0; }
+  for(const b of eBullets){ cx.fillStyle=b.col; cx.shadowBlur=7; cx.shadowColor=b.col; cx.beginPath(); cx.arc(b.x,b.y,3.6,0,Math.PI*2); cx.fill(); cx.shadowBlur=0; }
+
+  for(const e of enemies){
+    const col=e.tier===3?"#ff7fe8":e.tier===2?"#ff9a4a":"#66d8ff";
+    drawShip(e.x,e.y,col);
+  }
+  if(!(P.flash>0&&Math.floor(P.flash/120)%2===0)) drawShip(P.x,P.y,"#ffd35c");
+
+  for(const s of shards){
+    cx.fillStyle=s.col; cx.shadowBlur=10; cx.shadowColor=s.col;
+    cx.beginPath(); cx.moveTo(s.x,s.y-6); cx.lineTo(s.x+4,s.y); cx.lineTo(s.x,s.y+6); cx.lineTo(s.x-4,s.y); cx.closePath(); cx.fill(); cx.shadowBlur=0;
+  }
+
+  cx.textAlign="center";
+  for(const f of fx){
+    if(f.p){
+      cx.globalAlpha=Math.max(0,f.life); cx.fillStyle=f.col; cx.fillRect(f.x-2,f.y-2,4,4); cx.globalAlpha=1;
+    } else {
+      cx.globalAlpha=Math.max(0,f.life); cx.fillStyle=f.col||"#ffe08a"; cx.font="bold 14px ui-monospace,monospace"; cx.fillText(f.txt,f.x,f.y); cx.globalAlpha=1;
+    }
+  }
+
+  if(waveIntro>0){
+    cx.fillStyle="rgba(255,255,255,.9)";
+    cx.font="bold 30px ui-monospace,monospace";
+    cx.fillText("CHAPTER "+chapter+" • WAVE "+wave,W/2,H/2);
+  }
+}
+
+function loop(ts){ if(!last)last=ts; const dt=ts-last; last=ts; if(running) update(dt); draw(); requestAnimationFrame(loop); }
+addEventListener("keydown",e=>{ keys[e.key.toLowerCase()]=true; if(!running&&(e.key==="Enter"||e.key===" ")){e.preventDefault();resetGame();} if(e.key===" "||e.key==="ArrowUp") e.preventDefault(); });
+addEventListener("keyup",e=>{ keys[e.key.toLowerCase()]=false; });
+btn.addEventListener("click",resetGame);
+addEventListener("resize",resize);
+resize(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

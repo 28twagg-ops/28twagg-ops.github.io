@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jungle Jr Rescue</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:rgba(0,0,0,.5);font-size:13px;font-weight:700;color:#fff;text-shadow:0 0 6px #000;pointer-events:none}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.84)}
+#overlay.hidden{display:none}
+.card{max-width:420px;background:rgba(8,12,24,.96);border:2px solid #58e477;border-radius:10px;padding:22px 26px;text-align:center;color:#d9ebff}
+.card h1{margin:0 0 8px;font-size:28px;letter-spacing:2px;color:#58e477}
+.card p{margin:5px 0;font-size:13px}
+.card button{margin-top:12px;padding:10px 22px;border:2px solid #58e477;background:#0d2d1c;color:#58e477;font:inherit;font-weight:700;border-radius:5px;cursor:pointer}
+.card button:hover{background:#134227}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="hScore">SCORE 0</div>
+  <div id="hStage">STAGE 1</div>
+  <div id="hLives">LIVES ♥♥♥</div>
+</div>
+<div id="overlay">
+  <div class="card">
+    <h1>JUNGLE JR RESCUE</h1>
+    <p>Climb vines, collect key links, free the captive.</p>
+    <p>Move: A/D or arrows • Climb: W/S or up/down</p>
+    <p>Jump: Space or Up</p>
+    <p>Avoid birds, sparks, and snapping hazards.</p>
+    <button id="btn">START CLIMB</button>
+  </div>
+</div>
+<script>
+(() => {
+"use strict";
+const cv=document.getElementById("c"),cx=cv.getContext("2d");
+const overlay=document.getElementById("overlay"),btn=document.getElementById("btn");
+const hScore=document.getElementById("hScore"),hStage=document.getElementById("hStage"),hLives=document.getElementById("hLives");
+
+let W=800,H=600,last=0,running=false,posted=false;
+let score=0,lives=3,stage=1,bonus=8000;
+let keys={},platforms=[],vines=[],birds=[],sparks=[],snaps=[],keysToGrab=[],particles=[],floats=[];
+
+const P={x:0,y:0,w:16,h:22,vx:0,vy:0,dir:1,onGround:false,onVine:false,inv:0,walkT:0};
+const cage={x:0,y:0,w:56,h:46};
+
+function resize(){
+  const r=cv.getBoundingClientRect();
+  W=Math.max(500,Math.floor(r.width)); H=Math.max(380,Math.floor(r.height));
+  cv.width=W; cv.height=H;
+  buildStage();
+}
+
+function yPlat(p,x){ return p.y + (x-p.x1)*(p.slope||0); }
+
+function buildStage(){
+  const L=Math.floor(W*0.08), R=Math.floor(W*0.92), S=R-L;
+  const y0=Math.floor(H*0.88), step=Math.floor(H*0.16);
+  platforms=[
+    {x1:L,x2:R,y:y0,slope:0.00},
+    {x1:L+26,x2:R-18,y:y0-step,slope:0.01},
+    {x1:L+8,x2:R-40,y:y0-step*2,slope:-0.01},
+    {x1:L+32,x2:R-20,y:y0-step*3,slope:0.012},
+    {x1:L+16,x2:R-46,y:y0-step*4,slope:-0.01}
+  ];
+  vines=[
+    {x:L+Math.floor(S*0.18), yTop:platforms[3].y-6, yBot:platforms[0].y+2, moving:false},
+    {x:L+Math.floor(S*0.36), yTop:platforms[4].y-4, yBot:platforms[1].y+2, moving:true, phase:0},
+    {x:L+Math.floor(S*0.55), yTop:platforms[3].y-4, yBot:platforms[0].y+2, moving:false},
+    {x:L+Math.floor(S*0.76), yTop:platforms[4].y-4, yBot:platforms[1].y+2, moving:true, phase:2}
+  ];
+
+  cage.x=L+Math.floor(S*0.64); cage.y=platforms[4].y-54;
+
+  keysToGrab=[
+    {x:cage.x-34,y:cage.y+8,t:false},
+    {x:cage.x-10,y:cage.y-2,t:false},
+    {x:cage.x+16,y:cage.y+8,t:false},
+    {x:cage.x+40,y:cage.y-2,t:false}
+  ];
+
+  birds=[]; sparks=[]; snaps=[]; particles=[]; floats=[];
+  const bCount=Math.min(7,3+stage);
+  for(let i=0;i<bCount;i++){
+    const lane=(i%3)+1,p=platforms[lane],dir=i%2?1:-1;
+    const x=dir>0?p.x1+18:p.x2-18;
+    birds.push({x,y:yPlat(p,x)-10,lane,dir,s:1.2+stage*0.08});
+  }
+  const sCount=Math.min(6,2+Math.floor(stage*1.2));
+  for(let i=0;i<sCount;i++){
+    const v=vines[i%vines.length];
+    sparks.push({x:v.x,y:v.yBot-20-(i*34)%140,vx:0,vy:(i%2?1:-1)*(0.9+stage*0.08),v});
+  }
+  const snapCount=Math.min(5,2+Math.floor(stage/2));
+  for(let i=0;i<snapCount;i++){
+    const v=vines[(i+1)%vines.length];
+    snaps.push({v,t:i*1.5,speed:0.015+stage*0.0015});
+  }
+
+  const p0=platforms[0];
+  P.x=p0.x1+26; P.y=yPlat(p0,p0.x1+26)-P.h; P.vx=0; P.vy=0; P.onGround=false; P.onVine=false; P.inv=0; P.walkT=0;
+}
+
+function resetGame(){
+  score=0; lives=3; stage=1; bonus=8000; posted=false;
+  buildStage();
+  running=true;
+  overlay.classList.add("hidden");
+  btn.textContent="RESTART";
+}
+
+function submit(){ if(posted) return; posted=true; try{window.parent.postMessage({type:"GAME_OVER_SCORE",score:Number(score)||0},"*");}catch(_){} }
+function gameOver(){ running=false; submit(); overlay.classList.remove("hidden"); btn.textContent="TRY AGAIN"; }
+function loseLife(){
+  if(P.inv>0) return;
+  lives--; P.inv=1700;
+  for(let i=0;i<20;i++){const a=Math.random()*6.28,s=1+Math.random()*4;particles.push({x:P.x+P.w/2,y:P.y+P.h/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,col:"#ff7755",life:1});}
+  if(lives<=0){gameOver();return;}
+  const p0=platforms[0]; P.x=p0.x1+26; P.y=yPlat(p0,p0.x1+26)-P.h; P.vx=0; P.vy=0;
+}
+
+function onVineNear(){
+  return vines.find(v=>{
+    const vx=v.x + (v.moving?Math.sin(Date.now()*0.002+v.phase)*14:0);
+    return Math.abs((P.x+P.w/2)-vx)<12 && P.y+P.h>v.yTop-6 && P.y<v.yBot+6;
+  });
+}
+
+function jump(){
+  if(P.onGround&&!P.onVine){ P.vy=-(8.4+stage*0.05); P.onGround=false; }
+}
+
+function update(dt){
+  const ms=Math.min(dt,34);
+  bonus=Math.max(0,bonus-ms*1.6);
+  if(P.inv>0) P.inv-=ms;
+
+  // Player horizontal
+  P.vx=0;
+  if(keys["arrowleft"]||keys["a"]){P.vx=-2.6;P.dir=-1;}
+  if(keys["arrowright"]||keys["d"]){P.vx=2.6;P.dir=1;}
+
+  // Vine logic
+  P.onVine=false;
+  const v=onVineNear();
+  if(v&&(keys["arrowup"]||keys["w"]||keys["arrowdown"]||keys["s"])){
+    const vx=v.x + (v.moving?Math.sin(Date.now()*0.002+v.phase)*14:0);
+    P.x=vx-P.w/2;
+    P.onVine=true;
+    if(keys["arrowup"]||keys["w"]) P.vy=-2.3;
+    else if(keys["arrowdown"]||keys["s"]) P.vy=2.3;
+    else P.vy=0;
+  } else {
+    P.vy += 0.46 * (ms/16);
+  }
+
+  if(P.onVine) P.vx=0;
+  P.x += P.vx*(ms/16);
+  P.y += P.vy*(ms/16);
+
+  // Platform collision
+  P.onGround=false;
+  for(const p of platforms){
+    if(P.x+P.w<p.x1||P.x>p.x2) continue;
+    const py=yPlat(p,P.x+P.w*0.5);
+    if(P.y+P.h>=py-1&&P.y+P.h<=py+12&&P.vy>=0&&!P.onVine){
+      P.y=py-P.h; P.vy=0; P.onGround=true;
+    }
+  }
+
+  P.x=Math.max(platforms[0].x1-2,Math.min(platforms[0].x2-P.w+2,P.x));
+  if(P.y>H+40) loseLife();
+  if(P.onGround&&Math.abs(P.vx)>0.1) P.walkT += ms*0.015;
+
+  // Keys
+  for(const k of keysToGrab){
+    if(k.t) continue;
+    if(Math.abs((P.x+P.w/2)-k.x)<13&&Math.abs((P.y+P.h/2)-k.y)<15){
+      k.t=true; score+=350; floats.push({x:k.x,y:k.y,text:"+350 LINK",life:1.3,vy:-1.2,col:"#ffd966"});
+    }
+  }
+
+  // Birds
+  for(const b of birds){
+    const p=platforms[b.lane];
+    b.x += b.dir*b.s*(ms/16);
+    if(b.x<p.x1+10){b.x=p.x1+10;b.dir=1;}
+    if(b.x>p.x2-10){b.x=p.x2-10;b.dir=-1;}
+    b.y=yPlat(p,b.x)-10;
+    if(Math.hypot((P.x+P.w/2)-b.x,(P.y+P.h/2)-b.y)<13) loseLife();
+  }
+
+  // Sparks on vines
+  for(const s of sparks){
+    const vx=s.v.x + (s.v.moving?Math.sin(Date.now()*0.002+s.v.phase)*14:0);
+    s.x=vx; s.y+=s.vy*(ms/16);
+    if(s.y<s.v.yTop+8){s.y=s.v.yTop+8;s.vy=Math.abs(s.vy);}
+    if(s.y>s.v.yBot-8){s.y=s.v.yBot-8;s.vy=-Math.abs(s.vy);}
+    if(Math.hypot((P.x+P.w/2)-s.x,(P.y+P.h/2)-s.y)<12) loseLife();
+  }
+
+  // Snap hazards near top vines
+  for(const s of snaps){
+    s.t += s.speed*ms;
+    const vx=s.v.x + (s.v.moving?Math.sin(Date.now()*0.002+s.v.phase)*14:0);
+    const sy=s.v.yTop+18 + Math.sin(s.t)*36;
+    s.x=vx; s.y=sy;
+    if(Math.hypot((P.x+P.w/2)-s.x,(P.y+P.h/2)-s.y)<12) loseLife();
+  }
+
+  // Stage clear
+  if(keysToGrab.every(k=>k.t)){
+    const cx2=cage.x+cage.w*0.5, cy2=cage.y+cage.h*0.5;
+    if(Math.abs((P.x+P.w/2)-cx2)<24 && Math.abs((P.y+P.h/2)-cy2)<24){
+      const stageBonus=1200+Math.floor(bonus*0.1);
+      score += stageBonus;
+      floats.push({x:cx2,y:cy2-14,text:"RESCUE +"+stageBonus,life:1.8,vy:-1.1,col:"#7eff9c"});
+      stage++;
+      setTimeout(buildStage,500);
+    }
+  }
+
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i]; p.x+=p.vx*(ms/16); p.y+=p.vy*(ms/16); p.vy+=0.08*(ms/16); p.life-=0.025*(ms/16); if(p.life<=0) particles.splice(i,1);
+  }
+  for(let i=floats.length-1;i>=0;i--){
+    const f=floats[i]; f.y+=f.vy*(ms/16); f.life-=0.018*(ms/16); if(f.life<=0) floats.splice(i,1);
+  }
+
+  hScore.textContent="SCORE "+score;
+  hStage.textContent="STAGE "+stage+"  BONUS "+Math.floor(bonus);
+  hLives.textContent="LIVES "+"♥".repeat(Math.max(0,lives))+"♡".repeat(Math.max(0,3-lives));
+}
+
+function drawPlatform(p){
+  const y1=yPlat(p,p.x1), y2=yPlat(p,p.x2);
+  cx.strokeStyle="#f4b648"; cx.lineWidth=10;
+  cx.beginPath(); cx.moveTo(p.x1,y1); cx.lineTo(p.x2,y2); cx.stroke();
+  cx.strokeStyle="rgba(255,220,150,.5)"; cx.lineWidth=2;
+  cx.beginPath(); cx.moveTo(p.x1,y1-4); cx.lineTo(p.x2,y2-4); cx.stroke();
+}
+function draw(){
+  const g=cx.createLinearGradient(0,0,0,H); g.addColorStop(0,"#0f1435"); g.addColorStop(1,"#311d5d");
+  cx.fillStyle=g; cx.fillRect(0,0,W,H);
+
+  // Trees
+  for(let i=0;i<8;i++){
+    const x=(i/7)*W;
+    cx.strokeStyle="rgba(65,180,110,.22)"; cx.lineWidth=8;
+    cx.beginPath(); cx.moveTo(x,H); cx.lineTo(x,H*0.4+Math.sin(i*1.4)*24); cx.stroke();
+  }
+
+  for(const p of platforms) drawPlatform(p);
+
+  // Vines
+  for(const v of vines){
+    const vx=v.x + (v.moving?Math.sin(Date.now()*0.002+v.phase)*14:0);
+    cx.strokeStyle="#58e477"; cx.lineWidth=4;
+    cx.beginPath(); cx.moveTo(vx,v.yTop); cx.lineTo(vx,v.yBot); cx.stroke();
+    cx.strokeStyle="rgba(160,255,180,.45)"; cx.lineWidth=1;
+    for(let y=v.yTop+6;y<v.yBot;y+=12){cx.beginPath(); cx.moveTo(vx-5,y); cx.lineTo(vx+5,y); cx.stroke();}
+  }
+
+  // Cage + captive
+  cx.fillStyle="#2a2f43"; cx.fillRect(cage.x,cage.y,cage.w,cage.h);
+  cx.strokeStyle="#cfd7ff"; cx.lineWidth=2; cx.strokeRect(cage.x,cage.y,cage.w,cage.h);
+  for(let i=1;i<4;i++){cx.beginPath();cx.moveTo(cage.x+i*14,cage.y);cx.lineTo(cage.x+i*14,cage.y+cage.h);cx.stroke();}
+  cx.fillStyle="#ffd18e"; cx.beginPath(); cx.arc(cage.x+28,cage.y+15,7,0,Math.PI*2); cx.fill();
+  cx.fillStyle="#ff8899"; cx.fillRect(cage.x+22,cage.y+23,12,16);
+
+  // Key links
+  for(const k of keysToGrab){
+    if(k.t) continue;
+    cx.fillStyle="#ffd966"; cx.shadowBlur=8; cx.shadowColor="#ffd966";
+    cx.beginPath(); cx.arc(k.x,k.y,5,0,Math.PI*2); cx.fill();
+    cx.fillStyle="#333"; cx.beginPath(); cx.arc(k.x,k.y,2,0,Math.PI*2); cx.fill();
+    cx.shadowBlur=0;
+  }
+
+  // Hazards
+  for(const b of birds){
+    cx.fillStyle="#ff9ad1";
+    cx.beginPath(); cx.moveTo(b.x,b.y-7); cx.lineTo(b.x+10,b.y); cx.lineTo(b.x,b.y+7); cx.lineTo(b.x-10,b.y); cx.closePath(); cx.fill();
+  }
+  for(const s of sparks){
+    cx.fillStyle="#ffe875"; cx.beginPath(); cx.arc(s.x,s.y,4,0,Math.PI*2); cx.fill();
+    cx.fillStyle="#fff4bc"; cx.beginPath(); cx.arc(s.x,s.y,2,0,Math.PI*2); cx.fill();
+  }
+  for(const s of snaps){
+    cx.fillStyle="#6ce7ff";
+    cx.beginPath(); cx.arc(s.x,s.y,6,0,Math.PI*2); cx.fill();
+    cx.fillStyle="#1e2f4f"; cx.fillRect(s.x-3,s.y-1,6,2);
+  }
+
+  // Player
+  if(!(P.inv>0&&Math.floor(P.inv/120)%2===0)){
+    const px=P.x,py=P.y,leg=Math.sin(P.walkT)*3;
+    cx.fillStyle="#58e477"; cx.fillRect(px+1,py+7,P.w-2,P.h-7);
+    cx.fillStyle="#ffd18e"; cx.beginPath(); cx.arc(px+P.w/2,py+6,6,0,Math.PI*2); cx.fill();
+    cx.fillStyle="#3a2a1e"; cx.fillRect(px+P.w/2+1,py+7,4,2);
+    cx.fillStyle="#27334f"; cx.fillRect(px+2,py+P.h-6,5,6+leg);
+    cx.fillRect(px+P.w-7,py+P.h-6,5,6-leg);
+  }
+
+  for(const p of particles){ cx.globalAlpha=Math.max(0,p.life); cx.fillStyle=p.col; cx.fillRect(p.x-2,p.y-2,4,4); } cx.globalAlpha=1;
+  cx.font="bold 13px ui-monospace,monospace"; cx.textAlign="center";
+  for(const f of floats){ cx.globalAlpha=Math.max(0,f.life); cx.fillStyle=f.col||"#fff"; cx.fillText(f.text,f.x,f.y); } cx.globalAlpha=1;
+}
+
+function loop(ts){ if(!last) last=ts; const dt=ts-last; last=ts; if(running) update(dt); draw(); requestAnimationFrame(loop); }
+
+addEventListener("keydown",e=>{
+  keys[e.key.toLowerCase()]=true;
+  if(!running&&(e.key===" "||e.key==="Enter")){ e.preventDefault(); resetGame(); }
+  if(running&&(e.key===" "||e.key==="ArrowUp"||e.key.toLowerCase()==="w")){ jump(); e.preventDefault(); }
+});
+addEventListener("keyup",e=>{ keys[e.key.toLowerCase()]=false; });
+btn.addEventListener("click",resetGame);
+addEventListener("resize",resize);
+
+resize();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

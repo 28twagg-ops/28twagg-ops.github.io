@@ -437,6 +437,53 @@ Entry - 2026-04-21 (v0.0.35 - classic physics pass + Dig Dug Delve implementatio
   - Added thumbnail sourced from provided digdug_nes_2 archive screenshot
 - Bumped PIXEL-NET/version.json to 0.0.35
 
+Entry - 2026-04-21 (v0.0.36 - Combat 77 Arena implementation from A26 reference pack)
+- Source archive inspected: A26_COMBAT_CX2601.zip
+  - Archive contains cartridge/PCB imagery metadata (no runnable web source), so gameplay was implemented in-house in PIXEL-NET style.
+- NEW GAME: PIXEL-NET/games/combat-cx2601/
+  - Added `game.html`:
+    - Top-down ricochet tank duel with classic-inspired maze arena
+    - Player controls: rotate, move forward/reverse, fire shells
+    - Enemy AI: pursuit steering, line-of-sight shooting, round-based scaling
+    - Shell bounce physics against walls and arena borders
+    - Round progression, armor lives, score accumulation
+    - GAME_OVER_SCORE postMessage leaderboard compatibility retained
+  - Added `wrapper-v2.html` with instructions and theme metadata
+- Added thumbnail:
+  - PIXEL-NET/assets/combat-cx2601_thumb.jpg (from provided A26 archive tile image)
+- Updated PIXEL-NET/games.json:
+  - Registered COMBAT 77 ARENA entry (slug/path/thumb/tags/aliases)
+- Bumped PIXEL-NET/version.json to 0.0.36
+
+Entry - 2026-04-21 (v0.0.39 - multi-archive game implementation pass)
+- Source archives inspected:
+  - dkongjr_mame.zip (contains ROM/screenshots metadata pack, no runnable web source)
+  - AtariForceComicBookCollection.zip (comic/CBZ collection, no runnable web source)
+  - a8b_Kangaroo_1983_Atari_US_proto_a_k_file.zip (ROM/screenshots metadata pack, no runnable web source)
+- NEW GAME: PIXEL-NET/games/atariforce-hyperlane/
+  - Added `game.html` chapter-based comic-space shooter
+  - Added `wrapper-v2.html` with instructions/theme metadata
+  - Included burst dash, shard multipliers, wave/chapter escalation
+  - Preserved GAME_OVER_SCORE postMessage leaderboard compatibility
+- NEW GAME: PIXEL-NET/games/jungle-jr-rescue/
+  - Added `game.html` vine-climbing rescue platformer inspired by classic jungle-junior flow
+  - Added `wrapper-v2.html` with instructions/theme metadata
+  - Includes link collection objective, cage rescue, birds/sparks/snap hazards
+  - Preserved GAME_OVER_SCORE postMessage leaderboard compatibility
+- NEW GAME: PIXEL-NET/games/kangaroo-climb/
+  - Added `game.html` platform rescue climber with ladders, enemies, and collectible joeys
+  - Added `wrapper-v2.html` with instructions/theme metadata
+  - Preserved GAME_OVER_SCORE postMessage leaderboard compatibility
+- Added thumbnails:
+  - PIXEL-NET/assets/atariforce-hyperlane_thumb.jpg
+  - PIXEL-NET/assets/jungle-jr-rescue_thumb.png
+  - PIXEL-NET/assets/kangaroo-climb_thumb.jpg
+- Updated PIXEL-NET/games.json:
+  - Registered ATARIFORCE HYPERLANE
+  - Registered JUNGLE JR RESCUE
+  - Registered KANGAROO CLIMB
+- Bumped PIXEL-NET/version.json to 0.0.39
+
 Entry - 2026-04-21 (Tower Rush full DK-style rewrite)
 - Completely rewrote PIXEL-NET/games/orbit-siege/game.html:
   - Drew gorilla at summit with animated throw arm + red glowing eyes
@@ -453,3 +500,20 @@ Entry - 2026-04-21 (Tower Rush full DK-style rewrite)
   - Preserved GAME_OVER_SCORE postMessage leaderboard contract
 - Updated PIXEL-NET/games/orbit-siege/wrapper-v2.html theme + instructions
 - Bumped PIXEL-NET/version.json to 0.0.16
+
+Entry - 2026-04-21 (v0.0.40 - Track Field Blitz implementation)
+- Source archive inspected: d64_Track_Field_1983_Konami.zip
+  - Archive contains a D64 image/screenshots metadata pack, so gameplay was implemented in-house in PIXEL-NET style.
+- NEW GAME: PIXEL-NET/games/track-field-blitz/
+  - Added `game.html` multi-event athletics game loop:
+    - 100M sprint with alternate-key cadence and qualifying cutoff
+    - Long jump run-up and timing-based jump distance qualification
+    - Javelin run-up with timing-based throw distance qualification
+    - Round progression with tighter qualification thresholds per round
+    - Preserved GAME_OVER_SCORE postMessage leaderboard compatibility
+  - Added `wrapper-v2.html` with controls/instructions and wrapper metadata
+- Added thumbnail:
+  - PIXEL-NET/assets/track-field-blitz_thumb.jpg
+- Updated PIXEL-NET/games.json:
+  - Registered TRACK FIELD BLITZ entry (slug/path/thumb/tags/aliases)
+- Bumped PIXEL-NET/version.json to 0.0.40

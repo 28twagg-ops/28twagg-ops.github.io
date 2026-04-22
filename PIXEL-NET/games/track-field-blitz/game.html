@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Track Field Blitz</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:rgba(0,0,0,.5);color:#fff;font-size:13px;font-weight:700;text-shadow:0 0 6px #000;pointer-events:none}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.84)}
+#overlay.hidden{display:none}
+.card{max-width:460px;background:rgba(8,14,28,.96);border:2px solid #5de0ff;border-radius:10px;padding:22px 28px;text-align:center}
+.card h1{margin:0 0 8px;color:#5de0ff;font-size:28px;letter-spacing:2px}
+.card p{margin:5px 0;color:#d9eeff;font-size:13px}
+.card button{margin-top:12px;padding:10px 24px;border:2px solid #5de0ff;background:#10253d;color:#5de0ff;font:inherit;font-weight:700;border-radius:5px;cursor:pointer}
+.card button:hover{background:#1a375a}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="hScore">SCORE 0</div>
+  <div id="hEvent">EVENT 100M</div>
+  <div id="hRound">ROUND 1</div>
+</div>
+<div id="overlay">
+  <div class="card">
+    <h1>TRACK FIELD BLITZ</h1>
+    <p>Alternate <b>A + D</b> (or Left + Right) to build speed.</p>
+    <p>Use <b>Space</b> to jump/throw at the right moment.</p>
+    <p>Clear all 3 events to advance rounds.</p>
+    <button id="btn">START MEET</button>
+  </div>
+</div>
+<script>
+(() => {
+"use strict";
+const cv=document.getElementById("c"),cx=cv.getContext("2d");
+const overlay=document.getElementById("overlay"),btn=document.getElementById("btn");
+const hScore=document.getElementById("hScore"),hEvent=document.getElementById("hEvent"),hRound=document.getElementById("hRound");
+
+let W=960,H=600,last=0,running=false,posted=false;
+let score=0,round=1,eventIndex=0,eventTimer=0,flashMsg="";
+let keys={},stars=[];
+let runSpeed=0,lastStep=null,stepDecay=0;
+let athlete={x:120,y:460,vx:0,vy:0,onGround:true};
+let jumpCommitted=false,throwCommitted=false,javelin={active:false,x:0,y:0,vx:0,vy:0};
+let longJumpDist=0,javelinDist=0,sprintTime=0;
+
+const EVENTS=["100M","LONG JUMP","JAVELIN"];
+
+function resize(){
+  const r=cv.getBoundingClientRect();
+  W=Math.max(640,Math.floor(r.width));
+  H=Math.max(420,Math.floor(r.height));
+  cv.width=W; cv.height=H;
+  if(!stars.length) for(let i=0;i<120;i++) stars.push({x:Math.random()*W,y:Math.random()*H,z:0.3+Math.random()*1.2});
+}
+
+function submit(){ if(posted) return; posted=true; try{window.parent.postMessage({type:"GAME_OVER_SCORE",score:Number(score)||0},"*");}catch(_){} }
+function gameOver(msg){
+  running=false; submit();
+  overlay.classList.remove("hidden");
+  document.querySelector(".card p").textContent=msg || "Meet over. Train harder and try again.";
+  btn.textContent="TRY AGAIN";
+}
+
+function prepEvent(){
+  eventTimer=0; flashMsg="";
+  runSpeed=0; lastStep=null; stepDecay=0;
+  athlete.x=120; athlete.y=H*0.78; athlete.vx=0; athlete.vy=0; athlete.onGround=true;
+  jumpCommitted=false; throwCommitted=false;
+  javelin={active:false,x:0,y:0,vx:0,vy:0};
+  longJumpDist=0; javelinDist=0; sprintTime=0;
+}
+
+function startGame(){
+  score=0; round=1; eventIndex=0; posted=false;
+  prepEvent();
+  running=true;
+  overlay.classList.add("hidden");
+  btn.textContent="RESTART";
+}
+
+function nextEvent(){
+  eventIndex++;
+  if(eventIndex>=EVENTS.length){
+    eventIndex=0;
+    round++;
+    score += 500 + round*120;
+  }
+  prepEvent();
+}
+
+function cutoffFor(event){
+  if(event==="100M") return Math.max(15.0, 22.0 - round*0.7);
+  if(event==="LONG JUMP") return 5.4 + round*0.12;
+  return 48 + round*2.2; // javelin meters
+}
+
+function awardFor(event,val){
+  if(event==="100M") return Math.max(300, Math.floor((26-val)*120));
+  if(event==="LONG JUMP") return Math.floor(val*160);
+  return Math.floor(val*22);
+}
+
+function registerStep(which){
+  if(lastStep===which) return;
+  lastStep=which;
+  runSpeed += 0.8;
+  runSpeed=Math.min(14.5,runSpeed);
+  stepDecay=150;
+}
+
+function handleEventAction(){
+  const ev=EVENTS[eventIndex];
+  if(ev==="LONG JUMP"){
+    if(!jumpCommitted && athlete.x>W*0.52){
+      jumpCommitted=true;
+      athlete.vy=-(6.0 + runSpeed*0.42);
+      athlete.vx=runSpeed*0.58;
+      athlete.onGround=false;
+    }
+  } else if(ev==="JAVELIN"){
+    if(!throwCommitted && athlete.x>W*0.48){
+      throwCommitted=true;
+      const angle=Math.max(18,Math.min(56,24 + runSpeed*2.1));
+      const rad=angle*Math.PI/180;
+      javelin.active=true;
+      javelin.x=athlete.x+18; javelin.y=athlete.y-8;
+      javelin.vx=(5.2+runSpeed*0.55)*Math.cos(rad);
+      javelin.vy=-(5.2+runSpeed*0.55)*Math.sin(rad);
+    }
+  }
+}
+
+function updateSprint(ms){
+  sprintTime += ms/1000;
+  athlete.x += (1.0 + runSpeed*0.8)*(ms/16);
+  const finishX=W*0.87;
+  if(athlete.x>=finishX){
+    const cut=cutoffFor("100M");
+    if(sprintTime<=cut){
+      const pts=awardFor("100M",sprintTime);
+      score+=pts;
+      flashMsg=`100M CLEAR ${sprintTime.toFixed(2)}s  +${pts}`;
+      setTimeout(nextEvent,700);
+    } else {
+      gameOver(`Missed 100M cutoff (${sprintTime.toFixed(2)}s > ${cut.toFixed(2)}s).`);
+    }
+  }
+}
+
+function updateLongJump(ms){
+  // Run-up
+  if(!jumpCommitted) athlete.x += (0.8 + runSpeed*0.75)*(ms/16);
+  else {
+    // Flight
+    athlete.vy += 0.27*(ms/16);
+    athlete.x += athlete.vx*(ms/16);
+    athlete.y += athlete.vy*(ms/16);
+    if(athlete.y>=H*0.78){
+      athlete.y=H*0.78;
+      const boardX=W*0.58;
+      longJumpDist=Math.max(0,(athlete.x-boardX)/42);
+      const cut=cutoffFor("LONG JUMP");
+      if(longJumpDist>=cut){
+        const pts=awardFor("LONG JUMP",longJumpDist);
+        score+=pts;
+        flashMsg=`LONG JUMP ${longJumpDist.toFixed(2)}m  +${pts}`;
+        setTimeout(nextEvent,700);
+      } else {
+        gameOver(`Long jump short (${longJumpDist.toFixed(2)}m < ${cut.toFixed(2)}m).`);
+      }
+    }
+  }
+  // Fouled if jumped too early at low speed
+  if(!jumpCommitted && athlete.x>W*0.74) gameOver("No jump registered before pit.");
+}
+
+function updateJavelin(ms){
+  if(!throwCommitted){
+    athlete.x += (0.8 + runSpeed*0.72)*(ms/16);
+    if(athlete.x>W*0.74) gameOver("No throw registered.");
+    return;
+  }
+  if(javelin.active){
+    javelin.vy += 0.20*(ms/16);
+    javelin.x += javelin.vx*(ms/16);
+    javelin.y += javelin.vy*(ms/16);
+    if(javelin.y>=H*0.78){
+      javelin.active=false;
+      const launchX=W*0.52;
+      javelinDist=Math.max(0,(javelin.x-launchX)/20);
+      const cut=cutoffFor("JAVELIN");
+      if(javelinDist>=cut){
+        const pts=awardFor("JAVELIN",javelinDist);
+        score+=pts;
+        flashMsg=`JAVELIN ${javelinDist.toFixed(1)}m  +${pts}`;
+        setTimeout(nextEvent,700);
+      } else {
+        gameOver(`Javelin short (${javelinDist.toFixed(1)}m < ${cut.toFixed(1)}m).`);
+      }
+    }
+  }
+}
+
+function update(dt){
+  const ms=Math.min(dt,40);
+  eventTimer += ms;
+  if(stepDecay>0){ stepDecay-=ms; if(stepDecay<=0) runSpeed*=0.7; }
+  runSpeed=Math.max(0,runSpeed-0.014*(ms/16));
+
+  if(keys["a"]||keys["arrowleft"]) registerStep("L");
+  if(keys["d"]||keys["arrowright"]) registerStep("R");
+
+  const ev=EVENTS[eventIndex];
+  if(ev==="100M") updateSprint(ms);
+  else if(ev==="LONG JUMP") updateLongJump(ms);
+  else updateJavelin(ms);
+
+  for(const s of stars){ s.y += s.z*0.25; if(s.y>H) s.y=-2; }
+
+  hScore.textContent="SCORE "+score;
+  hEvent.textContent="EVENT "+ev+"  TARGET "+cutoffFor(ev).toFixed(ev==="100M"?2:1)+(ev==="100M"?"s":"m");
+  hRound.textContent="ROUND "+round+"  SPEED "+runSpeed.toFixed(1);
+}
+
+function drawAthlete(){
+  const px=athlete.x, py=athlete.y;
+  cx.fillStyle="#ffd66b"; cx.fillRect(px-8,py-20,16,20);
+  cx.fillStyle="#7fd8ff"; cx.fillRect(px-7,py-30,14,10);
+  cx.fillStyle="#23334f"; cx.fillRect(px-7,py,6,8+Math.sin(Date.now()*0.02)*2);
+  cx.fillRect(px+1,py,6,8-Math.sin(Date.now()*0.02)*2);
+}
+
+function drawTrack(){
+  cx.fillStyle="#0a1c30"; cx.fillRect(0,0,W,H);
+  for(const s of stars){ cx.fillStyle="rgba(200,230,255,.25)"; cx.fillRect(s.x,s.y,2,2); }
+
+  // ground
+  cx.fillStyle="#8f3a26"; cx.fillRect(0,H*0.78,W,H*0.22);
+  cx.strokeStyle="rgba(255,220,180,.2)"; cx.lineWidth=2;
+  for(let i=0;i<6;i++){const y=H*0.78 + i*18; cx.beginPath(); cx.moveTo(0,y); cx.lineTo(W,y); cx.stroke();}
+
+  const ev=EVENTS[eventIndex];
+  if(ev==="100M"){
+    const finishX=W*0.87;
+    cx.fillStyle="#fff"; cx.fillRect(finishX,H*0.64,4,H*0.17);
+  } else if(ev==="LONG JUMP"){
+    const boardX=W*0.58;
+    cx.fillStyle="#fff"; cx.fillRect(boardX,H*0.77,4,20);
+    cx.fillStyle="#c8b07a"; cx.fillRect(boardX+4,H*0.78,W*0.28,H*0.11);
+  } else {
+    const throwX=W*0.52;
+    cx.fillStyle="#fff"; cx.fillRect(throwX,H*0.76,3,22);
+    cx.strokeStyle="rgba(255,255,255,.32)";
+    for(let i=1;i<=7;i++){ const x=throwX+i*85; cx.beginPath(); cx.moveTo(x,H*0.78); cx.lineTo(x,H*0.9); cx.stroke(); }
+  }
+}
+
+function draw(){
+  drawTrack();
+  drawAthlete();
+
+  if(javelin.active){
+    cx.save(); cx.translate(javelin.x,javelin.y); cx.rotate(Math.atan2(javelin.vy,javelin.vx));
+    cx.fillStyle="#d9f2ff"; cx.fillRect(-2,-2,22,4);
+    cx.fillStyle="#ffdd88"; cx.beginPath(); cx.moveTo(20,-4); cx.lineTo(25,0); cx.lineTo(20,4); cx.closePath(); cx.fill();
+    cx.restore();
+  } else if(throwCommitted){
+    cx.fillStyle="#d9f2ff"; cx.fillRect(javelin.x-2,H*0.78-2,22,3);
+  }
+
+  cx.fillStyle="#fff";
+  cx.font="bold 15px ui-monospace,monospace";
+  if(EVENTS[eventIndex]==="100M"){
+    cx.fillText(`TIME ${sprintTime.toFixed(2)}s`,W*0.42,30);
+  } else if(EVENTS[eventIndex]==="LONG JUMP"){
+    cx.fillText(`DIST ${longJumpDist.toFixed(2)}m`,W*0.42,30);
+  } else {
+    cx.fillText(`THROW ${javelinDist.toFixed(1)}m`,W*0.42,30);
+  }
+  if(flashMsg){
+    cx.fillStyle="#7fffb8"; cx.font="bold 20px ui-monospace,monospace";
+    cx.fillText(flashMsg,W*0.5,H*0.28);
+  }
+}
+
+function loop(ts){
+  if(!last) last=ts;
+  const dt=ts-last; last=ts;
+  if(running) update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+addEventListener("keydown",e=>{
+  const k=e.key.toLowerCase();
+  keys[k]=true;
+  if(!running&&(e.key===" "||e.key==="Enter")){ e.preventDefault(); startGame(); }
+  if(running&&(e.key===" "||e.key==="Enter")){ e.preventDefault(); handleEventAction(); }
+  if(e.key==="ArrowUp"||e.key===" ") e.preventDefault();
+});
+addEventListener("keyup",e=>{ keys[e.key.toLowerCase()]=false; });
+btn.addEventListener("click",startGame);
+addEventListener("resize",resize);
+resize();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -119,6 +119,56 @@
     "aliases": ["dig dug", "digdug", "tunnel game"]
   },
   {
+    "name": "COMBAT 77 ARENA",
+    "type": "iframe",
+    "slug": "combat-cx2601",
+    "path": "games/combat-cx2601/wrapper-v2.html",
+    "thumb": "assets/combat-cx2601_thumb.jpg",
+    "description": "Ricochet tank duel inspired by classic 2600 combat arenas.",
+    "tags": ["tank duel", "ricochet shooter", "arena combat", "retro action"],
+    "aliases": ["combat", "atari combat", "tank battle"]
+  },
+  {
+    "name": "ATARIFORCE HYPERLANE",
+    "type": "iframe",
+    "slug": "atariforce-hyperlane",
+    "path": "games/atariforce-hyperlane/wrapper-v2.html",
+    "thumb": "assets/atariforce-hyperlane_thumb.jpg",
+    "description": "Comic-space shooter with chapter waves, burst dashes, and shard multipliers.",
+    "tags": ["space shooter", "comic scifi", "chapter waves", "arcade action"],
+    "aliases": ["atariforce", "hyperlane shooter"]
+  },
+  {
+    "name": "JUNGLE JR RESCUE",
+    "type": "iframe",
+    "slug": "jungle-jr-rescue",
+    "path": "games/jungle-jr-rescue/wrapper-v2.html",
+    "thumb": "assets/jungle-jr-rescue_thumb.png",
+    "description": "Vine-climbing platform challenge with link collection and cage rescue objective.",
+    "tags": ["jungle platformer", "vine climb", "rescue", "arcade classic style"],
+    "aliases": ["dk junior", "jungle jr", "vine rescue"]
+  },
+  {
+    "name": "KANGAROO CLIMB",
+    "type": "iframe",
+    "slug": "kangaroo-climb",
+    "path": "games/kangaroo-climb/wrapper-v2.html",
+    "thumb": "assets/kangaroo-climb_thumb.jpg",
+    "description": "Vine-climbing platform rescue with chain links, jungle hazards, and stage bonuses.",
+    "tags": ["platform climber", "vine climb", "jungle", "rescue arcade"],
+    "aliases": ["kangaroo", "jr climb", "jungle rescue"]
+  },
+  {
+    "name": "TRACK FIELD BLITZ",
+    "type": "iframe",
+    "slug": "track-field-blitz",
+    "path": "games/track-field-blitz/wrapper-v2.html",
+    "thumb": "assets/track-field-blitz_thumb.jpg",
+    "description": "Three-event athletics challenge: 100M sprint, long jump, and javelin qualification rounds.",
+    "tags": ["track and field", "athletics", "sprint", "long jump", "javelin"],
+    "aliases": ["track field", "track & field", "olympic sprint"]
+  },
+  {
     "name": "TOWER RUSH",
     "type": "iframe",
     "slug": "orbit-siege",
