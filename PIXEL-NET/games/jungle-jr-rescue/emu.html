@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Donkey Kong Jr — PIXEL-NET</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#fff}
+  #game{width:100%;height:100%;display:block}
+  #notice{position:fixed;left:8px;bottom:8px;font-size:11px;color:#58e477;text-shadow:0 0 6px #000;pointer-events:none;opacity:.85}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="notice">ARCADE MODE (MAME) — use Insert Coin / Start (5/1) then controls</div>
+<script>
+  window.EJS_player = '#game';
+  window.EJS_core = 'mame2003';
+  window.EJS_gameUrl = './rom/dkongjr.zip';
+  window.EJS_gameName = 'Donkey Kong Jr';
+  window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+  window.EJS_startOnLoaded = true;
+  window.EJS_color = '#58e477';
+  window.addEventListener('beforeunload', () => {
+    try { window.parent.postMessage({ type: 'GAME_OVER_SCORE', score: 0 }, '*'); } catch(_) {}
+  });
+</script>
+<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+</body>
+</html>

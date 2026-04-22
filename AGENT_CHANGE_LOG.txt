@@ -501,6 +501,23 @@ Entry - 2026-04-21 (Tower Rush full DK-style rewrite)
 - Updated PIXEL-NET/games/orbit-siege/wrapper-v2.html theme + instructions
 - Bumped PIXEL-NET/version.json to 0.0.16
 
+Entry - 2026-04-21 (v0.0.41 - real ROM games via EmulatorJS)
+- Per user request, stopped routing to HTML5 clones and wired the original ROMs from each archive through EmulatorJS. Existing game.html files left untouched.
+- New files added (each loads the real ROM from the provided zip):
+  - PIXEL-NET/games/dig-dug-delve/emu.html                    core: nes         rom: rom/digdug.nes
+  - PIXEL-NET/games/orbit-siege/emu.html                      core: mame2003    rom: rom/dkong.zip
+  - PIXEL-NET/games/jungle-jr-rescue/emu.html                 core: mame2003    rom: rom/dkongjr.zip
+  - PIXEL-NET/games/kangaroo-climb/emu.html                   core: atari5200   rom: rom/Kangaroo_1983_Atari_US_proto_a_k_file.atr
+  - PIXEL-NET/games/track-field-blitz/emu.html                core: c64         rom: rom/Track__Field_1983_Konami.d64
+- ROM binaries stored under each game folder at rom/.
+- Wrapper updates (entry switched from ./game.html -> ./emu.html):
+  - orbit-siege, dig-dug-delve, jungle-jr-rescue, kangaroo-climb, track-field-blitz
+- Track Field Blitz wrapper was previously duplicated and has been rewritten clean.
+- Notes:
+  - A26_COMBAT_CX2601.zip contains only cartridge/PCB photos, no ROM. No emulator wiring possible without a Combat .a26 file.
+  - AtariForceComicBookCollection.zip is comic books, not a game. No emulator wiring possible.
+- Bumped PIXEL-NET/version.json to 0.0.41
+
 Entry - 2026-04-21 (v0.0.40 - Track Field Blitz implementation)
 - Source archive inspected: d64_Track_Field_1983_Konami.zip
   - Archive contains a D64 image/screenshots metadata pack, so gameplay was implemented in-house in PIXEL-NET style.
