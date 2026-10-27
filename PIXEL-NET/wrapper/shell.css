@@ -380,3 +380,16 @@ iframe{ width:100%; height:100%; border:0; display:block; background:#05050b; }
 }
 .modalSave:hover{ opacity:.88; }
 .modalHint{ text-align:center; color: rgba(243,246,255,.55); font-size:11px; font-style:italic; }
+
+
+/* Compact top bar: keep Exit, long game names, and initials from overlapping. */
+@media (max-width: 600px){
+  .topbar{grid-template-columns:auto minmax(0,1fr) auto; gap:6px; padding:7px 9px}
+  .exit{font-size:11px; padding:7px 8px; white-space:nowrap}
+  .gameBadge{min-width:0; max-width:100%; font-size:10px; letter-spacing:.035em;
+    padding:8px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .verTag{display:none}
+  .playerBtn{padding:7px 8px; gap:4px}
+  .playerBtn .muted{font-size:9px; letter-spacing:.04em}
+  .playerBtn strong{font-size:12px; letter-spacing:.04em}
+}
