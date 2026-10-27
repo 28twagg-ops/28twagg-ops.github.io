@@ -243,15 +243,15 @@ body{
 .arrowPad .right{grid-column:3;grid-row:2;}
 
 /* ── GAME FRAME — transparent so body gradient shows in letterbox gaps ── */
-.center{ height:100%; min-height:0; display:flex; justify-content:center; align-items:center; }
+.center{ height:100%; min-height:0; min-width:0; display:flex; justify-content:center; align-items:center; }
 .frame{
-  width:100%; max-width: var(--centerMaxW); height:100%; min-height:0;
+  width:100%; max-width: var(--centerMaxW); height:100%; min-height:0; min-width:0;
   border-radius:22px; overflow:hidden;
-  background: transparent;
+  background: rgba(0,0,0,.55);
   border: 1px solid color-mix(in srgb, var(--hero) 32%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--hero) 10%, transparent), 0 30px 90px rgba(0,0,0,.52);
 }
-iframe{ width:100%; height:100%; border:0; display:block; }
+iframe{ width:100%; height:100%; border:0; display:block; background:#05050b; }
 
 /* ── LEADERBOARD ── */
 .lbHeader{
@@ -295,14 +295,14 @@ iframe{ width:100%; height:100%; border:0; display:block; }
 .noScores p{ margin:0; font-size:12px; letter-spacing:.12em; text-transform:uppercase; text-align:center; line-height:1.6; }
 
 /* ── MOBILE ── */
-.mobileWrap{ display:none; height: calc(100vh - var(--topbarH)); padding: var(--pad); }
-.mobileStack{ height:100%; display:flex; flex-direction:column; gap:10px; }
-.displayZone{ flex:1; min-height:0; display:flex; justify-content:center; align-items:center; }
-.displayCard{ width:100%; max-width: var(--centerMaxW); border-radius:22px; overflow:hidden; height:100%; }
+.mobileWrap{ display:none; height: calc(100vh - var(--topbarH)); height: calc(100dvh - var(--topbarH)); padding: var(--pad); }
+.mobileStack{ height:100%; min-height:0; display:flex; flex-direction:column; gap:10px; }
+.displayZone{ flex:1; min-height:0; min-width:0; display:flex; justify-content:center; align-items:center; }
+.displayCard{ width:100%; min-width:0; max-width: var(--centerMaxW); border-radius:22px; overflow:hidden; height:100%; }
 .hidden{ display:none; }
 .mobileFrame{
   border:1px solid color-mix(in srgb, var(--hero) 32%, transparent);
-  background: transparent;
+  background: rgba(0,0,0,.55);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--hero) 10%, transparent);
 }
 .btnbar{
