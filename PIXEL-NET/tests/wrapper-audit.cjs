@@ -76,7 +76,12 @@ const sizes=[
   console.log(JSON.stringify(summary,null,2));
   // Baseline: fail only when a wrapper cannot be loaded, not because a game is currently stretched.
   assert.equal(data.filter(x=>x.error).length,0,'All wrappers should load');
+  assert.equal(data.filter(x=>!x.validFrame).length,0,'All frames fit their viewport');
   assert.equal(data.filter(x=>!x.inactiveUnloaded).length,0,
     'Every hidden duplicate iframe must remain unloaded');
+  assert.equal(data.filter(x=>x.gameCanvas&&Math.abs(x.gameCanvas.distortion-1)>0.03).length,0,
+    'All custom-game primary canvases preserve their native proportions');
+  assert.equal(data.filter(x=>x.failed.length||x.errors.length).length,0,
+    'Local assets and iframe scripts must load without errors');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
