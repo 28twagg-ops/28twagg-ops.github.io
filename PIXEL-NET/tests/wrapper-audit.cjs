@@ -96,11 +96,10 @@ const sizes=[
   await page.waitForTimeout(150);
   let switchBack=await current();
   assert.ok(switchBack.desktop&&!switchBack.mobile,'return to desktop reactivates proper frame');
-  data.push({game:'neon-chase',size:'breakpoint-regression',
-    transitions:{switchDesktop,switchMobile,switchBack}});
+  const breakpointResults={switchDesktop,switchMobile,switchBack};
   await context.close();
   
-  const summary={games:games.length,contexts:sizes.length,total:games.length*sizes.length,breakpoint:true,
+  const summary={games:games.length,contexts:sizes.length,total:games.length*sizes.length,breakpoint:breakpointResults,
      errors:data.filter(x=>x.error||x.errors.length||x.failed.length).length,
      distortion:data.filter(x=>x.gameCanvas&&Math.abs(x.gameCanvas.distortion-1)>0.03).map(x=>({game:x.game,size:x.size,ratio:x.gameCanvas.distortion})),
      inactiveFrameLoaded:data.filter(x=>x.inactiveUnloaded===false).map(x=>x.game+':'+x.size)};
