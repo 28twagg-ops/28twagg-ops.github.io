@@ -62,7 +62,8 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       const icon = iconFor(raw);
       return `<div class="instrCard"><div class="instrAction"><span class="i">${icon}</span> ${action}</div><div class="instrDetail">${detail}</div></div>`;
     }
-    const looksDirectional = /arrow keys|wasd|move|left|right|up|down/i.test(raw);
+    // Avoid rendering an arrow pad for unrelated text such as 'up to ×8'.
+    const looksDirectional = /^(?:move|steer|navigate|controls?|arrow keys|wasd|use (?:the )?arrows?)\b/i.test(raw.trim());
     if (looksDirectional) {
       return `<div class="instrCard diagramCard"><div class="instrAction"><span class="i">🎮</span> ${fmt(raw)}</div><div class="arrowPad"><span class="kbd up">↑</span><span class="kbd left">←</span><span class="kbd down">↓</span><span class="kbd right">→</span></div></div>`;
     }
@@ -154,6 +155,10 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       </div>
     </div>
   `;
+  for(const id of ['view-howto','view-board']){
+    const panel=document.getElementById(id);
+    if(panel)panel.dataset.cabinet=title.toUpperCase();
+  }
   async function loadVersionTag() {
     const el = document.getElementById('verTag');
     if (!el) return;
