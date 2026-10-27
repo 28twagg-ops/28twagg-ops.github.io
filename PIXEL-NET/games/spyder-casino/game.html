@@ -2934,10 +2934,12 @@ function showEndScreen(game,score,subtitle,slug){
   const scoreNum=slug===BJ_SLUG
     ? Math.round(parseFloat(score.replace('$','')))
     : parseInt(score)||0;
-  fbPost(slug,{initials:ini,score:scoreNum,mode:endGameMode,t:Date.now()});
-  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:slug},'*');
+  // Submit only once via the parent wrapper; the old game and wrapper both
+  // wrote Firebase, producing duplicate scores and losing the game mode.
+  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,
+    slug:slug,mode:endGameMode},location.origin);
+  endMsg.textContent='Saving score for '+ini+'…';
   refreshLobbyBoards();
-  endMsg.textContent=`✓ Score saved for ${ini}`;
   fbFetch(slug,5).then(r=>renderLb(r,'endLb',slug===BJ_SLUG?'bj':'he'));
 }
 async function endSubmit(){
@@ -2950,11 +2952,10 @@ async function endSubmit(){
   if(endGameSlug===BJ_SLUG) scoreNum=Math.round(parseFloat(document.getElementById('endScore').textContent.replace('$','')));
   else scoreNum=parseInt(document.getElementById('endScore').textContent)||0;
   const entry={initials:ini,score:scoreNum,mode:endGameMode,t:Date.now()};
-  await fbPost(endGameSlug,entry);
-  // Keep lobby leaderboards up-to-date immediately after any submit.
-  refreshLobbyBoards();
-  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:endGameSlug},'*');
-  document.getElementById('endMsg').textContent='✓ Score saved!';
+  // The wrapper owns the write and acknowledges whether it actually worked.
+  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,
+    slug:endGameSlug,mode:endGameMode},location.origin);
+  document.getElementById('endMsg').textContent='Saving score…';
   setTimeout(()=>fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he')),600);
 }
 function endSkip(){fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he'));}
@@ -2963,7 +2964,17 @@ function endSkip(){fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug
 // INIT
 // ════════════════════════════════════════════
 window.addEventListener('message',e=>{
+  // Only trust acknowledgments from the embedding arcade wrapper.
+  if(e.source!==window.parent || e.origin!==location.origin)return;
   const d=e.data||{};
+  if(d.type==='PIXELNET_SCORE_STATUS'){
+    const target=document.getElementById('endMsg');
+    if(target)target.textContent=d.globalSaved
+      ?'✓ Score saved to global leaderboard.'
+      :(d.localSaved?'✓ Score saved on this device. Global board unavailable.':
+        'Score could not be saved.');
+    return;
+  }
   if(d.type==='PIXELNET_SET_INITIALS'&&d.initials){
     userInitials=d.initials.toUpperCase().slice(0,3);
     localStorage.setItem('PIXELNET_INITIALS',userInitials);
