@@ -481,3 +481,28 @@ iframe{ width:100%; height:100%; border:0; display:block; background:#05050b; }
   .btnbar{padding:4px}
   .tabBtn{height:35px}
 }
+
+
+/* Polished short instructions/scores pages: use available portrait height
+   intentionally rather than leaving a plain black lower half. */
+@media(max-width:1100px){
+  #view-howto,#view-board{
+    position:relative;
+    background:
+      radial-gradient(ellipse at 50% 76%,color-mix(in srgb,var(--hero) 14%,transparent),transparent 60%),
+      repeating-linear-gradient(0deg,transparent 0px,transparent 39px,
+        color-mix(in srgb,var(--hero) 4%,transparent) 40px),
+      var(--panelBg);
+  }
+  #view-howto .content{justify-content:safe center}
+  #view-howto .instructionGrid{flex:0 0 auto;max-width:560px;margin-inline:auto}
+  #view-howto::after,#view-board::after{
+    content:attr(data-cabinet);
+    position:absolute;left:8%;right:8%;bottom:11%;
+    font:900 clamp(18px,5vw,29px)/1.3 var(--arcadeFont);
+    text-align:center;letter-spacing:.13em;
+    color:var(--hero);opacity:.12;
+    overflow-wrap:anywhere;pointer-events:none;
+  }
+  #view-howto>.content,#view-board>.content{position:relative;z-index:1}
+}
