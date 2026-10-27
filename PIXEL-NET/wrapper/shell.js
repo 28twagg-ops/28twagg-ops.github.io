@@ -169,6 +169,20 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   }
   loadVersionTag();
 
+  // App install entry on every game page; manifest/start page are shared.
+  const appManifest=document.createElement('link');
+  appManifest.rel='manifest';
+  appManifest.href='../../manifest.webmanifest';
+  document.head.appendChild(appManifest);
+  const appIcon=document.createElement('link');
+  appIcon.rel='apple-touch-icon';
+  appIcon.href='../../icons/arcade-192.png';
+  document.head.appendChild(appIcon);
+  const appInstallScript=document.createElement('script');
+  appInstallScript.src='../../install.js';
+  appInstallScript.defer=true;
+  document.body.appendChild(appInstallScript);
+
   // --- Aspect ratio: prevent game canvas stretching ---
   // CSS aspect-ratio is unreliable on iframes (no intrinsic size).
   // We compute pixel dimensions in JS and re-apply on every resize.
