@@ -71,7 +71,8 @@ const log=(name,data)=>report.tests.push({name,...data});
   await page.locator('#initialsInput').fill('XYZ');
   await page.locator('#saveInitials').click();
   assert.equal(await page.locator('#initials').textContent(),'XYZ','change initials remains enabled');
-  await page.goto('http://127.0.0.1:8765/index.html',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8765/index.html',{waitUntil:'load'});
+  await page.waitForFunction(()=>document.querySelector('#playerInitials').textContent==='XYZ',{timeout:5000});
   assert.equal(await page.locator('#playerInitials').textContent(),'XYZ');
   log('Change initials in app', {status:'pass',value:'XYZ'});
 
