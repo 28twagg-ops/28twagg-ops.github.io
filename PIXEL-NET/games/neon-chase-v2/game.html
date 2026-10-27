@@ -339,6 +339,21 @@ const LEVEL_MAPS = [
     ]
 ];
 
+// Per-map walkable spawn points, [column, row]. Validation runs on every reset.
+const LEVEL_SPAWNS = [
+ { player:[9,16], drones:[[1,1],[17,1],[1,18],[17,18]] },
+ { player:[9,15], drones:[[1,1],[17,1],[1,17],[17,17]] },
+ { player:[9,15], drones:[[1,1],[17,1],[1,17],[17,17]] }
+];
+function levelSpawns() { return LEVEL_SPAWNS[(level - 1) % LEVEL_MAPS.length]; }
+function requireWalkable([c,r]) {
+ if (!Number.isInteger(c) || !Number.isInteger(r) ||
+     r < 0 || r >= LEVEL_MAPS[0].length ||
+     c < 0 || c >= LEVEL_MAPS[0][0].length ||
+     currentMapData[r][c] === 1) {
+   throw new Error(`Blocked spawn (${c},${r}) in zone ${level}`);
+ }
+}
 const COLS = LEVEL_MAPS[0][0].length;
 const ROWS = LEVEL_MAPS[0].length;
 
@@ -347,6 +362,7 @@ let wallColor = LEVEL_COLORS[0];
 let canvas, ctx, gameInterval;
 let score = 0, level = 1, highScore = 0, lives = 3;
 let gameState = 'START', powerModeTime = 0, flashTimer = 0;
+let playerInvulnTicks = 0, levelTransitionTimer = null;
 let player = {}, drones = [], particles = [], bits = [];
 let nextDir = { x: 0, y: 0 }, touchStartX = 0, touchStartY = 0;
 
@@ -499,7 +515,7 @@ class Drone extends Entity {
         }
         
         this.move();
-        if (Math.hypot(this.x - player.x, this.y - player.y) < TILE_SIZE * 0.8) {
+        if (gameState === 'PLAY' && playerInvulnTicks === 0 && Math.hypot(this.x - player.x, this.y - player.y) < TILE_SIZE * 0.8) {
             if (this.mode === 'FRIGHTENED') { 
                 AudioEngine.eatDrone(); 
                 const _px = this.x, _py = this.y;
@@ -520,19 +536,10 @@ class Drone extends Entity {
         const midC = (COLS - 1) / 2;
         const midR = (ROWS - 1) / 2;
 
-        let spawnC = 1, spawnR = 1;
-
-        // TL -> BR, TR -> BL, BL -> TR, BR -> TL
-        if (p.c < midC && p.r < midR) {          // top-left
-            spawnC = COLS - 2; spawnR = ROWS - 2;
-        } else if (p.c >= midC && p.r < midR) {  // top-right
-            spawnC = 1; spawnR = ROWS - 2;
-        } else if (p.c < midC && p.r >= midR) {  // bottom-left
-            spawnC = COLS - 2; spawnR = 1;
-        } else {                                 // bottom-right
-            spawnC = 1; spawnR = 1;
-        }
-
+        // Opposite corner, chosen from this zone's validated positions.
+        const opposite = (p.r < midR ? 2 : 0) + (p.c < midC ? 1 : 0);
+        const [spawnC, spawnR] = levelSpawns().drones[opposite];
+        requireWalkable([spawnC, spawnR]);
         this.x = spawnC * TILE_SIZE + TILE_SIZE/2;
         this.y = spawnR * TILE_SIZE + TILE_SIZE/2;
         this.mode = 'CHASE';
@@ -598,11 +605,12 @@ function init() {
 
 function showStartScreen() {
     gameState = 'START'; const ov = document.getElementById('overlay'); ov.classList.remove('hidden');
-    ov.innerHTML = `<h1>NEON CHASE</h1><p>ARROWS / SWIPE to Move<br>Drones hunt from the corners.</p><button class="reboot-btn" onclick="startGame()">INITIATE</button>`;
+    ov.innerHTML = `<h1>NEON CHASE</h1><p>ARROWS / WASD / SWIPE to Move<br>Press P to pause · Drones hunt from the corners.</p><button class="reboot-btn" onclick="startGame()">INITIATE</button>`;
 }
 
 function resetLevel() {
     bits = [];
+    powerModeTime = 0; flashTimer = 0;
     currentMapData = LEVEL_MAPS[(level - 1) % LEVEL_MAPS.length];
     wallColor = LEVEL_COLORS[(level - 1) % LEVEL_COLORS.length];
     for (let r = 0; r < ROWS; r++) {
@@ -615,29 +623,40 @@ function resetLevel() {
 }
 
 function resetEntities() {
-    player = new Player(9, 15);
-    drones = [
-        new Drone(1, 1, '#FF0055', 0), 
-        new Drone(17, 1, '#FF9900', 1), 
-        new Drone(1, 18, '#CC00FF', 2), 
-        new Drone(17, 18, '#FFFF00', 3)
-    ];
+    const spawn = levelSpawns();
+    [spawn.player, ...spawn.drones].forEach(requireWalkable);
+    player = new Player(...spawn.player);
+    const colors = ['#FF0055','#FF9900','#CC00FF','#FFFF00'];
+    drones = spawn.drones.map(([x,y],i) => new Drone(x,y,colors[i],i));
     nextDir = { x: 0, y: 0 };
+    playerInvulnTicks = 75;
 }
 
 function startGame() {
     __px_sentScore = false;
-    AudioEngine.init(); AudioEngine.start(); document.getElementById('overlay').classList.add('hidden');
-    score = 0; lives = 3; level = 1; updateUI(); gameState = 'PLAY'; resetLevel();
-    if (gameInterval) clearInterval(gameInterval); gameInterval = setInterval(gameLoop, 1000/60);
+    if (levelTransitionTimer) clearTimeout(levelTransitionTimer);
+    levelTransitionTimer = null;
+    if (gameInterval) clearInterval(gameInterval);
+    gameInterval = null;
+    AudioEngine.init(); AudioEngine.start();
+    document.getElementById('overlay').classList.add('hidden');
+    score = 0; lives = 3; level = 1; particles = [];
+    gameState = 'PLAY'; resetLevel(); updateUI();
+    gameInterval = setInterval(gameLoop, 1000/60);
 }
 
 function winGame() {
+    if (gameState !== 'PLAY') return;
     gameState = 'LEVEL_TRANSITION'; AudioEngine.start(); level++;
     const ov = document.getElementById('overlay'); ov.classList.remove('hidden');
     ov.innerHTML = `<h1>ZONE ${level}</h1><p>SYNCING CORE...</p>`;
-    clearInterval(gameInterval);
-    setTimeout(() => { ov.classList.add('hidden'); gameState = 'PLAY'; resetLevel(); gameInterval = setInterval(gameLoop, 1000/60); }, 1500);
+    clearInterval(gameInterval); gameInterval = null;
+    levelTransitionTimer = setTimeout(() => {
+        levelTransitionTimer = null;
+        ov.classList.add('hidden'); gameState = 'PLAY';
+        resetLevel(); updateUI();
+        gameInterval = setInterval(gameLoop, 1000/60);
+    }, 1500);
 }
 
 function gameOver() {
@@ -655,8 +674,22 @@ function gameOver() {
 }
 
 function killPlayer() {
-    lives--; updateUI(); AudioEngine.crash(); createParticles(player.x, player.y, '#00F0FF');
+    if (gameState !== 'PLAY' || playerInvulnTicks > 0) return;
+    lives--; updateUI(); AudioEngine.crash();
+    createParticles(player.x, player.y, '#00F0FF');
+    powerModeTime = 0; flashTimer = 0;
     if (lives <= 0) gameOver(); else resetEntities();
+}
+function togglePause() {
+    if (gameState === 'PLAY') {
+        gameState = 'PAUSED';
+        const ov = document.getElementById('overlay');
+        ov.innerHTML = '<h1>PAUSED</h1><p>Your run is safe.</p><button class="reboot-btn" onclick="togglePause()">RESUME</button>';
+        ov.classList.remove('hidden');
+    } else if (gameState === 'PAUSED') {
+        gameState = 'PLAY';
+        document.getElementById('overlay').classList.add('hidden');
+    }
 }
 
 function activatePowerMode() {
@@ -678,7 +711,11 @@ function updateUI() {
 
 function gameLoop() {
     if (gameState !== 'PLAY') return;
-    player.update(); drones.forEach(g => g.update());
+    if (playerInvulnTicks > 0) playerInvulnTicks--;
+    player.update();
+    if (gameState !== 'PLAY') return;
+    drones.forEach(g => { if (gameState === 'PLAY') g.update(); });
+    if (gameState !== 'PLAY') { updateUI(); draw(); return; }
     if (powerModeTime > 0) {
         powerModeTime--; if (powerModeTime < 120) flashTimer++;
         if (powerModeTime === 0) drones.forEach(g => { if (g.mode === 'FRIGHTENED') g.mode = 'CHASE'; });
@@ -712,14 +749,22 @@ function draw() {
 }
 
 function handleKey(e) {
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) > -1) e.preventDefault();
-    if (__DEV && gameState === 'PLAY' && e.key.toLowerCase() === 'n') { winGame(); return; }
-    switch(e.code) {
-        case 'ArrowUp': nextDir = { x: 0, y: -1 }; break;
-        case 'ArrowDown': nextDir = { x: 0, y: 1 }; break;
-        case 'ArrowLeft': nextDir = { x: -1, y: 0 }; break;
-        case 'ArrowRight': nextDir = { x: 1, y: 0 }; break;
+    const moves = {
+        ArrowUp:[0,-1], KeyW:[0,-1], ArrowDown:[0,1], KeyS:[0,1],
+        ArrowLeft:[-1,0], KeyA:[-1,0], ArrowRight:[1,0], KeyD:[1,0]
+    };
+    const code = e.code || e.key;
+    if (moves[code]) {
+        e.preventDefault();
+        if (gameState === 'PLAY') {
+            const [x,y] = moves[code]; nextDir = {x,y};
+        }
+        return;
     }
+    if (code === 'KeyP' || e.key?.toLowerCase() === 'p') {
+        e.preventDefault(); togglePause(); return;
+    }
+    if (__DEV && gameState === 'PLAY' && e.key?.toLowerCase() === 'n') winGame();
 }
 init();
 </script>
