@@ -240,15 +240,30 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const entry = CFG.entry || './game.html';
   const gd = document.getElementById('gameDesktop');
   const gm = document.getElementById('gameMobile');
-  gd.src = entry;
-  gm.src = entry;
+  // Only the visible game should execute. Previously both frames were
+  // loaded simultaneously, duplicating audio, animation and possible score events.
+  const narrowScreen = window.matchMedia('(max-width: 1100px)');
+  let activeGame = null;
+  const activateGameFrame = () => {
+    const chosen = narrowScreen.matches ? gm : gd;
+    if (chosen === activeGame) return;
+    const inactive = chosen === gd ? gm : gd;
+    // Crossing the desktop/mobile breakpoint starts a fresh game instance.
+    // Do not attempt to preserve a running game's opaque internal state.
+    if (inactive.hasAttribute('src')) inactive.removeAttribute('src');
+    if (!chosen.hasAttribute('src')) chosen.setAttribute('src', entry);
+    activeGame = chosen;
+  };
+  activateGameFrame();
+  if (narrowScreen.addEventListener) narrowScreen.addEventListener('change', activateGameFrame);
+  else if (narrowScreen.addListener) narrowScreen.addListener(activateGameFrame);
 
   const focusFrame = el => {
     try { el.focus(); } catch(_) {}
     try { el.contentWindow && el.contentWindow.focus && el.contentWindow.focus(); } catch(_) {}
   };
-  gd.addEventListener('load', () => focusFrame(gd));
-  gm.addEventListener('load', () => focusFrame(gm));
+  gd.addEventListener('load', () => { if(activeGame === gd) focusFrame(gd); });
+  gm.addEventListener('load', () => { if(activeGame === gm) focusFrame(gm); });
   document.getElementById('gameFrame')?.addEventListener('pointerdown', () => focusFrame(gd));
   document.getElementById('view-game')?.addEventListener('pointerdown', () => focusFrame(gm));
 
@@ -399,6 +414,9 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
   // Listen for score / initials messages from iframed games
   window.addEventListener('message', e => {
+    // Only accept messages from the active child game, never the inactive
+    // blank frame or unrelated windows. All hosted custom games are same-origin.
+    if (!activeGame || e.source !== activeGame.contentWindow || e.origin !== location.origin) return;
     const d = e.data || {};
     if (!d || !d.type) return;
     if (d.type === 'PIXELNET_SET_INITIALS' && d.initials) {
