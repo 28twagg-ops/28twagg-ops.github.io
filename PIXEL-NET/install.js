@@ -122,18 +122,8 @@
     document.head.appendChild(sheet);
   }
 
-  function setup() {
-    if (standalone()) return;
-    addStyle();
-    const modalButton = document.querySelector('#initialModal .btn-save');
-    if (modalButton)
-      modalButton.insertAdjacentElement('afterend', makeButton('px-install-inline'));
-    const wrapperModalButton = document.getElementById('saveInitials');
-    if (wrapperModalButton)
-      wrapperModalButton.insertAdjacentElement('afterend', makeButton('px-install-inline px-install-wrapper'));
-    const player = document.getElementById('playerInitials') || document.getElementById('playerBtn');
-    if (player) player.insertAdjacentElement('afterend', makeButton('px-install-header'));
-    if (!buttons.length) document.body.appendChild(makeButton('px-install-header'));
+  function registerServiceWorker() {
+    // Installed iOS apps have separate storage and their own first launch.
     if ('serviceWorker' in navigator && location.pathname.startsWith(appRoot.pathname)) {
       const register = () => {
         navigator.serviceWorker.register(new URL('sw.js', appRoot), { scope: appRoot.pathname })
@@ -142,6 +132,21 @@
       if (document.readyState === 'complete') register();
       else window.addEventListener('load', register, { once:true });
     }
+  }
+  function setup() {
+    registerServiceWorker();
+    if (standalone()) return;
+    addStyle();
+    const modalButton = document.querySelector('#initialModal .btn-save');
+    if (modalButton)
+      modalButton.insertAdjacentElement('afterend', makeButton('px-install-inline'));
+    const wrapperModalButton = document.getElementById('saveInitials');
+    if (wrapperModalButton)
+      wrapperModalButton.insertAdjacentElement('afterend', makeButton('px-install-inline px-install-wrapper'));
+    // Keep wrapper topbar three-column: install stays within initials modal.
+    const player = document.getElementById('playerInitials');
+    if (player) player.insertAdjacentElement('afterend', makeButton('px-install-header'));
+    if (!buttons.length) document.body.appendChild(makeButton('px-install-header'));
   }
 
   window.addEventListener('beforeinstallprompt', event => {
