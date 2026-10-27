@@ -109,10 +109,16 @@ const check=(condition,msg)=>{if(!condition)throw Error(msg)};
       if(view.device!=='desktop'){
         await page.locator('.tabBtn[data-tab="howto"]').click();
         check(await page.locator('#view-howto').isVisible(),'How To tab inaccessible');
+        if(view.device==='mobile') await page.screenshot({
+          path:output+'/'+game.slug+'-howto-mobile.png',timeout:12000
+        });
         const text=await page.locator('#instructionsMobile').innerText();
         check(text.trim().length>8,'Empty instructions');
         await page.locator('.tabBtn[data-tab="board"]').click();
         check(await page.locator('#view-board').isVisible(),'Leaderboard tab inaccessible');
+        if(view.device==='mobile') await page.screenshot({
+          path:output+'/'+game.slug+'-scores-mobile.png',timeout:12000
+        });
         if(item.category==='custom')check((await page.locator('#view-board').innerText()).includes('QA1') ||
            game.slug==='spyder-casino','Global test data not shown');
         await page.locator('.tabBtn[data-tab="game"]').click();
