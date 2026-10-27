@@ -393,3 +393,91 @@ iframe{ width:100%; height:100%; border:0; display:block; background:#05050b; }
   .playerBtn .muted{font-size:9px; letter-spacing:.04em}
   .playerBtn strong{font-size:12px; letter-spacing:.04em}
 }
+
+
+/* 2026-10-27 design consistency pass: every panel inherits its cabinet's colors.
+   Keep the in-game iframe separate from panel styling and its native ratio. */
+:root{
+  --panelBg:
+    radial-gradient(ellipse at 0% 0%, color-mix(in srgb,var(--hero) 13%,transparent),transparent 72%),
+    linear-gradient(165deg,color-mix(in srgb,var(--bg2) 78%,#080910),color-mix(in srgb,var(--bg0) 82%,#070711));
+}
+.shell{
+  height:calc(100vh - var(--topbarH));
+  height:calc(100dvh - var(--topbarH));
+  --leftW:clamp(245px,20vw,325px);
+  --rightW:clamp(245px,20vw,325px);
+}
+.panel{
+  border:1px solid color-mix(in srgb,var(--hero) 38%,rgba(255,255,255,.11));
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--hero2) 16%,transparent),
+   0 15px 35px rgba(0,0,0,.30);
+}
+.panel h3,
+.panel .mobile-board-heading{
+  color:color-mix(in srgb,var(--hero2) 75%,#fff);
+  border-bottom:1px solid color-mix(in srgb,var(--hero) 28%,transparent);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--hero) 20%,transparent),
+    color-mix(in srgb,var(--hero2) 8%,transparent));
+  min-height:43px;
+}
+.panel.leaderboard h3{color:color-mix(in srgb,var(--hero) 73%,#fff)}
+.panel .content{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--hero) transparent}
+.instructionGrid{overflow:visible;flex:initial;width:100%;align-content:flex-start;min-width:0}
+.instrCard{
+  flex:1 1 100%;min-width:0;
+  padding:12px;
+  border:1px solid color-mix(in srgb,var(--hero) 35%,transparent);
+  background:linear-gradient(140deg,
+    color-mix(in srgb,var(--hero) 10%,#090911),
+    color-mix(in srgb,var(--hero2) 4%,#070912));
+  box-shadow:inset 3px 0 0 color-mix(in srgb,var(--hero) 52%,transparent);
+}
+.instrAction{color:color-mix(in srgb,var(--hero2) 86%,white);overflow-wrap:anywhere}
+.instrDetail{overflow-wrap:anywhere;font-size:12px;line-height:1.5}
+.instrCard .kbd{
+  background:color-mix(in srgb,var(--hero) 11%,#05050d);
+  border-color:color-mix(in srgb,var(--hero) 40%,transparent);
+}
+.boardRow{
+  min-width:0;border-color:color-mix(in srgb,var(--hero2) 28%,transparent);
+}
+.boardRow .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.boardRow .score{font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.boardNotice{
+  border:1px solid color-mix(in srgb,var(--hero2) 45%,transparent);
+  border-radius:12px;padding:10px 11px;margin-bottom:12px;
+  background:color-mix(in srgb,var(--hero2) 8%,#060914);
+  color:var(--text);font-size:11px;line-height:1.5;
+}
+.boardNotice[data-status="online"]{border-color:color-mix(in srgb,var(--hero) 53%,transparent)}
+.boardNotice[data-status="error"]{border-color:#eab35b;color:#ffe7ae}
+.frame,.mobileFrame{
+  border:2px solid color-mix(in srgb,var(--hero) 58%,#131523);
+  border-radius:16px;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--hero) 8%,transparent),
+    0 18px 48px #0008;
+}
+@media(max-width:1100px){
+  .mobileWrap{padding:10px 12px max(10px,env(safe-area-inset-bottom))}
+  .mobileStack{gap:8px}
+  .displayZone{min-height:0;overflow:hidden;padding:6px}
+  .displayCard{max-height:100%;height:100%;border-radius:16px}
+  #view-howto,#view-board{display:flex;flex-direction:column;overflow:hidden}
+  #view-howto.hidden,#view-board.hidden{display:none}
+  #view-howto>.content,#view-board>.content{overflow-y:auto;overflow-x:hidden;min-height:0}
+  .btnbar{padding:6px;gap:6px;flex-shrink:0;border-radius:13px}
+  .tabBtn{height:46px;border-radius:10px;min-width:0;font-size:11px}
+}
+@media(max-width:420px){
+  .mobileWrap{padding:7px 8px max(9px,env(safe-area-inset-bottom))}
+  .displayZone{padding:4px}
+  .instrCard{padding:10px}
+  .topbar{height:var(--topbarH)}
+}
+@media(max-height:560px) and (max-width:1100px){
+  .mobileWrap{padding:5px}
+  .mobileStack{gap:5px}
+  .btnbar{padding:4px}
+  .tabBtn{height:35px}
+}
