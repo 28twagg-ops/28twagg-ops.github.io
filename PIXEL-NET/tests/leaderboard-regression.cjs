@@ -34,6 +34,15 @@ const fs=require('node:fs');
   // no duplicate POST on two identical game-over messages.
   const casino=await browser.newContext({viewport:{width:1400,height:900}});
   const posts=[];
+  await casino.route('**/wrapper/shell.js',async route=>{
+    const response=await route.fetch();
+    const code=(await response.text()).replace('const FIREBASE_WEB_API_KEY = "";',
+      'const FIREBASE_WEB_API_KEY = "TEST_KEY";');
+    await route.fulfill({response,body:code,contentType:'application/javascript'});
+  });
+  await casino.route(/identitytoolkit.googleapis.com/,route=>
+    route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({idToken:'mock-token',expiresIn:'3600'})}));
   await casino.route(/firebaseio\.com/,route=>{
     const req=route.request(),method=req.method();
     if(method==='POST'){
@@ -56,7 +65,8 @@ const fs=require('node:fs');
   await board.waitForFunction(()=>JSON.parse(localStorage.getItem('LB_spyder-blackjack')||'[]')
     .some(r=>r.score===185));
   await board.waitForTimeout(300);
-  assert.equal(posts.length,1,'One score event means one Firebase write');
+  assert.equal(posts.length,1,'One score event means one authenticated Firebase write');
+  assert.ok(posts[0].url.includes('auth=mock-token'),'Authenticated token missing');
   assert.equal(posts[0].data.mode,'ANALYSIS','Casino mode must persist');
   const records=await board.evaluate(()=>JSON.parse(localStorage.getItem('LB_spyder-blackjack')));
   assert.equal(records.length,1);
