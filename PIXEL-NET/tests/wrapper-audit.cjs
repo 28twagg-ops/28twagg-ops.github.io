@@ -45,7 +45,7 @@ const sizes=[
      }));
      item.frameBounds=await page.locator(size.frame).boundingBox();
      const inner=page.frameLocator(size.frame);
-     item.game=await inner.locator('body').evaluate(()=>({
+     item.canvasInfo=await inner.locator('body').evaluate(()=>({
        bodyWidth:document.body.scrollWidth,bodyHeight:document.body.scrollHeight,
        innerW:innerWidth,innerH:innerHeight,
        canvases:[...document.querySelectorAll('canvas')].filter(c=>c.width>0&&c.height>0).map(c=>{
@@ -55,7 +55,9 @@ const sizes=[
           area:r.width*r.height};
        }).sort((a,b)=>b.area-a.area).slice(0,4)
      }));
-     item.gameCanvas=item.game.canvases[0]||null;
+     item.gameCanvas=item.canvasInfo.canvases[0]||null;
+     const inactive=size.name==='desktop'?'mobile':'desktop';
+     item.inactiveUnloaded=!item.frames[inactive];
      item.validFrame=item.frameBounds.width>30&&item.frameBounds.height>30&&
          item.frameBounds.width <= size.width+2 && item.frameBounds.height<=size.height+2;
      if(['millipede-chaos','caked-up-cats','logic-bomb','knight-flight','neon-chase'].includes(slug)&&size.name!=='tablet')
@@ -69,10 +71,12 @@ const sizes=[
   const summary={games:games.length,contexts:sizes.length,total:data.length,
      errors:data.filter(x=>x.error||x.errors.length||x.failed.length).length,
      distortion:data.filter(x=>x.gameCanvas&&Math.abs(x.gameCanvas.distortion-1)>0.03).map(x=>({game:x.game,size:x.size,ratio:x.gameCanvas.distortion})),
-     inactiveFrameLoaded:data.filter(x=>x.frames&&(x.size==='desktop'?x.frames.mobile:x.frames.desktop) && (x.size==='desktop'?x.frames.mobile:x.frames.desktop)!=='about:blank').map(x=>x.game+':'+x.size)};
+     inactiveFrameLoaded:data.filter(x=>x.inactiveUnloaded===false).map(x=>x.game+':'+x.size)};
   fs.writeFileSync(dir+'/report.json',JSON.stringify({summary,cases:data},null,2));
   console.log(JSON.stringify(summary,null,2));
   // Baseline: fail only when a wrapper cannot be loaded, not because a game is currently stretched.
   assert.equal(data.filter(x=>x.error).length,0,'All wrappers should load');
+  assert.equal(data.filter(x=>!x.inactiveUnloaded).length,0,
+    'Every hidden duplicate iframe must remain unloaded');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
