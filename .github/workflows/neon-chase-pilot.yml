@@ -35,5 +35,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: neon-chase-pilot-browser-proof
-          path: playwright-artifacts/
+          path: |
+            playwright-artifacts/
+            PIXEL-NET/games/neon-chase-v2/game.html
           if-no-files-found: warn
