@@ -1,0 +1,39 @@
+name: Neon Chase pilot validation
+on:
+  push:
+    branches:
+      - pilot/neon-chase-quality-2026-10-26
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pilot-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify maps and game logic without network
+        run: node PIXEL-NET/tests/neon-chase-pilot.test.cjs
+      - name: Install isolated browser test dependencies
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Launch local arcade (never production)
+        run: |
+          python3 -m http.server 8765 --directory PIXEL-NET > /tmp/pixelnet-http.log 2>&1 &
+          echo $! > /tmp/pixelnet-http.pid
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games/neon-chase-v2/game.html >/dev/null && break || sleep 1; done
+      - name: Play desktop and simulate mobile touch
+        run: node PIXEL-NET/tests/neon-chase-browser.cjs
+      - name: Save screenshots and observed results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-chase-pilot-browser-proof
+          path: playwright-artifacts/
+          if-no-files-found: warn
