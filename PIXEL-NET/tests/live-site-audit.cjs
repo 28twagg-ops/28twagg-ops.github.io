@@ -19,6 +19,21 @@ async function check(url){
 }
 (async()=>{
  for(const path of paths)results.pages.push({url:ROOT+path,...await check(ROOT+path)});
+ // Verify all 19 public game wrappers and all thumbnail asset URLs.
+ const catalog=JSON.parse(fs.readFileSync('PIXEL-NET/games.json','utf8'));
+ results.catalogCount=catalog.length;
+ results.gameRoutes=await Promise.all(catalog.map(async game=>{
+   const url=ROOT+'/PIXEL-NET/'+game.path;
+   return {slug:game.slug,url,...await check(url)};
+ }));
+ results.thumbnails=await Promise.all(catalog.map(async game=>{
+   const url=ROOT+'/PIXEL-NET/'+game.thumb;
+   // HEAD avoids pulling the large AI-generated image assets over the network.
+   try{
+     const r=await fetch(url,{method:'HEAD',signal:AbortSignal.timeout(12000)});
+     return {slug:game.slug,url,status:r.status,ok:r.ok};
+   }catch(e){return {slug:game.slug,url,error:String(e)}}
+ }));
  for(const slug of boards){
   const url=DB+'/lb/'+slug+'.json';
   const response=await check(url);
@@ -26,6 +41,8 @@ async function check(url){
   if(!response.ok)results.warnings.push('Leaderboard '+slug+': '+(response.status||response.error));
  }
  fs.mkdirSync('live-audit-results',{recursive:true});
+ results.gameRouteProblems=results.gameRoutes.filter(x=>!x.ok).map(x=>({slug:x.slug,status:x.status,error:x.error}));
+ results.thumbnailProblems=results.thumbnails.filter(x=>!x.ok).map(x=>({slug:x.slug,status:x.status,error:x.error}));
  fs.writeFileSync('live-audit-results/report.json',JSON.stringify(results,null,2));
  console.log(JSON.stringify(results,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1});
