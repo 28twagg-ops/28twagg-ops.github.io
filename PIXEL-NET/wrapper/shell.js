@@ -11,6 +11,10 @@
 // 4. Paste it below and replace null:
 //
 const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
+// Public Firebase Web API key only (not a service-account secret).
+// Configure this after enabling Firebase Authentication → Anonymous.
+// Until then global score writes remain safely disabled.
+const FIREBASE_WEB_API_KEY = "";
 // example: "https://pixel-net-arcade-default-rtdb.firebaseio.com"
 //
 // After saving this file and pushing to GitHub, all players on
@@ -357,10 +361,33 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       return {ok:true,rows:normalizeRows(await res.json())};
     }catch(_){return {ok:false,rows:[],reason:'Global database connection unavailable.'}}
   }
+  // Anonymous Firebase Auth: no user-facing account creation. The token is
+  // held only in memory; reload creates a new anonymous session. A production
+  // deployment should use the SDK for persistent identity/token refresh.
+  let authPromise=null;
+  async function getScoreToken(){
+    if(!FIREBASE_WEB_API_KEY)return null;
+    if(!authPromise){
+      authPromise=(async()=>{
+        const res=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+
+          encodeURIComponent(FIREBASE_WEB_API_KEY),{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({returnSecureToken:true})
+        });
+        if(!res.ok)throw new Error('Firebase anonymous sign-in failed');
+        const data=await res.json();
+        return data.idToken||null;
+      })().catch(()=>null);
+    }
+    return authPromise;
+  }
   async function fbPost(entry,board=slug){
     if(!cloudURL(board))return false;
+    const token=await getScoreToken();
+    if(!token)return false;
     try{
-      const res=await fetch(cloudURL(board),{method:'POST',
+      const url=cloudURL(board)+'?auth='+encodeURIComponent(token);
+      const res=await fetch(url,{method:'POST',
         headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});
       return res.ok;
     }catch(_){return false}
