@@ -63,10 +63,15 @@ body{
 }
 
 canvas{
+  /* The native pixel playfield is always 400x640 (5:8).
+     Resize in one uniform scale; never stretch X and Y separately. */
   position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:400px;
+  height:640px;
+  display:block;
   image-rendering:pixelated;
   touch-action:none;
 }
@@ -103,7 +108,10 @@ canvas{
 }
 #overlay button:active{transform:scale(.98)}
 #scanlines{
-  position:absolute;inset:0;pointer-events:none;
+  position:absolute;
+  left:50%; top:50%; transform:translate(-50%,-50%);
+  width:400px; height:640px;
+  pointer-events:none;
   background:
     linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
     linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06));
@@ -155,7 +163,31 @@ canvas{
   var canvas=document.getElementById("c");
   canvas.width=COLS*GRID_SIZE;
   canvas.height=ROWS*GRID_SIZE;
-var ctx=canvas.getContext("2d");
+  var ctx=canvas.getContext("2d");
+  var canvasBox=document.getElementById("canvasBox");
+  var scanlines=document.getElementById("scanlines");
+
+  // Container-only fix: fit without distorting native game coordinates.
+  // Pointer coordinates still use the actual canvas bounding rect.
+  function fitPlayfield(){
+    var availableW=canvasBox.clientWidth, availableH=canvasBox.clientHeight;
+    if(availableW<=0 || availableH<=0) return; // hidden responsive frame
+    var factor=Math.min(availableW/canvas.width, availableH/canvas.height);
+    var width=Math.max(1,Math.floor(canvas.width*factor));
+    var height=Math.max(1,Math.floor(canvas.height*factor));
+    // Use one exact scale factor after pixel rounding to avoid asymmetry.
+    factor=Math.min(width/canvas.width,height/canvas.height);
+    var outW=(canvas.width*factor).toFixed(2)+"px";
+    var outH=(canvas.height*factor).toFixed(2)+"px";
+    canvas.style.width=outW;
+    canvas.style.height=outH;
+    scanlines.style.width=outW;
+    scanlines.style.height=outH;
+  }
+  if(window.ResizeObserver) new ResizeObserver(fitPlayfield).observe(canvasBox);
+  window.addEventListener("resize",fitPlayfield);
+  requestAnimationFrame(fitPlayfield);
+  window.addEventListener("load",fitPlayfield);
 
   // --- HUD ---
   var hudScore=document.getElementById("hudScore");
