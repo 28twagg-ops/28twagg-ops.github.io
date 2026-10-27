@@ -114,6 +114,11 @@ const check=(condition,msg)=>{if(!condition)throw Error(msg)};
         });
         const text=await page.locator('#instructionsMobile').innerText();
         check(text.trim().length>8,'Empty instructions');
+        if(game.slug==='galaxy-swarm-2084'){
+          const falseArrow=await page.locator('#instructionsMobile .instrCard')
+            .filter({hasText:'Kill streak builds'}).locator('.arrowPad').count();
+          check(falseArrow===0,'Scoring instruction falsely rendered as directional controls');
+        }
         await page.locator('.tabBtn[data-tab="board"]').click();
         check(await page.locator('#view-board').isVisible(),'Leaderboard tab inaccessible');
         if(view.device==='mobile') await page.screenshot({
