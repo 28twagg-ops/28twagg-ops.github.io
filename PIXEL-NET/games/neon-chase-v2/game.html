@@ -41,8 +41,9 @@ Purpose: AI implementation for themes
             width: 100%;
             height: 100%;
             overflow: hidden;
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
-            border: 4px solid #333;
+            box-sizing: border-box;
+            box-shadow: inset 0 0 24px rgba(0,255,65,.11), 0 0 18px rgba(0,245,255,.20);
+            border: 2px solid #184b58;
             border-radius: 8px;
             background-color: #000;
         }
@@ -78,9 +79,12 @@ Purpose: AI implementation for themes
         .hud-bar {
             display: flex;
             justify-content: space-between;
-            padding: 10px 15px;
-            font-size: 14px;
-            text-shadow: 0 0 5px #0ff;
+            padding: 4px 9px;
+            font-size: 11px;
+            letter-spacing: .04em;
+            background: linear-gradient(90deg,rgba(3,12,27,.90),rgba(3,12,27,.75));
+            border-bottom: 1px solid rgba(0,240,255,.32);
+            text-shadow: 0 0 4px #0ff;
             z-index: 10;
         }
 
@@ -429,11 +433,25 @@ class Player extends Entity {
         }
     }
     draw() {
-        ctx.fillStyle = this.color;
-        ctx.shadowBlur = 10; ctx.shadowColor = this.color;
-        ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 0.4, 0, Math.PI * 2); ctx.fill();
+        // Directional cyber-core; blink briefly during respawn protection.
+        if (playerInvulnTicks && Math.floor(playerInvulnTicks/7)%2===0) return;
+        const r = this.radius;
+        const heading = this.dir.x || this.dir.y ? Math.atan2(this.dir.y,this.dir.x) : 0;
+        ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(heading);
+        ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 9;
+        ctx.fillStyle = '#062438';
+        ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 2.6; ctx.stroke();
         ctx.shadowBlur = 0;
+        ctx.fillStyle = '#79fbff';
+        ctx.beginPath(); ctx.arc(0,0,r*.54,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(-r*.15,-r*.20,r*.22,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#031223';
+        ctx.beginPath();
+        ctx.moveTo(r*.38,-r*.39); ctx.lineTo(r*.92,0);
+        ctx.lineTo(r*.38,r*.39); ctx.closePath(); ctx.fill();
+        ctx.restore();
     }
 }
 
@@ -551,10 +569,32 @@ class Drone extends Entity {
     }
     
     draw() {
-        const c = (this.mode === 'FRIGHTENED') ? ((flashTimer > 0 && Math.floor(Date.now() / 200) % 2 === 0) ? '#fff' : '#00f') : this.originalColor;
-        ctx.fillStyle = c; const r = this.radius;
-        ctx.beginPath(); ctx.moveTo(this.x, this.y - r); ctx.lineTo(this.x + r, this.y + r); ctx.lineTo(this.x - r, this.y + r); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(this.x, this.y, r/3, 0, Math.PI*2); ctx.fill();
+        const frightened = this.mode === 'FRIGHTENED';
+        const c = frightened
+            ? ((flashTimer > 0 && Math.floor(Date.now()/200)%2===0) ? '#fff' : '#5678ff')
+            : this.originalColor;
+        const r = this.radius;
+        ctx.save(); ctx.translate(this.x,this.y);
+        ctx.shadowColor = c; ctx.shadowBlur = 6;
+        ctx.fillStyle = '#090a19'; ctx.strokeStyle = c; ctx.lineWidth = 2;
+        // Colored angular chassis and two sensors distinguish these from the player.
+        ctx.beginPath();
+        ctx.moveTo(-r*.62,-r*.84); ctx.lineTo(r*.62,-r*.84);
+        ctx.lineTo(r*.93,-r*.24); ctx.lineTo(r*.78,r*.66);
+        ctx.lineTo(0,r*.94); ctx.lineTo(-r*.78,r*.66);
+        ctx.lineTo(-r*.93,-r*.24); ctx.closePath();
+        ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+        ctx.strokeStyle = c; ctx.lineWidth=1.5;
+        ctx.beginPath();
+        ctx.moveTo(-r*.4,-r*.82); ctx.lineTo(-r*.58,-r*1.08);
+        ctx.moveTo(r*.4,-r*.82); ctx.lineTo(r*.58,-r*1.08); ctx.stroke();
+        ctx.fillStyle = frightened ? '#fff' : c;
+        ctx.fillRect(-r*.53,-r*.28,r*.34,r*.29);
+        ctx.fillRect(r*.19,-r*.28,r*.34,r*.29);
+        ctx.fillStyle = frightened ? '#202c8a' : '#fff';
+        ctx.fillRect(-r*.31,-r*.21,r*.11,r*.18);
+        ctx.fillRect(r*.42,-r*.21,r*.11,r*.18);
+        ctx.restore();
     }
 }
 
@@ -728,24 +768,36 @@ function gameLoop() {
 }
 
 function draw() {
-    ctx.fillStyle = '#050010'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            const x = c * TILE_SIZE, y = r * TILE_SIZE;
-            if (currentMapData[r][c] === 1) {
-                ctx.strokeStyle = wallColor; ctx.lineWidth = 1; ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-                ctx.shadowBlur = 5; ctx.shadowColor = wallColor; ctx.strokeRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8); ctx.shadowBlur = 0;
-            }
+    ctx.fillStyle = '#050010'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    const wall=(c,r)=>r>=0&&r<ROWS&&c>=0&&c<COLS&&currentMapData[r][c]===1;
+    // Continuous wall contours instead of repetitive glowing square tiles.
+    ctx.fillStyle='#0a1730';
+    ctx.beginPath();
+    for(let r=0;r<ROWS;r++){
+        for(let c=0;c<COLS;c++){
+            if(!wall(c,r))continue;
+            const x=c*TILE_SIZE,y=r*TILE_SIZE;
+            ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE);
+            if(!wall(c,r-1)){ctx.moveTo(x,y);ctx.lineTo(x+TILE_SIZE,y);}
+            if(!wall(c,r+1)){ctx.moveTo(x,y+TILE_SIZE);ctx.lineTo(x+TILE_SIZE,y+TILE_SIZE);}
+            if(!wall(c-1,r)){ctx.moveTo(x,y);ctx.lineTo(x,y+TILE_SIZE);}
+            if(!wall(c+1,r)){ctx.moveTo(x+TILE_SIZE,y);ctx.lineTo(x+TILE_SIZE,y+TILE_SIZE);}
         }
     }
-    bits.forEach(b => {
-        const x = b.c * TILE_SIZE + TILE_SIZE/2, y = b.r * TILE_SIZE + TILE_SIZE/2;
-        ctx.fillStyle = '#00F0FF';
-        if (b.type === 2) ctx.fillRect(x-1, y-1, 2, 2);
-        else if (Math.floor(Date.now() / 100) % 2 === 0) { ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill(); }
+    ctx.strokeStyle=wallColor;ctx.lineWidth=2;ctx.shadowColor=wallColor;ctx.shadowBlur=5;
+    ctx.stroke();ctx.shadowBlur=0;
+    bits.forEach(b=>{
+        const x=b.c*TILE_SIZE+TILE_SIZE/2,y=b.r*TILE_SIZE+TILE_SIZE/2;
+        const power=b.type===3;
+        const radius=power?5+Math.sin(Date.now()/180)*.6:2.1;
+        ctx.fillStyle=power?'#f9e8ff':'#64eaff';
+        ctx.shadowColor=power?'#e33bff':'#00f5ff';
+        ctx.shadowBlur=power?11:3;
+        ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill();
     });
-    player.draw(); drones.forEach(g => g.draw());
-    particles.forEach(p => { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); });
+    ctx.shadowBlur=0;
+    player.draw();drones.forEach(g=>g.draw());
+    particles.forEach(p=>{ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3);});
 }
 
 function handleKey(e) {
