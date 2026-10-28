@@ -10,7 +10,10 @@ const games=[
  ['robo-arena-v2','robo-arena'],['millipede-chaos-v3','millipede-chaos'],
  ['spyder-casino','spyder-casino'],['galaxy-swarm-2084','galaxy-swarm'],
  ['circuit-salvager','stack-drop'],['atariforce-hyperlane','atariforce'],
- ['kangaroo-climb','kangaroo']
+ ['kangaroo-climb','kangaroo'],
+ ['dig-dug-delve','dig-dug'],['combat-cx2601','combat'],
+ ['jungle-jr-rescue','jungle-jr'],['track-field-blitz','track-field'],
+ ['orbit-siege','tower-rush']
 ];
 const sizes=[
  {name:'desktop',width:1440,height:900,frame:'#gameDesktop'},
