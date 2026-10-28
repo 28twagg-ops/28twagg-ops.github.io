@@ -25,7 +25,7 @@ jobs:
           python3 -m http.server 8765 --directory PIXEL-NET >/tmp/pixelnet-leaderboard.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
       - name: Exercise all playable game score submissions (mock Firebase, no production writes)
-        run: node PIXEL-NET/tests/leaderboard-all-games.cjs
+        run: PIXELNET_GAME=neon-chase node PIXEL-NET/tests/leaderboard-all-games.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
