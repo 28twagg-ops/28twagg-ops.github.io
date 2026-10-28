@@ -11,20 +11,20 @@ const triggers={
  'caked-up-cats':"score=123;endGame(false,'QA test');",
  'creek-crosser':"gameState.score=123;gameOver();",
  'astrotype':"state.score=123;gameOver();",
- 'knight-flight':"gameState='PLAYING';score=123;lives=1;handlePlayerDeath();",
+ 'knight-flight':"startGame();score=123;lives=1;handlePlayerDeath();",
  'logic-bomb':"score=123;lives=1;handleDeath();",
  'neon-chase':"score=123;gameOver();",
  'robo-arena':"state.score=123;gameOver();",
- 'millipede-chaos':"score=123;g.gameOver=true;submitScoreOnce();",
- 'galaxy-swarm-2084':"score=123;gameOver();",
- 'circuit-salvager':"score=123;gameOver();",
- 'dig-dug-delve':"score=123;gameOver();",
- 'combat-cx2601':"score=123;gameOver();",
- 'atariforce-hyperlane':"score=123;gameOver();",
- 'jungle-jr-rescue':"score=123;gameOver();",
- 'kangaroo-climb':"score=123;gameOver();",
- 'track-field-blitz':"score=123;gameOver('QA');",
- 'orbit-siege':"score=123;gameOver();"
+ 'millipede-chaos':"window.__pxQaEnd();",
+ 'galaxy-swarm-2084':"window.__pxQaEnd();",
+ 'circuit-salvager':"window.__pxQaEnd();",
+ 'dig-dug-delve':"window.__pxQaEnd();",
+ 'combat-cx2601':"window.__pxQaEnd();",
+ 'atariforce-hyperlane':"window.__pxQaEnd();",
+ 'jungle-jr-rescue':"window.__pxQaEnd();",
+ 'kangaroo-climb':"window.__pxQaEnd();",
+ 'track-field-blitz':"window.__pxQaEnd();",
+ 'orbit-siege':"window.__pxQaEnd();"
 };
 const testCases=catalog.flatMap(g=>{
  if(g.slug==='retro-kombat')return [];
@@ -53,6 +53,21 @@ const testCases=catalog.flatMap(g=>{
     const patched=(await response.text()).replace('const FIREBASE_WEB_API_KEY = "";',
        'const FIREBASE_WEB_API_KEY = "TEST_KEY";');
     await route.fulfill({response,body:patched,contentType:'application/javascript'});
+   });
+   // Test-only QA hook inside each game's private IIFE. Production HTML is untouched.
+   await context.route(/\/games\/[^/]+\/game\.html$/,async route=>{
+    const response=await route.fetch();
+    let html=await response.text();
+    const hookItem=item.slug==='millipede-chaos'
+      ?{anchor:'function submitScoreOnce(',call:'submitScoreOnce()'}
+      :["galaxy-swarm-2084","circuit-salvager","dig-dug-delve","combat-cx2601","atariforce-hyperlane","jungle-jr-rescue","kangaroo-climb","track-field-blitz","orbit-siege"].includes(item.slug)
+       ?{anchor:'function gameOver(',call:'gameOver()'}:null;
+    if(hookItem){
+      if(!html.includes(hookItem.anchor))throw Error('Missing game-over hook '+item.slug);
+      html=html.replace(hookItem.anchor,
+        'window.__pxQaEnd=()=>{score=123;'+hookItem.call+'};\n'+hookItem.anchor);
+    }
+    await route.fulfill({response,body:html,contentType:'text/html'});
    });
    await context.route(/identitytoolkit\.googleapis\.com/,route=>
     route.fulfill({status:200,contentType:'application/json',
