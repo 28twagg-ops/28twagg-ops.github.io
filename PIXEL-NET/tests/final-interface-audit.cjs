@@ -7,7 +7,7 @@ const assert=require('node:assert/strict');
 const output='final-interface-audit';
 fs.mkdirSync(output,{recursive:true});
 const catalog=JSON.parse(fs.readFileSync('PIXEL-NET/games.json','utf8'));
-const emulator=new Set(['dig-dug-delve','combat-cx2601','jungle-jr-rescue','track-field-blitz','orbit-siege']);
+const emulator=new Set(); // These now use native auto-scoring game.html instead of ROM emulators.
 const placeholder=new Set(['retro-kombat']);
 const views=[
   {device:'desktop',viewport:{width:1440,height:900},id:'#gameDesktop'},
