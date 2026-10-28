@@ -74,6 +74,51 @@ const fs=require('node:fs');
   assert.equal(records[0].mode,'ANALYSIS');
   summary.tests.push('Spyder analysis score submitted once to mock backend with mode intact');
   await casino.close();
+  // Retry reliability: when Firebase is temporarily down, a game-over
+  // entry remains queued and reuses the exact same record ID on reconnect.
+  const retry=await browser.newContext({viewport:{width:1400,height:900}});
+  let backendAvailable=false;
+  const attempts=[];
+  await retry.route('**/wrapper/shell.js',async route=>{
+    const response=await route.fetch();
+    const js=(await response.text()).replace('const FIREBASE_WEB_API_KEY = "";',
+      'const FIREBASE_WEB_API_KEY = "TEST_KEY";');
+    await route.fulfill({response,body:js,contentType:'application/javascript'});
+  });
+  await retry.route(/identitytoolkit.googleapis.com/,route=>
+    route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({idToken:'mock-retry-token',expiresIn:'3600'})}));
+  await retry.route(/firebaseio\.com/,route=>{
+    const request=route.request();
+    if(request.method()==='PUT'){
+      attempts.push({path:new URL(request.url()).pathname,body:request.postData()});
+      return route.fulfill({status:backendAvailable?200:503,contentType:'application/json',
+        body:backendAvailable?'{}':'{"error":"temporarily unavailable"}'});
+    }
+    return route.fulfill({status:200,contentType:'application/json',body:'{}'});
+  });
+  const retryPage=await retry.newPage();
+  await retryPage.goto(local+'games/neon-chase-v2/wrapper-v2.html');
+  await retryPage.frameLocator('#gameDesktop').locator('body').evaluate(()=>{
+    window.parent.postMessage({type:'GAME_OVER_SCORE',score:777},location.origin);
+  });
+  await retryPage.waitForFunction(()=>{
+    const q=JSON.parse(localStorage.getItem('PIXELNET_PENDING_SCORES_V1')||'[]');
+    return q.length===1&&q[0].entry.score===777;
+  });
+  await retryPage.waitForFunction(()=>document.querySelector('#boardNoticeDesktop')?.textContent.includes('queued for global upload'));
+  assert.equal(attempts.length,1);
+  backendAvailable=true;
+  await retryPage.evaluate(()=>window.dispatchEvent(new Event('online')));
+  await retryPage.waitForFunction(()=>
+    JSON.parse(localStorage.getItem('PIXELNET_PENDING_SCORES_V1')||'[]').length===0);
+  assert.equal(attempts.length,2,'One failed PUT and one retry required');
+  assert.equal(attempts[0].path,attempts[1].path,
+    'A retry must reuse the same score record ID');
+  assert.ok(attempts[1].path.includes('/lb/neon-chase/pn-'));
+  summary.tests.push('Offline score uploads retry automatically with the same idempotent Firebase record ID');
+  await retry.close();
+
   fs.mkdirSync('leaderboard-regression-results',{recursive:true});
   fs.writeFileSync('leaderboard-regression-results/results.json',JSON.stringify(summary,null,2));
   console.log('PASS '+summary.tests.join('; '));
