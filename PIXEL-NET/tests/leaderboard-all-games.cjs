@@ -86,7 +86,7 @@ const testCases=catalog.flatMap(g=>{
     await page.waitForTimeout(item.slug==='knight-flight'?1200:400);
     assert.equal(posts.length-before,1,'Expected ONE authenticated database write');
     const p=posts[0];
-    assert.match(new URL(p.url).pathname,new RegExp('^/lb/'+item.board+'/pn-[^/]+\\.json
+    assert.match(new URL(p.url).pathname,new RegExp('^/lb/'+item.board+'/pn-[^/]+\\.json$'));
     assert.equal(new URL(p.url).searchParams.get('auth'),'mock-all-games');
     assert.equal(p.data.score,123);
     assert.equal(p.data.initials,'TST');
@@ -108,26 +108,6 @@ const testCases=catalog.flatMap(g=>{
     }))}catch(err){debug={error:String(err)}}
     console.error('DIAG '+item.slug+' '+JSON.stringify({debug,posts,errors}).slice(0,2000));
     report.failed.push({game:item.slug,board:item.board,mode:item.mode||null,reason:String(e.message||e).slice(0,900),errors,posts,debug});
-    console.error('FAIL '+item.slug+' '+(item.mode||'')+' '+e.message);
-   }finally{await context.close();}
-  }
- }finally{await browser.close();}
- fs.mkdirSync('leaderboard-all-games-results',{recursive:true});
- fs.writeFileSync('leaderboard-all-games-results/report.json',JSON.stringify(report,null,2));
- console.log('LEADERBOARD_ALL_GAMES '+JSON.stringify({total:report.total,passed:report.passed.length,failed:report.failed.length,skipped:report.skipped}));
- if(report.failed.length)process.exitCode=1;
-})().catch(e=>{console.error(e);process.exitCode=1});
-));
-    assert.equal(new URL(p.url).searchParams.get('auth'),'mock-all-games');
-    assert.equal(p.data.score,123);
-    assert.equal(p.data.initials,'TST');
-    assert.ok(Math.abs(p.data.t-Date.now())<60000);
-    if(item.mode)assert.equal(p.data.mode,item.mode);
-    assert.equal(errors.length,0,'Browser error(s): '+errors.join(' / '));
-    report.passed.push(item.slug+(item.mode?'/'+item.board+'/'+item.mode:''));
-    console.log('PASS '+report.passed[report.passed.length-1]);
-   }catch(e){
-    report.failed.push({game:item.slug,board:item.board,mode:item.mode||null,reason:String(e.message||e).slice(0,900),errors,posts});
     console.error('FAIL '+item.slug+' '+(item.mode||'')+' '+e.message);
    }finally{await context.close();}
   }
