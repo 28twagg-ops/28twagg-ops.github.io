@@ -361,13 +361,13 @@ const FIREBASE_WEB_API_KEY = "";
       return {ok:true,rows:normalizeRows(await res.json())};
     }catch(_){return {ok:false,rows:[],reason:'Global database connection unavailable.'}}
   }
-  // Anonymous Firebase Auth: no user-facing account creation. The token is
-  // held only in memory; reload creates a new anonymous session. A production
-  // deployment should use the SDK for persistent identity/token refresh.
-  let authPromise=null;
+  // Anonymous Firebase Auth: a player needs no account or sign-in form.
+  // Tokens expire; create another anonymous session when they do. Firebase
+  // security rules must allow authenticated, create-only writes at /lb.
+  let authPromise=null,authExpiry=0;
   async function getScoreToken(){
     if(!FIREBASE_WEB_API_KEY)return null;
-    if(!authPromise){
+    if(!authPromise || Date.now()>authExpiry-60000){
       authPromise=(async()=>{
         const res=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+
           encodeURIComponent(FIREBASE_WEB_API_KEY),{
@@ -376,21 +376,65 @@ const FIREBASE_WEB_API_KEY = "";
         });
         if(!res.ok)throw new Error('Firebase anonymous sign-in failed');
         const data=await res.json();
+        authExpiry=Date.now()+Math.max(60,Number(data.expiresIn)||3600)*1000;
         return data.idToken||null;
-      })().catch(()=>null);
+      })().catch(()=>{authExpiry=0;authPromise=null;return null});
     }
     return authPromise;
   }
-  async function fbPost(entry,board=slug){
-    if(!cloudURL(board))return false;
+  // A stable database key makes retries idempotent. If Firebase wrote a
+  // score but the acknowledgement was lost, don't create a duplicate.
+  async function fbPost(entry,board=slug,id){
+    if(!FIREBASE_DB_URL || !id)return false;
     const token=await getScoreToken();
     if(!token)return false;
+    const url=FIREBASE_DB_URL+'/lb/'+encodeURIComponent(board)+'/'+encodeURIComponent(id)+'.json';
     try{
-      const url=cloudURL(board)+'?auth='+encodeURIComponent(token);
-      const res=await fetch(url,{method:'POST',
+      const res=await fetch(url+'?auth='+encodeURIComponent(token),{method:'PUT',
         headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});
-      return res.ok;
+      if(res.ok)return true;
+      // A create-only policy can deny retrying a previously committed write.
+      // Check the exact record before treating that denial as a failure.
+      if(res.status===401||res.status===403){
+        const check=await fetch(url,{cache:'no-store'});
+        if(check.ok){
+          const remote=await check.json();
+          if(remote&&remote.initials===entry.initials&&remote.score===entry.score)return true;
+        }
+      }
+      return false;
     }catch(_){return false}
+  }
+  const PENDING_KEY='PIXELNET_PENDING_SCORES_V1';
+  const pendingLoad=()=>{
+    try{const a=JSON.parse(localStorage.getItem(PENDING_KEY)||'[]');
+      return Array.isArray(a)?a.filter(x=>x&&x.id&&x.board&&x.entry):[]}
+    catch(_){return []}
+  };
+  const pendingSave=a=>{try{localStorage.setItem(PENDING_KEY,JSON.stringify(a.slice(-100)))}catch(_){}};
+  const pendingRows=board=>pendingLoad().filter(x=>x.board===board)
+    .map(x=>({...x.entry,pending:true}));
+  const queueScore=(entry,board)=>{
+    const id='pn-'+(crypto.randomUUID ? crypto.randomUUID() :
+      Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,14));
+    pendingSave([...pendingLoad(),{id,board,entry}]);
+    return id;
+  };
+  let draining=null;
+  async function drainPending(){
+    if(draining)return draining;
+    draining=(async()=>{
+      const done=[];
+      if(!FIREBASE_WEB_API_KEY)return done;
+      for(const item of pendingLoad()){
+        // Use submission time for Firebase's server-time validation on retries.
+        const payload={...item.entry,t:Date.now()};
+        if(await fbPost(payload,item.board,item.id))done.push(item.id);
+      }
+      if(done.length)pendingSave(pendingLoad().filter(x=>!done.includes(x.id)));
+      return done;
+    })().finally(()=>{draining=null});
+    return draining;
   }
   function renderBoard(id,rows){
     const el=document.getElementById(id);
@@ -404,7 +448,7 @@ const FIREBASE_WEB_API_KEY = "";
       const row=document.createElement('div');row.className='boardRow'+(i===0?' top1':'');
       const rank=document.createElement('div');rank.className='rank';rank.textContent=(i+1)+'.';
       const name=document.createElement('div');name.className='name';
-      name.textContent=clean(entry.initials||entry.name)||'???';
+      name.textContent=(clean(entry.initials||entry.name)||'???')+(entry.pending?' · LOCAL':'');
       const points=document.createElement('div');points.className='score';
       points.textContent=String(cleanScore(entry.score));
       row.append(rank,name,points);el.appendChild(row);
@@ -420,8 +464,8 @@ const FIREBASE_WEB_API_KEY = "";
     if(isSpyderCasino){
       const [bj,he]=await Promise.all([fbFetch('spyder-blackjack'),fbFetch('spyder-holdem')]);
       if(id!==refreshId)return;
-      const b=modeSplit(bj.ok?bj.rows:lbLoadRaw('LB_spyder-blackjack'));
-      const h=modeSplit(he.ok?he.rows:lbLoadRaw('LB_spyder-holdem'));
+      const b=modeSplit(bj.ok?[...bj.rows,...pendingRows('spyder-blackjack')]:lbLoadRaw('LB_spyder-blackjack'));
+      const h=modeSplit(he.ok?[...he.rows,...pendingRows('spyder-holdem')]:lbLoadRaw('LB_spyder-holdem'));
       for(const type of ['Desktop','Mobile']){
         renderBoard('board'+type+'BjStd',b.std);
         renderBoard('board'+type+'BjAn',b.an);
@@ -435,7 +479,8 @@ const FIREBASE_WEB_API_KEY = "";
     }
     const cloud=await fbFetch();
     if(id!==refreshId)return;
-    const rows=cloud.ok?cloud.rows:lbLoad();
+    const rows=cloud.ok?[...cloud.rows,...pendingRows(slug)]
+      .sort((a,b)=>b.score-a.score||a.t-b.t):lbLoad();
     renderBoard('boardDesktop',rows);renderBoard('boardMobile',rows);
     setStatus(cloud.ok,cloud.ok?'Live global scores shared across devices.':
       cloud.reason+' Showing scores saved on this device.');
@@ -443,7 +488,7 @@ const FIREBASE_WEB_API_KEY = "";
   refreshBoards();
   let lastSig='',lastAt=0;
   async function addScore(rawScore,scoreSlug,scoreMode){
-    const initials=clean(getInitials())||'???',score=cleanScore(rawScore),now=Date.now();
+    const initials=clean(getInitials())||'YOU',score=cleanScore(rawScore),now=Date.now();
     const mode=cleanMode(scoreMode);
     const target=isSpyderCasino&&['spyder-blackjack','spyder-holdem'].includes(scoreSlug)
       ?scoreSlug:slug;
@@ -455,21 +500,26 @@ const FIREBASE_WEB_API_KEY = "";
     rows.push(entry);
     rows.sort((a,b)=>(b.score||0)-(a.score||0)||(a.t||0)-(b.t||0));
     try{localStorage.setItem(key,JSON.stringify(rows.slice(0,30)))}catch(_){}
+    const id=queueScore(entry,target);
     await refreshBoards();
-    const globalSaved=await fbPost(entry,target);
+    const done=await drainPending();
+    const globalSaved=done.includes(id);
     if(isSpyderCasino&&activeGame?.contentWindow){
       activeGame.contentWindow.postMessage(
         {type:'PIXELNET_SCORE_STATUS',localSaved:true,globalSaved},location.origin);
     }
     await refreshBoards();
     if(!globalSaved){
-      for(const id of ['boardNoticeDesktop','boardNoticeMobile']){
-        const node=document.getElementById(id);
+      for(const noticeId of ['boardNoticeDesktop','boardNoticeMobile']){
+        const node=document.getElementById(noticeId);
         if(node){node.dataset.status='error';
-          node.textContent='Score saved locally; global score submission is unavailable.';}
+          node.textContent='Score saved on this device; queued for global upload.';}
       }
     }
   }
+  window.addEventListener('online',()=>drainPending().then(refreshBoards));
+  // Retry an interrupted score submission when the player next opens a game.
+  setTimeout(()=>drainPending().then(refreshBoards),1200);
 
   // Listen for score / initials messages from iframed games
   window.addEventListener('message', e => {
