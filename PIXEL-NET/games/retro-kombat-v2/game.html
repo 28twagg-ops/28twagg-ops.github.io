@@ -97,7 +97,7 @@ function gameOver(){
   },location.origin)}catch(_){}
  }
  setScreen('RUN COMPLETE','FINAL SCORE: <strong>'+score+'</strong> · WAVE '+round+
-   '<br>BEST: '+best+'<br>Your score is sent automatically to the arcade leaderboard.',
+   '<br>BEST: '+best+'<br>Score saved locally; checking global upload…',
    'FIGHT AGAIN');
 }
 function showText(x,y,s,color='#fff',life=750){
@@ -302,6 +302,15 @@ document.querySelectorAll('[data-action]').forEach(b=>{
  const up=e=>{e.preventDefault();controls.delete(name);b.classList.remove('pressed')};
  b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);
  b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);
+});
+window.addEventListener('message',e=>{
+ if(e.source!==parent||e.origin!==location.origin||state!=='GAMEOVER')return;
+ const data=e.data||{};
+ if(data.type!=='PIXELNET_SCORE_STATUS')return;
+ const status=data.globalSaved?'✓ Score confirmed on global leaderboard.'
+   :'Score saved on this device; queued for global upload.';
+ detail.innerHTML='FINAL SCORE: <strong>'+score+'</strong> · WAVE '+round+
+   '<br>BEST: '+best+'<br>'+status;
 });
 startBtn.addEventListener('click',startGame);
 hero=actor(225,'#5cf7ff','#f4cf6d',false);
