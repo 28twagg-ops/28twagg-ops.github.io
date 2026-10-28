@@ -6,13 +6,23 @@
       "$game": {
         ".read": true,
         "$entry": {
-          ".write": "auth != null && !data.exists() && newData.exists() && $entry.matches(/^[-A-Za-z0-9_]{10,80}$/) && ($game === 'neon-chase' || $game === 'millipede-chaos' || $game === 'spyder-blackjack' || $game === 'spyder-holdem' || $game === 'astrotype' || $game === 'galaxy-swarm-2084' || $game === 'circuit-salvager' || $game === 'atariforce-hyperlane' || $game === 'kangaroo-climb' || $game === 'caked-up-cats' || $game === 'spyder-casino' || $game === 'space-invaders' || $game === 'pacman')",
-          ".validate": "newData.hasChildren(['initials','score','t']) && newData.childrenCount <= 4",
-          "initials": { ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{1,3}$/)" },
-          "score": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && newData.val() % 1 === 0" },
-          "t": { ".validate": "newData.isNumber() && newData.val() >= now - 300000 && newData.val() <= now + 300000" },
-          "mode": { ".validate": "newData.isString() && (newData.val() === 'STANDARD' || newData.val() === 'ANALYSIS')" },
-          "$other": { ".validate": false }
+          ".write": "auth != null && !data.exists() && newData.exists() && $entry.matches(/^[-A-Za-z0-9_]{10,80}$/) && ($game === 'caked-up-cats' || $game === 'creek-crosser' || $game === 'astrotype' || $game === 'knight-flight' || $game === 'logic-bomb' || $game === 'neon-chase' || $game === 'robo-arena' || $game === 'millipede-chaos' || $game === 'galaxy-swarm-2084' || $game === 'circuit-salvager' || $game === 'dig-dug-delve' || $game === 'combat-cx2601' || $game === 'atariforce-hyperlane' || $game === 'jungle-jr-rescue' || $game === 'kangaroo-climb' || $game === 'track-field-blitz' || $game === 'orbit-siege' || $game === 'spyder-blackjack' || $game === 'spyder-holdem')",
+          ".validate": "newData.hasChildren(['initials','score','t'])",
+          "initials": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{1,3}$/)"
+          },
+          "score": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && newData.val() % 1 === 0"
+          },
+          "t": {
+            ".validate": "newData.isNumber() && newData.val() >= now - 300000 && newData.val() <= now + 300000"
+          },
+          "mode": {
+            ".validate": "newData.isString() && (newData.val() === 'STANDARD' || newData.val() === 'ANALYSIS')"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     }
