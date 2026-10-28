@@ -1,6 +1,6 @@
 // End-to-end browser integration for EVERY playable PIXEL-NET wrapper.
 // Game-owned end-of-run callbacks -> iframe postMessage -> parent wrapper ->
-// Firebase anonymous sign-in -> authenticated POST -> refreshed global board.
+// Firebase anonymous sign-in -> authenticated PUT -> refreshed global board.
 // Firebase is mocked to prevent synthetic scores polluting the live database.
 const {chromium}=require('playwright');
 const fs=require('node:fs');
@@ -14,6 +14,7 @@ const triggers={
  'knight-flight':"startGame();score=123;lives=1;handlePlayerDeath();",
  'logic-bomb':"score=123;lives=1;handleDeath();",
  'neon-chase':"score=123;gameOver();",
+ 'retro-kombat':"window.__pxQaEnd();",
  'robo-arena':"state.score=123;gameOver();",
  'millipede-chaos':"window.__pxQaEnd();",
  'galaxy-swarm-2084':"window.__pxQaEnd();",
@@ -27,7 +28,6 @@ const triggers={
  'orbit-siege':"window.__pxQaEnd();"
 };
 const testCases=catalog.flatMap(g=>{
- if(g.slug==='retro-kombat')return [];
  if(g.slug==='spyder-casino')return [
   {slug:g.slug,board:'spyder-blackjack',mode:'STANDARD',path:g.path,
    trigger:"endGameMode='STANDARD';showEndScreen('BLACKJACK','$123','STANDARD',BJ_SLUG);"},
@@ -42,7 +42,7 @@ const testCases=catalog.flatMap(g=>{
 }).filter(x=>!process.env.PIXELNET_GAME||x.slug===process.env.PIXELNET_GAME);
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
- const report={total:testCases.length,passed:[],failed:[],skipped:['retro-kombat: non-playable placeholder']};
+ const report={total:testCases.length,passed:[],failed:[],skipped:[]};
  try{
   for(const item of testCases){
    const posts=[],errors=[],mockDB={};
@@ -60,7 +60,7 @@ const testCases=catalog.flatMap(g=>{
     let html=await response.text();
     const hookItem=item.slug==='millipede-chaos'
       ?{anchor:'function submitScoreOnce(',call:'submitScoreOnce()'}
-      :["galaxy-swarm-2084","circuit-salvager","dig-dug-delve","combat-cx2601","atariforce-hyperlane","jungle-jr-rescue","kangaroo-climb","track-field-blitz","orbit-siege"].includes(item.slug)
+      :["galaxy-swarm-2084","circuit-salvager","dig-dug-delve","combat-cx2601","atariforce-hyperlane","jungle-jr-rescue","kangaroo-climb","track-field-blitz","orbit-siege","retro-kombat"].includes(item.slug)
        ?{anchor:'function gameOver(',call:'gameOver()'}:null;
     if(hookItem){
       if(!html.includes(hookItem.anchor))throw Error('Missing game-over hook '+item.slug);
