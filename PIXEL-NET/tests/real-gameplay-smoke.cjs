@@ -18,7 +18,7 @@ const assert=require('node:assert/strict');
    route.fulfill({status:200,contentType:'application/json',
     body:JSON.stringify({idToken:'mock-gameplay-token',expiresIn:'3600'})}));
   await context.route(/firebaseio\.com/,route=>{
-   if(route.request().method()==='POST'){
+   if(route.request().method()==='PUT'){
     posts.push({url:route.request().url(),data:JSON.parse(route.request().postData())});
     return route.fulfill({status:200,contentType:'application/json',body:'{"name":"mock-gameplay"}'});
    }
