@@ -35,7 +35,7 @@ async function check(url){
    }catch(e){return {slug:game.slug,url,error:String(e)}}
  }));
  // Read-only verification of user-created Firebase console test entry.
- const testURL=DB+'/lb/neon-chase/test123.json';
+ const testURL=DB+'/lb/neon-chase/Test.json';
  const testResponse=await check(testURL);
  let testEntry=null;
  try{testEntry=JSON.parse(testResponse.sample||'null')}catch(_){}
