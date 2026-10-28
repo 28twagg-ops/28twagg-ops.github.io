@@ -8,7 +8,7 @@ const output='final-interface-audit';
 fs.mkdirSync(output,{recursive:true});
 const catalog=JSON.parse(fs.readFileSync('PIXEL-NET/games.json','utf8'));
 const emulator=new Set(); // These now use native auto-scoring game.html instead of ROM emulators.
-const placeholder=new Set(['retro-kombat']);
+const placeholder=new Set(); // Retro Kombat is now playable.
 const views=[
   {device:'desktop',viewport:{width:1440,height:900},id:'#gameDesktop'},
   {device:'mobile',viewport:{width:390,height:844},id:'#gameMobile'},
