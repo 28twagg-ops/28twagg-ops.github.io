@@ -27,6 +27,8 @@ jobs:
         run: node PIXEL-NET/tests/leaderboard-regression.cjs
       - name: Play Neon Chase in Chromium and verify mock score submission
         run: node PIXEL-NET/tests/real-gameplay-smoke.cjs
+      - name: Play Retro Kombat with keyboard and touch controls
+        run: node PIXEL-NET/tests/retro-kombat-playtest.cjs
       - name: Verify each game's real game-over score reaches an authenticated mock database
         run: node PIXEL-NET/tests/leaderboard-all-games.cjs
       - uses: actions/upload-artifact@v4
