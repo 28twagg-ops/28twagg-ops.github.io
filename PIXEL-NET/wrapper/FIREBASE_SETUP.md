@@ -43,15 +43,15 @@ may apply; never assume permanently unlimited free usage.
 
 ## Scope
 
-The arcade includes 18 playable game wrappers. The Casino has distinct
-Blackjack/Hold'em Standard/Analysis rankings, yielding 21 automatic scoring
+The arcade includes 19 playable game wrappers. The Casino has distinct
+Blackjack/Hold'em Standard/Analysis rankings, yielding 22 automatic scoring
 integration cases. Five games that previously used manually scored ROM
 emulators now use their native, auto-scoring `game.html` implementations.
-Retro Kombat is a non-playable placeholder and has no earned-score contract.
+Retro Kombat is now a playable original arcade fighter and saves a score on game over.
 
 ## Verification
 
-- `node PIXEL-NET/tests/leaderboard-all-games.cjs` runs 21 browser-level
+- `node PIXEL-NET/tests/leaderboard-all-games.cjs` runs 22 browser-level
   game-over / authenticated-write / cross-browser ranking tests using a
   **mock backend**; no synthetic production scores are inserted.
 - `node PIXEL-NET/tests/live-site-audit.cjs` verifies the published site and
