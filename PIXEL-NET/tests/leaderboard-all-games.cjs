@@ -87,7 +87,7 @@ const testCases=catalog.flatMap(g=>{
     const response=await page.goto(target+item.path,{waitUntil:'domcontentloaded',timeout:18000});
     assert.equal(response.status(),200);
     const game=page.frameLocator('#gameDesktop');
-    await game.locator('body').waitFor({timeout:12000});
+    await game.locator('body').waitFor({state:'attached',timeout:12000});
     await page.waitForTimeout(250);
     await page.evaluate(()=>{window.__QA_messages=[];window.addEventListener('message',e=>window.__QA_messages.push({type:e.data?.type,score:e.data?.score,origin:e.origin,sourceOK:e.source===document.querySelector('#gameDesktop')?.contentWindow}))});
     const before=posts.length;
