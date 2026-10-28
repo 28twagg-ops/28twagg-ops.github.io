@@ -74,11 +74,13 @@ const testCases=catalog.flatMap(g=>{
     const game=page.frameLocator('#gameDesktop');
     await game.locator('body').waitFor({timeout:12000});
     await page.waitForTimeout(250);
+    await page.evaluate(()=>{window.__QA_messages=[];window.addEventListener('message',e=>window.__QA_messages.push({type:e.data?.type,score:e.data?.score,origin:e.origin,sourceOK:e.source===document.querySelector('#gameDesktop')?.contentWindow}))});
     const before=posts.length;
     const triggerError=await game.locator('body').evaluate(source=>{
       try{(0,eval)(source);return null}catch(e){return String(e.stack||e)}
     },item.trigger);
     assert.equal(triggerError,null,'Game lifecycle error: '+triggerError);
+    if(item.slug==='neon-chase')console.log('NEON_STATE '+JSON.stringify(await game.locator('body').evaluate(()=>({href:location.href,gameState,score,__px_sentScore}))));
     await page.waitForFunction(({expected,board})=>{
      return JSON.parse(localStorage.getItem('LB_'+board)||'[]')
       .some(x=>x.score===123&&x.initials==='TST');
@@ -106,6 +108,7 @@ const testCases=catalog.flatMap(g=>{
       status:document.querySelector('[data-lb-status]')?.textContent,
       notice:document.querySelector('#boardNoticeDesktop')?.textContent
     }))}catch(err){debug={error:String(err)}}
+    try{debug.messages=await page.evaluate(()=>window.__QA_messages)}catch(_){}
     console.error('DIAG '+item.slug+' '+JSON.stringify({debug,posts,errors}).slice(0,2000));
     report.failed.push({game:item.slug,board:item.board,mode:item.mode||null,reason:String(e.message||e).slice(0,900),errors,posts,debug});
     console.error('FAIL '+item.slug+' '+(item.mode||'')+' '+e.message);
