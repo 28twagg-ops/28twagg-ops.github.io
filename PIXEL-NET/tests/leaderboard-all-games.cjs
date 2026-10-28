@@ -45,7 +45,7 @@ const testCases=catalog.flatMap(g=>{
  const report={total:testCases.length,passed:[],failed:[],skipped:['retro-kombat: non-playable placeholder']};
  try{
   for(const item of testCases){
-   const posts=[],errors=[];
+   const posts=[],errors=[],mockDB={};
    const context=await browser.newContext({viewport:{width:1440,height:900}});
    await context.addInitScript(()=>{try{localStorage.setItem('PIXELNET_INITIALS','TST')}catch(_){}});
    await context.route('**/wrapper/shell.js',async route=>{
@@ -72,15 +72,21 @@ const testCases=catalog.flatMap(g=>{
    await context.route(/identitytoolkit\.googleapis\.com/,route=>
     route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({idToken:'mock-all-games',expiresIn:'3600'})}));
-   await context.route(/firebaseio\.com/,route=>{
-    const req=route.request();
+   const firebaseResponse=route=>{
+    const req=route.request(),parts=new URL(req.url()).pathname.split('/').filter(Boolean);
+    const board=parts[1],key=parts[2]?.replace(/\.json$/,'');
     if(req.method()==='PUT'){
-     posts.push({url:req.url(),data:JSON.parse(req.postData()||'{}')});
-     return route.fulfill({status:200,contentType:'application/json',
-       body:'{"name":"mock-created-entry"}'});
+      const data=JSON.parse(req.postData()||'{}');
+      if(!mockDB[board])mockDB[board]={};
+      if(mockDB[board][key])return route.fulfill({status:401,body:'{"error":"already exists"}'});
+      mockDB[board][key]=data;
+      posts.push({url:req.url(),data});
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({name:key})});
     }
-    return route.fulfill({status:200,contentType:'application/json',body:'{}'});
-   });
+    const body=key?(mockDB[board]?.[key]||null):(mockDB[board]||{});
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
+   };
+   await context.route(/firebaseio\.com/,firebaseResponse);
    const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
    try{
     assert.ok(item.trigger,'Missing real game ending for '+item.slug);
@@ -110,6 +116,24 @@ const testCases=catalog.flatMap(g=>{
     assert.ok(Math.abs(p.data.t-Date.now())<60000);
     if(item.mode)assert.equal(p.data.mode,item.mode);
     assert.equal(errors.length,0,'Browser error(s): '+errors.join(' / '));
+    // Verify a second browser with no shared localStorage can retrieve this
+    // score from the same mock database and show it in the right game/mode.
+    assert.equal(Object.keys(mockDB[item.board]||{}).length,1,'Remote database has wrong record count');
+    const other=await browser.newContext({viewport:{width:1440,height:900}});
+    try{
+      await other.route(/firebaseio\.com/,firebaseResponse);
+      const checkPage=await other.newPage();
+      await checkPage.goto(target+item.path,{waitUntil:'domcontentloaded',timeout:18000});
+      const boardId=item.slug==='spyder-casino'
+        ?'#boardDesktop'+(item.board==='spyder-blackjack'?'Bj':'He')+(item.mode==='ANALYSIS'?'An':'Std')
+        :'#boardDesktop';
+      await checkPage.waitForFunction(selector=>{
+        return [...document.querySelectorAll(selector+' .boardRow')]
+          .some(e=>e.textContent.includes('TST')&&e.textContent.includes('123'));
+      },boardId,{timeout:7000});
+      assert.equal(await checkPage.evaluate(board=>localStorage.getItem('LB_'+board),item.board),null);
+    }finally{await other.close();}
+
     report.passed.push(item.slug+(item.mode?'/'+item.board+'/'+item.mode:''));
     console.log('PASS '+report.passed[report.passed.length-1]);
    }catch(e){
