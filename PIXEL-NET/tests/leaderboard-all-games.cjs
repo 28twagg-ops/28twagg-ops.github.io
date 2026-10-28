@@ -74,7 +74,7 @@ const testCases=catalog.flatMap(g=>{
       body:JSON.stringify({idToken:'mock-all-games',expiresIn:'3600'})}));
    const firebaseResponse=route=>{
     const req=route.request(),parts=new URL(req.url()).pathname.split('/').filter(Boolean);
-    const board=parts[1],key=parts[2]?.replace(/\.json$/,'');
+    const board=parts[1]?.replace(/\.json$/,''),key=parts[2]?.replace(/\.json$/,'');
     if(req.method()==='PUT'){
       const data=JSON.parse(req.postData()||'{}');
       if(!mockDB[board])mockDB[board]={};
