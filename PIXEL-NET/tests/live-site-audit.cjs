@@ -34,6 +34,15 @@ async function check(url){
      return {slug:game.slug,url,status:r.status,ok:r.ok};
    }catch(e){return {slug:game.slug,url,error:String(e)}}
  }));
+ // Read-only verification of user-created Firebase console test entry.
+ const testURL=DB+'/lb/neon-chase/test123.json';
+ const testResponse=await check(testURL);
+ let testEntry=null;
+ try{testEntry=JSON.parse(testResponse.sample||'null')}catch(_){}
+ results.manualTestEntry={url:testURL,status:testResponse.status,
+  found:!!(testEntry&&testEntry.initials==='TST'&&testEntry.score===123),
+  initials:testEntry?.initials||null,score:testEntry?.score??null};
+ console.log('MANUAL_TEST_ENTRY '+JSON.stringify(results.manualTestEntry));
  for(const slug of boards){
   const url=DB+'/lb/'+slug+'.json';
   const response=await check(url);
