@@ -1,27 +1,12 @@
-// ================================================================
-// PIXEL-NET Shared Wrapper Shell
-// ================================================================
-// FIREBASE SETUP — Shared cross-device leaderboards (free)
-//
-// 1. Go to https://console.firebase.google.com → Add project
-// 2. Click "Realtime Database" in the left sidebar → Create database
-//    → Start in TEST MODE (sets read/write to true)
-// 3. Copy your database URL (looks like:
-//    https://YOUR-PROJECT-default-rtdb.firebaseio.com)
-// 4. Paste it below and replace null:
-//
+// PIXEL-NET shared arcade shell.
+// Firebase global score reads are public; writes MUST be authenticated
+// and permitted by the project owner's Firebase Realtime Database rules.
+// Do not use TEST mode or unrestricted public write permissions.
 const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
-// Public Firebase Web API key only (not a service-account secret).
-// Configure this after enabling Firebase Authentication → Anonymous.
-// Until then global score writes remain safely disabled.
+// Web API key is a PUBLIC client configuration value, NOT a service account key.
+// A blank value deliberately disables authenticated uploads until configured.
 const FIREBASE_WEB_API_KEY = "";
-// example: "https://pixel-net-arcade-default-rtdb.firebaseio.com"
-//
-// After saving this file and pushing to GitHub, all players on
-// all devices will share the same leaderboard per game.
-// See PIXEL-NET/wrapper/FIREBASE_SETUP.md for full instructions.
-// ================================================================
-
+// See PIXEL-NET/wrapper/FIREBASE_SETUP.md.
 (() => {
   const CFG = (window.PX_WRAPPER || {});
   const T = CFG.theme || {};
