@@ -76,7 +76,7 @@ const testCases=catalog.flatMap(g=>{
     await page.waitForTimeout(250);
     await page.evaluate(()=>{window.__QA_messages=[];window.addEventListener('message',e=>window.__QA_messages.push({type:e.data?.type,score:e.data?.score,origin:e.origin,sourceOK:e.source===document.querySelector('#gameDesktop')?.contentWindow}))});
     const before=posts.length;
-    const triggerError=await game.locator('body').evaluate(source=>{
+    const triggerError=await game.locator('body').evaluate((_,source)=>{
       try{(0,eval)(source);return null}catch(e){return String(e.stack||e)}
     },item.trigger);
     assert.equal(triggerError,null,'Game lifecycle error: '+triggerError);
