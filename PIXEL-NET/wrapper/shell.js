@@ -489,7 +489,8 @@ const FIREBASE_WEB_API_KEY = "";
     await refreshBoards();
     const done=await drainPending();
     const globalSaved=done.includes(id);
-    if(isSpyderCasino&&activeGame?.contentWindow){
+    // Let every game display honest global-upload confirmation or fallback.
+    if(activeGame?.contentWindow){
       activeGame.contentWindow.postMessage(
         {type:'PIXELNET_SCORE_STATUS',localSaved:true,globalSaved},location.origin);
     }
