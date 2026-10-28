@@ -13,7 +13,7 @@ const games=[
  ['kangaroo-climb','kangaroo'],
  ['dig-dug-delve','dig-dug'],['combat-cx2601','combat'],
  ['jungle-jr-rescue','jungle-jr'],['track-field-blitz','track-field'],
- ['orbit-siege','tower-rush']
+ ['orbit-siege','tower-rush'],['retro-kombat-v2','retro-kombat']
 ];
 const sizes=[
  {name:'desktop',width:1440,height:900,frame:'#gameDesktop'},
