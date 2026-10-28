@@ -39,7 +39,7 @@ const testCases=catalog.flatMap(g=>{
    trigger:"endGameMode='ANALYSIS';showEndScreen('HOLDEM','123 chips','ANALYSIS',HE_SLUG);"}
  ];
  return [{slug:g.slug,board:g.slug,path:g.path,trigger:triggers[g.slug]}];
-});
+}).filter(x=>!process.env.PIXELNET_GAME||x.slug===process.env.PIXELNET_GAME);
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const report={total:testCases.length,passed:[],failed:[],skipped:['retro-kombat: non-playable placeholder']};
@@ -96,7 +96,18 @@ const testCases=catalog.flatMap(g=>{
     report.passed.push(item.slug+(item.mode?'/'+item.board+'/'+item.mode:''));
     console.log('PASS '+report.passed[report.passed.length-1]);
    }catch(e){
-    report.failed.push({game:item.slug,board:item.board,mode:item.mode||null,reason:String(e.message||e).slice(0,900),errors,posts});
+    let debug=null;
+    try{debug=await page.evaluate(()=>({
+      initials:localStorage.getItem('PIXELNET_INITIALS'),
+      keys:Object.keys(localStorage),
+      boardData:Object.fromEntries(Object.keys(localStorage).filter(k=>k.startsWith('LB_'))
+       .map(k=>[k,localStorage.getItem(k)?.slice(0,350)])),
+      frameSrc:document.querySelector('#gameDesktop')?.getAttribute('src'),
+      status:document.querySelector('[data-lb-status]')?.textContent,
+      notice:document.querySelector('#boardNoticeDesktop')?.textContent
+    }))}catch(err){debug={error:String(err)}}
+    console.error('DIAG '+item.slug+' '+JSON.stringify({debug,posts,errors}).slice(0,2000));
+    report.failed.push({game:item.slug,board:item.board,mode:item.mode||null,reason:String(e.message||e).slice(0,900),errors,posts,debug});
     console.error('FAIL '+item.slug+' '+(item.mode||'')+' '+e.message);
    }finally{await context.close();}
   }
