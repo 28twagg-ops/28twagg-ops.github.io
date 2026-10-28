@@ -25,6 +25,8 @@ jobs:
         run: node PIXEL-NET/tests/final-interface-audit.cjs
       - name: Verify leaderboard unavailable and healthy backend states
         run: node PIXEL-NET/tests/leaderboard-regression.cjs
+      - name: Play Neon Chase in Chromium and verify mock score submission
+        run: node PIXEL-NET/tests/real-gameplay-smoke.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
