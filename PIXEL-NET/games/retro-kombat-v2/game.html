@@ -157,6 +157,10 @@ function movement(f,dt){
  f.step+=Math.abs(f.vx)*dt/25000;
 }
 function update(dt){
+ const stage=document.getElementById('stage');
+ stage.dataset.state=state;
+ stage.dataset.score=String(score);
+ stage.dataset.round=String(round);
  clock+=dt;flash=Math.max(0,flash-dt);shake*=.83;
  if(state!=='PLAY')return;
  hero.blocking=controls.has('block')&&hero.stun===0;
