@@ -45,7 +45,7 @@ const fs=require('node:fs');
       body:JSON.stringify({idToken:'mock-token',expiresIn:'3600'})}));
   await casino.route(/firebaseio\.com/,route=>{
     const req=route.request(),method=req.method();
-    if(method==='POST'){
+    if(method==='PUT'){
       const json=JSON.parse(req.postData()||'{}');
       posts.push({url:req.url(),data:json});
       return route.fulfill({status:200,contentType:'application/json',body:'{"name":"test-only"}'});
@@ -67,6 +67,7 @@ const fs=require('node:fs');
   await board.waitForTimeout(300);
   assert.equal(posts.length,1,'One score event means one authenticated Firebase write');
   assert.ok(posts[0].url.includes('auth=mock-token'),'Authenticated token missing');
+  assert.ok(new URL(posts[0].url).pathname.startsWith('/lb/spyder-blackjack/pn-'),'Idempotent entry key missing');
   assert.equal(posts[0].data.mode,'ANALYSIS','Casino mode must persist');
   const records=await board.evaluate(()=>JSON.parse(localStorage.getItem('LB_spyder-blackjack')));
   assert.equal(records.length,1);
