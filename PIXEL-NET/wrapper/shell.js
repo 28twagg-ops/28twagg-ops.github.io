@@ -72,7 +72,8 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     return `<div class="instrCard"><div class="instrDetail"><span class="i">${icon}</span> ${fmt(raw)}</div></div>`;
   };
 
-  const globalBadge = !licensed && FIREBASE_DB_URL ? '<span class="badge">GLOBAL</span>' : '';
+  // Do not assert a global connection until the Firebase read succeeds.
+  const globalBadge = !licensed && FIREBASE_DB_URL ? '<span class="badge" data-cloud-status>VERIFYING</span>' : '';
   const verifiedHref=(value,allowLocal=false)=>{
     const url=String(value||'');
     return /^https:\/\//.test(url) || (allowLocal && /^\.\.\/\.\.\/licensed\/vendors\/[a-z0-9/_\-.]+$/i.test(url))
@@ -138,7 +139,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       <div class="mobileStack">
         <div class="displayZone">
           <div class="displayCard mobileFrame" id="view-game">
-            <iframe id="gameMobile" allow="gamepad *; fullscreen *; autoplay"></iframe>
+            <!-- The sole game iframe is mounted here on narrow viewports. -->
           </div>
           <div class="panel displayCard hidden" id="view-howto">
             <div class="content">
@@ -248,26 +249,31 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (e.key === KEY_MAIN || e.key === KEY_ALT) renderInitials();
   });
 
-  // Exit: prefer history.back, fallback to home
-  document.getElementById('exitBtn').addEventListener('click', e => {
-    if (history.length > 1) { e.preventDefault(); history.back(); }
-  });
+  // Exit always returns to this arcade, not an arbitrary browser history page.
 
   // --- Iframe setup ---
   const entry = CFG.entry || './game.html';
   const gd = document.getElementById('gameDesktop');
-  const gm = document.getElementById('gameMobile');
+  const mobileMount = document.getElementById('view-game');
+  const desktopMount = document.getElementById('gameFrame');
+  const mobileQuery = matchMedia('(max-width: 1100px)');
+  // One running game. Remount only when switching desktop/mobile layouts.
+  // Some browsers reload an iframe when adopted into a new parent.
+  const mountGame = () => {
+    const target = mobileQuery.matches ? mobileMount : desktopMount;
+    if (gd.parentElement !== target) target.appendChild(gd);
+  };
+  mountGame();
+  mobileQuery.addEventListener?.('change', mountGame);
   gd.src = entry;
-  gm.src = entry;
 
   const focusFrame = el => {
     try { el.focus(); } catch(_) {}
     try { el.contentWindow && el.contentWindow.focus && el.contentWindow.focus(); } catch(_) {}
   };
   gd.addEventListener('load', () => focusFrame(gd));
-  gm.addEventListener('load', () => focusFrame(gm));
   document.getElementById('gameFrame')?.addEventListener('pointerdown', () => focusFrame(gd));
-  document.getElementById('view-game')?.addEventListener('pointerdown', () => focusFrame(gm));
+  document.getElementById('view-game')?.addEventListener('pointerdown', () => focusFrame(gd));
 
   // --- Leaderboard: slug + local storage keys ---
   const slug = CFG.slug || (location.pathname.split('/').filter(Boolean).slice(-2,-1)[0] || 'unknown');
@@ -327,18 +333,19 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   }
 
   async function fbPost(entry, slugOverride) {
-    if (licensed) return;
+    if (licensed) return false;
     const base = FIREBASE_DB_URL
       ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
       : null;
-    if (!base) return;
+    if (!base) return false;
     try {
-      await fetch(`${base}.json`, {
+      const response = await fetch(`${base}.json`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(entry),
       });
-    } catch(_) {}
+      return response.ok;
+    } catch(_) { return false; }
   }
 
   // --- Render leaderboard rows ---
@@ -364,11 +371,15 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     std: rows.filter(r => !isAnalysisMode(r)).slice(0, 10),
     an:  rows.filter(r =>  isAnalysisMode(r)).slice(0, 10),
   });
+  const setCloudStatus = text => document.querySelectorAll('[data-cloud-status]').forEach(el => { el.textContent = text; });
   const refreshBoards = async () => {
     if (licensed) return;
     if (isSpyderCasino) {
-      const bjRows = ((await fbFetch('spyder-blackjack')) || []).slice(0, 10);
-      const heRows = ((await fbFetch('spyder-holdem')) || []).slice(0, 10);
+      const bjCloud = await fbFetch('spyder-blackjack');
+      const heCloud = await fbFetch('spyder-holdem');
+      setCloudStatus(bjCloud !== null && heCloud !== null ? 'GLOBAL' : 'LOCAL / OFFLINE');
+      const bjRows = (bjCloud || lbLoadRaw('LB_spyder-blackjack') || []).slice(0, 10);
+      const heRows = (heCloud || lbLoadRaw('LB_spyder-holdem') || []).slice(0, 10);
       const bj = modeSplit(bjRows);
       const he = modeSplit(heRows);
       renderBoard('boardDesktopBjStd', bj.std);
@@ -382,56 +393,52 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       return;
     }
     const cloud = await fbFetch();
+    setCloudStatus(cloud !== null ? 'GLOBAL' : 'LOCAL / OFFLINE');
     const rows  = (cloud !== null ? cloud : lbLoad()).slice(0, 10);
     renderBoard('boardDesktop', rows);
     renderBoard('boardMobile', rows);
   };
   refreshBoards();
 
-  // --- Score intake (dedup burst within 1.2 s) ---
+  // --- Score intake: only messages from the active game iframe are trusted. ---
+  const SPYDER_BOARDS = new Set(['spyder-blackjack', 'spyder-holdem']);
   let lastSig = '', lastAt = 0;
-  async function addScore(rawScore, scoreSlug) {
-    if (licensed) return;
-    const initials = getInitials() || '???';
-    const score = Math.max(0, Math.floor(Number(rawScore) || 0));
+  async function addScore(rawScore, boardSlug, mode) {
+    if (licensed || typeof rawScore !== 'number' || !Number.isFinite(rawScore)) return;
+    if (!Number.isInteger(rawScore) || rawScore < 0 || rawScore > 10000000) return;
+    const score = rawScore;
+    const initials = getInitials();
     const now = Date.now();
-    const sig = `${initials}:${score}`;
-    if (sig === lastSig && (now - lastAt) < 1200) return;
+    const target = isSpyderCasino && SPYDER_BOARDS.has(boardSlug) ? boardSlug : slug;
+    const normalizedMode = String(mode || '').toUpperCase().startsWith('A') ? 'Analysis' : 'Standard';
+    const sig = `${target}:${normalizedMode}:${initials}:${score}`;
+    if (sig === lastSig && now - lastAt < 2000) return;
     lastSig = sig; lastAt = now;
-
-    const entry = { initials, score, t: now };
-
-    if (isSpyderCasino && scoreSlug) {
-      const entry = { initials, score, t: now };
-      fbPost(entry, scoreSlug).finally(() => refreshBoards());
-      refreshBoards();
-      return;
-    }
-    // Always save locally (works offline / no Firebase configured)
-    const rows = lbLoad();
+    const entry = { initials, score, t: now, ...(isSpyderCasino ? {mode:normalizedMode} : {}) };
+    const key = `LB_${target}`;
+    const rows = lbLoadRaw(key);
     rows.push(entry);
     rows.sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
-    lbSave(rows.slice(0,10));
-
-    // Also push to Firebase (fire-and-forget, then refresh)
-    fbPost(entry).finally(() => refreshBoards());
-    refreshBoards(); // show local result immediately; Firebase update follows
+    try { localStorage.setItem(key, JSON.stringify(rows.slice(0, 10))); } catch (_) {}
+    await refreshBoards();
+    const uploaded = await fbPost(entry, target);
+    if (!uploaded) setCloudStatus('LOCAL ONLY — UPLOAD FAILED');
+    else await refreshBoards();
   }
-
-  // Listen for score / initials messages from iframed games
   window.addEventListener('message', e => {
-    if (licensed) return; // Third-party games cannot submit PIXEL-NET scores.
-    const d = e.data || {};
-    if (!d || !d.type) return;
+    if (licensed || e.source !== gd.contentWindow) return;
+    // Accept the active same-origin game only.
+    if (e.origin !== location.origin && e.origin !== 'null') return;
+    const d = e.data;
+    if (!d || typeof d !== 'object') return;
     if (d.type === 'PIXELNET_SET_INITIALS' && d.initials) {
       const v = clean(d.initials);
       if (v) { setInitialsAll(v); renderInitials(); }
       return;
     }
-    if (d.type === 'GAME_OVER_SCORE' || d.type === 'GAME_OVER' ||
-        d.type === 'PIXELNET_SCORE'  || d.type === 'PIXELNET_SUBMIT_SCORE') {
-      const s = d.score != null ? d.score : (d.finalScore != null ? d.finalScore : d.value);
-      if (s != null) addScore(s, d.slug);
+    if (['GAME_OVER_SCORE','GAME_OVER','PIXELNET_SCORE','PIXELNET_SUBMIT_SCORE'].includes(d.type)) {
+      const score = d.score ?? d.finalScore ?? d.value;
+      addScore(score, d.slug, d.mode);
     }
   });
 
