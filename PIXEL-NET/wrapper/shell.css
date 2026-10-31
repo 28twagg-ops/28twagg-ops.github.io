@@ -389,3 +389,35 @@ iframe{ width:100%; height:100%; border:0; display:block; }
 .licensedInfo a{display:block;padding:12px 10px;border:1px solid rgba(109,236,246,.45);border-radius:10px;text-decoration:none;color:#93f8f3;font-weight:750;overflow-wrap:anywhere}
 .licensedInfo a:focus-visible{outline:3px solid #ffcb68;outline-offset:2px}
 .licensedInfo .licensedLandscape{color:#ffd27a;font-weight:700}
+
+/* Stage 2: conservative mobile viewport and cabinet corrections */
+html,body { overscroll-behavior: none; }
+.shell { height: calc(100dvh - var(--topbarH)); }
+.mobileWrap {
+  height: calc(100dvh - var(--topbarH));
+  padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(var(--pad), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--pad), env(safe-area-inset-right, 0px));
+}
+.topbar { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
+.gameBadge {
+  min-width:0; max-width: min(52vw, 460px);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:clamp(10px, 2.6vw, 18px);
+}
+.gameBadge .verTag { display:none; }
+.top-left,.playerBtn { flex-shrink:0; }
+.displayZone,.mobileStack { min-width:0; }
+.displayZone { overflow:hidden; }
+#gameDesktop { display:block; width:100%; height:100%; border:0; touch-action: manipulation; }
+@media (max-width:1100px) {
+  .mobileFrame { width:100%; max-width:none; height:100%; min-width:0; }
+  .btnbar { flex-shrink:0; }
+}
+@media (max-width: 1100px) and (orientation:landscape) {
+  .mobileWrap { padding-top:4px; padding-bottom:max(4px,env(safe-area-inset-bottom,0px)); }
+  .mobileStack { gap:4px; }
+  .btnbar { padding:3px; border-radius:9px; }
+  .tabBtn { height:28px; border-radius:7px; font-size:10px; }
+  .gameBadge { max-width:45vw; }
+}
