@@ -39,6 +39,10 @@ async function exercise(browser,profile,game){
  try {
    const nav=await page.goto(BASE+game.path,{waitUntil:'domcontentloaded',timeout:25000});
    assert.equal(nav.status(),200,'Wrapper route failed');
+   if(profile.name!=='desktop-chromium'&&game.slug==='astrotype'){
+     await page.locator('.mobileOnlyNotice button').click({timeout:4000});
+     inputs.push('explicitly opted into keyboard-only mobile game');
+   }
    const iframe=page.locator(profile.frame);
    await iframe.waitFor({state:'attached',timeout:12000});
    await page.waitForFunction(id=>{

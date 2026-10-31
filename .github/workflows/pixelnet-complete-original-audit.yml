@@ -24,6 +24,7 @@ jobs:
           node --check PIXEL-NET/wrapper/shell.js
           node --check PIXEL-NET/tests/original-input-audit.cjs
           node --check PIXEL-NET/tests/score-safety-smoke.cjs
+          node --check PIXEL-NET/tests/mobile-cabinet-layout.cjs
           node PIXEL-NET/tests/arcade-publish-guard.cjs
       - name: Install browser engines
         run: |
@@ -35,6 +36,8 @@ jobs:
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
       - name: Verify mocked score pipeline and Casino mode isolation
         run: node PIXEL-NET/tests/score-safety-smoke.cjs
+      - name: Run 28-game portrait and landscape mobile layout regression
+        run: node PIXEL-NET/tests/mobile-cabinet-layout.cjs
       - name: Exercise original games on desktop Android and iOS emulation
         run: node PIXEL-NET/tests/original-input-audit.cjs
       - name: Preserve game screenshots and per-title diagnostics
@@ -42,4 +45,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: original-input-audit-results
-          path: original-input-audit-results/
+          path: |
+            original-input-audit-results/
+            mobile-layout-results/
