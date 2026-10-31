@@ -12,7 +12,7 @@ const profiles = [
  {name:'android-chromium',browser:chromium,settings:devices['Pixel 7'],frame:'#gameMobile'},
  {name:'iphone-webkit',browser:webkit,settings:devices['iPhone 13'],frame:'#gameMobile'}
 ];
-const legacyEmulators = new Set(['dig-dug-delve','combat-cx2601','jungle-jr-rescue','track-field-blitz','orbit-siege']);
+const nativeRepairs = new Set(['dig-dug-delve','combat-cx2601','jungle-jr-rescue','track-field-blitz','orbit-siege']);
 const output = 'original-input-audit-results';
 fs.mkdirSync(output,{recursive:true});
 const results={total:catalog.length*profiles.length,passed:[],failed:[],warnings:[],coverage:
@@ -48,11 +48,11 @@ async function exercise(browser,profile,game){
    const frame=await frameHandle.contentFrame();
    assert.ok(frame,'Missing game frame');
    evidence.frameURL=frame.url();
-   await page.waitForTimeout(legacyEmulators.has(game.slug)?5500:900);
+   await page.waitForTimeout(900);
    const canvas=frame.locator('canvas').first();
    const hasCanvas=await canvas.count()>0;
    const body=frame.locator('body');
-   const play=frame.locator('#btnStart, #startBtn, #startButton, button:has-text("START"), button:has-text("PLAY")').first();
+   const play=frame.locator('#btn, #btnStart, #startBtn, #startButton, button:has-text("START"), button:has-text("PLAY")').first();
    if(await play.count()&&await play.isVisible().catch(()=>false)){
      await play.click({timeout:2500}).then(()=>inputs.push('click start/play')).catch(()=>{});
    }
@@ -68,6 +68,17 @@ async function exercise(browser,profile,game){
        const x=rect.x+Math.min(rect.width*.5,Math.max(16,rect.width-16));
        const y=rect.y+Math.min(rect.height*.5,Math.max(16,rect.height-16));
        await page.touchscreen.tap(x,y).then(()=>inputs.push('physical simulated touch')).catch(()=>{});
+     }
+     if(nativeRepairs.has(game.slug)){
+       const left=frame.locator('[data-pn-touch="left"]');
+       await left.waitFor({state:'visible',timeout:5000});
+       await frame.evaluate(()=>{
+         window.__pnTouchTestKeys=0;
+         window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')window.__pnTouchTestKeys++;});
+       });
+       await left.tap({timeout:4000});
+       await frame.waitForFunction(()=>window.__pnTouchTestKeys>0,{timeout:4000});
+       inputs.push('verified native touch left emits ArrowLeft keydown');
      }
      const arrow=frame.locator('[data-direction="left"], #btnLeft, .dpad button').first();
      if(await arrow.count()&&await arrow.isVisible().catch(()=>false)){
@@ -95,10 +106,7 @@ async function exercise(browser,profile,game){
      reason:'Horizontal wrapper overflow '+evidence.pageSize.overflow+'px'});
    // Permission errors in emulator sandboxes can coexist with rendered games;
    // retain them as warnings until deeper gameplay establishes functionality.
-   if(errors.length){
-     if(legacyEmulators.has(game.slug))results.warnings.push({game:game.slug,device:profile.name,reason:'Emulator runtime warnings',errors});
-     else throw Error('JS exceptions: '+errors.join(' | '));
-   }
+   if(errors.length) throw Error('JS exceptions: '+errors.join(' | '));
    assert.deepEqual(http,[],'Missing local resources');
    const shot=output+'/'+profile.name+'-'+game.slug+'.png';
    await page.screenshot({path:shot,timeout:15000});
