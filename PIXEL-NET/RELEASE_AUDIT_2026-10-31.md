@@ -75,7 +75,7 @@ Statuses: FIXED — DEV = change applied to development branch, not public; TEST
 | R44 | P2 | FIXED — DEV | Casino terminal-only interface was misdiagnosed as broken | Game start smoke tests use real terminal 1+Enter start path, not hidden graphical buttons |
 | R45 | P2 | FIXED — DEV | Track Field Blitz canvas stretched on small phones | Scale both internal canvas axes uniformly; responsive UI regression |
 | R46 | P2 | FIXED — DEV | PWA uncached-game offline navigation returned misleading home page | Show explicit offline game notice and return-to-arcade link; service worker cache version bumped |
-| R47 | P2 | OPEN | Offline install does not precache all 19 games | Clearly describe online-first install or opt-in offline asset pack with quota/progress checks |
+| R47 | P2 | OPEN | Offline install does not precache all 19 games | PARTIAL DEV improvement: visited game HTML/JS/CSS and shared shell now cache for offline replay; full opt-in offline pack, external assets and real-device quota checks remain outstanding |
 | R48 | P2 | OPEN | PWA icon maskable crop and iOS installed app not human tested | Validate icon safe zones and on-device home-screen flow on current iPhone/Android |
 | R49 | P2 | OPEN | Game loses active state when crossing responsive breakpoint | Retain iframe across resizes where possible, or warn player before restart; needs architecture design |
 | R50 | P2 | OPEN | Real-device multitouch, audio gesture unlock and focus are incompletely tested | Human Safari iOS / Chrome Android / low-end phone sessions and keyboard/gamepad checks |
@@ -89,9 +89,9 @@ Statuses: FIXED — DEV = change applied to development branch, not public; TEST
 | R58 | P2 | OPEN | Old game/ROM names and artwork may carry trademark or copyright concerns | Review each game/asset source, license and naming; replace with original art where rights uncertain |
 | R59 | P2 | OPEN | Score and mode normalization rely on client-side historical data quality | Backend migration/report for malformed, duplicated and legacy records with immutable backup |
 | R60 | P2 | OPEN | Automated UI tests cannot prove all WCAG behavior | Screen-reader VoiceOver/NVDA checks, focus order, contrast and touch target measurements |
-| R61 | P3 | OPEN | No continuous post-deploy alerts for all 19 game routes | Scheduled synthetic tests for HTTP, JS errors, score GET and staging game-end flows |
+| R61 | P3 | FIXED — DEV | No continuous post-deploy alerts for all 19 game routes | Public GET-only audit now fails if 19 published game routes, thumbnails, core pages or selected leaderboard reads fail; daily cron staged but only runs when workflow reaches default branch. Browser JS-error and staging game-end monitoring remain future scope |
 | R62 | P3 | OPEN | No feature flags for per-game disabling when runtime regressions occur | Add central availability flags and release fallback per game; preserve historic scores |
-| R63 | P3 | OPEN | No explicit release rollback playbook tested against public Pages | Back up main commit, check Pages deployment, document fast revert and DB rules rollback |
+| R63 | P3 | OPEN | No explicit release rollback playbook tested against public Pages | RELEASE_ROLLBACK_PLAYBOOK.md created with safe frontend and rules rollback steps; operator rehearsal and authorized Firebase backup remain outstanding |
 | R64 | P3 | FIXED — DEV | Public and development catalog were confused during live URL checks | Live auditor now fetches public games.json separately to avoid false 404s for unpublished files |
 | R65 | P3 | FIXED — DEV | Version tag did not identify unfinished public release | Development version 0.1.0-rc.1; main remains unchanged |
 | R66 | P3 | OPEN | No independent Lighthouse/Core Web Vitals baseline | Run lab and field measurements after real deployment, track LCP/INP/CLS on mobile |
@@ -147,3 +147,18 @@ This branch removes six bundled ROM binaries and redirects their legacy emulator
 - **Explicit decision:** do not call the public site finished, do not claim perfect 100% quality, and do not silently merge.
 
 This document is intended as a durable handoff so the user need not repeat audit history. Every future fix should cite its issue ID, exact commit, test run, and updated release gate.
+
+## October 31 follow-up implementation addendum (this session)
+This addendum supersedes the initial 70-item snapshot **only where noted**, and does not claim a completed production release.
+
+- **R47 partial development:** PIXEL-NET/sw.js now network-first caches previously visited game HTML/JS/CSS and shared wrapper resources, allowing core files to replay offline after a successful online visit. The full all-game install pack, external resources, browser quota, and actual iPhone Safari behavior remain OPEN. A dedicated service-worker regression case was added to tests/pwa-install.test.cjs.
+- **R61 fixed in development, not scheduled on main yet:** tests/live-site-audit.cjs now sets nonzero exit status for failing core HTTP routes, published game routes and thumbnail paths, missing catalog, or unreachable leaderboard reads. The read-only workflow has a daily schedule, which GitHub executes only on the default branch after merge. No fake public scores are written.
+- **R63 partially documented:** see RELEASE_ROLLBACK_PLAYBOOK.md. Real rollback rehearsal and Firebase owner backup remain OPEN.
+- **Additional fix (new R71, outside original 70):** Casino local score history now retains up to 30 entries per Standard and Analysis mode instead of allowing high Standard scores to evict Analysis results. See wrapper/shell.js and tests/release-hardening.cjs.
+- **Additional fix (R72, outside original 70):** corrected an incorrectly escaped Firebase mock URL regular expression in the restricted-storage test. This makes the intended backend interception meaningful.
+- **Research deliverables:** AI_GAME_CREATION_RESEARCH_2026-10-31.md and AI_GAME_CREATION_MASTER_PROMPT.md standardize evidence-grounded original arcade game creation and actual browser playtesting.
+- **Separate historical backend warning:** 28twagg-ops/spyder-leaderboard (not called by the current Casino game) contains a public fallback signature secret, SPYDER2026, in server.py. If deployed, that historical service cannot treat such a signature as secure player proof. Needs owner-confirmed service inventory and credential rotation/hardening. No unverified alteration to that unrelated live deployment was made.
+
+**Current classification for the original R01–R70 entries after R61 change:** 36 FIXED—DEV, 4 TESTED—NOT LIVE, 6 BLOCKED, 24 OPEN = 70. R47 and R63 are still OPEN despite partial improvements. R71 and R72 are additional fixes, not secretly counted within the original seventy.
+
+**Release decision remains NO-GO:** real Firebase authenticated score submission/independent production readback, authorized rules deployment, real-device QA, and rollback rehearsal remain unproven. Developer CI confirms only precisely tested behaviors. Preserve main and the original backup.
