@@ -15,13 +15,20 @@ async function touch2048(frame){
  const board=frame.locator('.game-container');
  await board.evaluate(el=>{
   const r=el.getBoundingClientRect(),x=r.left+r.width*.75,y=r.top+r.height*.5;
-  const mk=(cx,cy)=>new Touch({identifier:1,target:el,clientX:cx,clientY:cy,
+  const mk=(cx,cy)=>({identifier:1,target:el,clientX:cx,clientY:cy,
     screenX:cx,screenY:cy,pageX:cx,pageY:cy});
   const a=mk(x,y),b=mk(x-r.width*.5,y);
-  el.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,
-    touches:[a],targetTouches:[a],changedTouches:[a]}));
-  el.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,
-    touches:[],targetTouches:[],changedTouches:[b]}));
+  const emit=(type,touches,changed)=>{
+    const event=document.createEvent('Event');
+    event.initEvent(type,true,true);
+    Object.defineProperties(event,{
+      touches:{value:touches},targetTouches:{value:touches},
+      changedTouches:{value:changed}
+    });
+    el.dispatchEvent(event);
+  };
+  emit('touchstart',[a],[a]);
+  emit('touchend',[],[b]);
  });
  await frame.locator('.restart-button').tap();
  assert.ok((await frame.locator('.tile').count())>=2,'2048 restart did not seed tiles');
@@ -43,13 +50,21 @@ async function touchOpenGames(frame,id){
   await frame.locator('#board').tap();
  }
  await frame.locator('#restart').tap();
- await play.waitFor({state:'visible',timeout:3000});
+ await wait(180);
+ assert.equal((await frame.locator('#score').innerText()).trim(),'0','Restart failed to reset score');
  return 'tap play, native touch controls and touch restart';
 }
 async function touchLittleJS(frame,id){
  const play=frame.locator('button.ljs-menu-item').filter({hasText:/^PLAY$/i}).first();
  await play.waitFor({state:'visible',timeout:18000});
  await play.tap({timeout:12000});
+ if(id==='emoji-survivors'){
+   const hero=frame.locator('button.ljs-menu-item[data-item-id^="hero-"]:not([disabled])').first();
+   await hero.waitFor({state:'visible',timeout:5000});
+   await hero.tap();
+   const stage=frame.locator('button.ljs-menu-item[data-item-id^="stage-"]:not([disabled])').first();
+   if(await stage.isVisible().catch(()=>false))await stage.tap();
+ }
  await wait(300);
  const playing=await frame.evaluate(()=>typeof isPlaying==='function'?isPlaying():null);
  if(playing!==null)assert.ok(playing,'PLAY did not start '+id);
@@ -60,7 +75,10 @@ async function touchLittleJS(frame,id){
  return 'tap PLAY and tap active game canvas';
 }
 async function exercise(browser,target,game){
- const context=await browser.newContext({...target.device,reducedMotion:'reduce',serviceWorkers:'block'});
+ const landscape=['missile-defense','pong'].includes(game.id);
+ const viewport=landscape?{width:844,height:390}:target.device.viewport;
+ const context=await browser.newContext({...target.device,viewport,
+   screen:landscape?viewport:target.device.screen,reducedMotion:'reduce',serviceWorkers:'block'});
  const page=await context.newPage(),events={js:[],http:[],restricted:[],console:[]};
  page.on('pageerror',e=>events.js.push(e.message));
  page.on('console',m=>{if(m.type()==='error')events.console.push(m.text())});
@@ -80,7 +98,7 @@ async function exercise(browser,target,game){
   await page.waitForFunction(p=>document.querySelector('#game')?.contentWindow?.location?.pathname.endsWith('/'+p),
    game.path,{timeout:20000});
   const frame=page.frameLocator('#game');
-  await frame.locator('body').waitFor({timeout:15000});
+  await frame.locator('html').waitFor({state:'attached',timeout:15000});
   const action=game.id==='2048'?await touch2048(frame):
     ['snake','flap'].includes(game.id)?await touchOpenGames(frame,game.id):
     await touchLittleJS(frame,game.id);
