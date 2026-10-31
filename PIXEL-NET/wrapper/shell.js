@@ -357,9 +357,22 @@ const FIREBASE_WEB_API_KEY = "";
   // Anonymous Firebase Auth: a player needs no account or sign-in form.
   // Tokens expire; create another anonymous session when they do. Firebase
   // security rules must allow authenticated, create-only writes at /lb.
+  const AUTH_CACHE_KEY='PIXELNET_ANON_AUTH_SESSION_V1';
   let authPromise=null,authExpiry=0;
   async function getScoreToken(){
     if(!FIREBASE_WEB_API_KEY)return null;
+    // A short-lived anonymous session is reused across game navigation.
+    // Avoid creating a new Firebase anonymous user for every arcade cabinet.
+    if(!authPromise){
+      try{
+        const cached=JSON.parse(sessionStorage.getItem(AUTH_CACHE_KEY)||'null');
+        if(cached?.token&&cached?.key===FIREBASE_WEB_API_KEY&&
+           Number(cached.exp)>Date.now()+60000){
+          authExpiry=Number(cached.exp);
+          authPromise=Promise.resolve(cached.token);
+        }
+      }catch(_){}
+    }
     if(!authPromise || Date.now()>authExpiry-60000){
       authPromise=(async()=>{
         const res=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+
@@ -370,7 +383,11 @@ const FIREBASE_WEB_API_KEY = "";
         if(!res.ok)throw new Error('Firebase anonymous sign-in failed');
         const data=await res.json();
         authExpiry=Date.now()+Math.max(60,Number(data.expiresIn)||3600)*1000;
-        return data.idToken||null;
+        if(!data.idToken)throw new Error('Missing Firebase identity token');
+        try{sessionStorage.setItem(AUTH_CACHE_KEY,JSON.stringify({
+          token:data.idToken,exp:authExpiry,key:FIREBASE_WEB_API_KEY
+        }))}catch(_){}
+        return data.idToken;
       })().catch(()=>{authExpiry=0;authPromise=null;return null});
     }
     return authPromise;
