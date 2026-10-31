@@ -215,7 +215,10 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
     const refit = () => {
       fitFrame(desktopCenter, desktopFrame);
-      fitFrame(mobileZone,    mobileFrame);
+      // Mobile gameplay takes the available zone; the game's own canvas preserves its pixels.
+      mobileFrame.style.width = '100%';
+      mobileFrame.style.height = '100%';
+      mobileFrame.style.flex = '1 1 auto';
     };
 
     // Run once after layout is ready, then on every resize
@@ -378,8 +381,8 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       const bjCloud = await fbFetch('spyder-blackjack');
       const heCloud = await fbFetch('spyder-holdem');
       setCloudStatus(bjCloud !== null && heCloud !== null ? 'GLOBAL' : 'LOCAL / OFFLINE');
-      const bjRows = (bjCloud || lbLoadRaw('LB_spyder-blackjack') || []).slice(0, 10);
-      const heRows = (heCloud || lbLoadRaw('LB_spyder-holdem') || []).slice(0, 10);
+      const bjRows = (bjCloud !== null ? bjCloud : lbLoadRaw('LB_spyder-blackjack')).slice(0, 100);
+      const heRows = (heCloud !== null ? heCloud : lbLoadRaw('LB_spyder-holdem')).slice(0, 100);
       const bj = modeSplit(bjRows);
       const he = modeSplit(heRows);
       renderBoard('boardDesktopBjStd', bj.std);
@@ -416,7 +419,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     lastSig = sig; lastAt = now;
     const entry = { initials, score, t: now, ...(isSpyderCasino ? {mode:normalizedMode} : {}) };
     const key = `LB_${target}`;
-    const rows = lbLoadRaw(key);
+    const rows = Array.isArray(lbLoadRaw(key)) ? lbLoadRaw(key) : [];
     rows.push(entry);
     rows.sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
     try { localStorage.setItem(key, JSON.stringify(rows.slice(0, 10))); } catch (_) {}
@@ -428,7 +431,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   window.addEventListener('message', e => {
     if (licensed || e.source !== gd.contentWindow) return;
     // Accept the active same-origin game only.
-    if (e.origin !== location.origin && e.origin !== 'null') return;
+    if (e.origin !== location.origin) return;
     const d = e.data;
     if (!d || typeof d !== 'object') return;
     if (d.type === 'PIXELNET_SET_INITIALS' && d.initials) {
