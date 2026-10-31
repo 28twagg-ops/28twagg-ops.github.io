@@ -322,8 +322,8 @@ const FIREBASE_WEB_API_KEY = "";
     ?FIREBASE_DB_URL+'/lb/'+encodeURIComponent(key)+'.json':null;
   const setStatus=(ok,message)=>{
     for(const e of document.querySelectorAll('[data-lb-status]')){
-      e.textContent=ok?'GLOBAL LIVE':'LOCAL ONLY';
-      e.dataset.status=ok?'online':'error';e.title=message;
+      e.textContent=ok?(FIREBASE_WEB_API_KEY?'GLOBAL LIVE':'GLOBAL VIEW ONLY'):'LOCAL ONLY';
+      e.dataset.status=ok?(FIREBASE_WEB_API_KEY?'online':'readonly'):'error';e.title=message;
     }
     for(const id of ['boardNoticeDesktop','boardNoticeMobile']){
       const e=document.getElementById(id);
