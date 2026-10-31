@@ -390,7 +390,7 @@ Purpose: AI implementation for themes
         let level = 1;
         let score = 0;
         let __pnScorePosted = false;
-        let highScore = localStorage.getItem('cakedUpHighScore') || 0;
+        let highScore = 0; try{highScore=Number(localStorage.getItem('cakedUpHighScore'))||0}catch(_){}
         let mapData = [];
         let particles = [];
         let weatherParticles = [];
@@ -1585,7 +1585,7 @@ Purpose: AI implementation for themes
                 }
                 if (score > highScore) {
                     highScore = score;
-                    localStorage.setItem('cakedUpHighScore', highScore);
+                    try{localStorage.setItem('cakedUpHighScore', highScore)}catch(_){}
                     uiHighScore.innerText = `HIGH SCORE: ${highScore}`;
                 }
                 if (msg) document.getElementById('gameover-msg').innerText = msg;
