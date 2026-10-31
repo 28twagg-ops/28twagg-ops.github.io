@@ -206,8 +206,9 @@ Purpose: AI implementation for themes
         .d-left { top: 55px; left: 0; }
         .d-right { top: 55px; right: 0; }
 
-        @media (hover: none) and (pointer: coarse) {
-            #mobile-controls { display: block; }
+        /* Use natural touch input instead of an overlay that covered START. */
+        @media (hover:none) and (pointer:coarse) {
+          #mobile-controls { display:none !important; }
         }
         
         #mute-btn {
@@ -1398,7 +1399,22 @@ function startGameplay() {
     window.focus();
 }
 document.getElementById('start-btn').addEventListener('click', startGameplay);
-canvas.addEventListener('pointerdown', () => { if (!gameHasStarted) startGameplay(); });
+let pnSwipeStart=null;
+canvas.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'){if(!gameHasStarted)startGameplay();return;}
+  pnSwipeStart={x:e.clientX,y:e.clientY,wasRunning:gameHasStarted};
+  if(!gameHasStarted)startGameplay();
+});
+canvas.addEventListener('pointerup',e=>{
+  if(!pnSwipeStart||e.pointerType==='mouse')return;
+  const s=pnSwipeStart;pnSwipeStart=null;
+  if(!s.wasRunning||gameState.isGameOver)return;
+  const x=e.clientX-s.x,y=e.clientY-s.y;
+  if(Math.abs(x)<16&&Math.abs(y)<16)player.move('up');
+  else if(Math.abs(x)>Math.abs(y))player.move(x>0?'right':'left');
+  else player.move(y>0?'down':'up');
+});
+canvas.addEventListener('pointercancel',()=>{pnSwipeStart=null;});
 </script>
 </body>
 </html>

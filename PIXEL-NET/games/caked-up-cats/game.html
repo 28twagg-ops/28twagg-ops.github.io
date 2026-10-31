@@ -288,6 +288,25 @@ Purpose: AI implementation for themes
             box-shadow: 0 0 0 #15803d, inset 0 2px 5px rgba(0,0,0,0.2);
         }
 
+
+    /* Responsive selection: preserve existing sprites, garden palette and menu. */
+    @media(max-width:700px), (max-height:510px){
+      .screen{padding:8px;overflow:auto;justify-content:center;gap:3px}
+      .screen h1{font-size:clamp(20px,5vw,30px)}
+      .screen h2{font-size:13px;margin-bottom:4px}
+      .screen p{font-size:12px;margin-bottom:6px;max-width:100%}
+      #char-select{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:100%;gap:7px;margin:6px 0 10px}
+      .char-card{width:auto;min-width:0;max-width:100%;padding:7px 3px;border-radius:11px}
+      .char-card.selected,.char-card:hover{transform:none}
+      .char-preview-canvas{width:46px !important;height:46px !important}
+      .lock-msg{top:-7px;right:-4px;font-size:8px}
+      .score-big{margin:4px 0;font-size:22px}
+      .screen button{font-size:15px;padding:10px 20px}
+      #ui-layer{padding:0 8px;font-size:13px;height:40px}
+      #energy-container{width:93px;padding:3px 5px}
+      .ui-group{gap:5px}
+    }
+    @media(orientation:landscape) and (max-height:480px){.screen{justify-content:flex-start}.char-preview-canvas{width:36px!important;height:36px!important}}
     </style>
 </head>
 <body tabindex="0"> <!-- Added tabindex to ensure body can receive focus -->
