@@ -1077,8 +1077,8 @@ function renderLb(rows, elId, type) {
   if (!el) return;
   if (!rows || !rows.length) { el.innerHTML = '<div class="mut" style="font-size:9px;text-align:center">No scores yet.</div>'; return; }
   el.innerHTML = rows.slice(0,5).map((r,i) => {
-    const nm = (r.initials||r.name||'???').toString().toUpperCase().slice(0,3);
-    const md = (r.mode||'STD').toString().toUpperCase().slice(0,6);
+    const nm = (r.initials||r.name||'???').toString().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+    const md = (r.mode||'STD').toString().toUpperCase().replace(/[^A-Z]/g,'').slice(0,6);
     const sc = type==='bj' ? `$${parseFloat(r.score||0).toFixed(0)}` : `${Math.round(r.score||0)} chips`;
     return `<div class="lb-row${i===0?' t1':''}"><div class="lb-rk">#${i+1}</div><div class="lb-nm">${nm}</div><div class="lb-md">${md}</div><div class="lb-sc">${sc}</div></div>`;
   }).join('');
@@ -2934,10 +2934,10 @@ function showEndScreen(game,score,subtitle,slug){
   const scoreNum=slug===BJ_SLUG
     ? Math.round(parseFloat(score.replace('$','')))
     : parseInt(score)||0;
-  fbPost(slug,{initials:ini,score:scoreNum,mode:endGameMode,t:Date.now()});
-  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:slug},'*');
+  // Submit exactly once through the shared PIXEL-NET wrapper, not directly and again via the wrapper.
+  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:slug,mode:endGameMode},'*');
   refreshLobbyBoards();
-  endMsg.textContent=`✓ Score saved for ${ini}`;
+  endMsg.textContent=`Score captured for ${ini}; global upload may be unavailable.`;
   fbFetch(slug,5).then(r=>renderLb(r,'endLb',slug===BJ_SLUG?'bj':'he'));
 }
 async function endSubmit(){
@@ -2950,11 +2950,11 @@ async function endSubmit(){
   if(endGameSlug===BJ_SLUG) scoreNum=Math.round(parseFloat(document.getElementById('endScore').textContent.replace('$','')));
   else scoreNum=parseInt(document.getElementById('endScore').textContent)||0;
   const entry={initials:ini,score:scoreNum,mode:endGameMode,t:Date.now()};
-  await fbPost(endGameSlug,entry);
+  // The wrapper owns database writes; never duplicate the score here.
   // Keep lobby leaderboards up-to-date immediately after any submit.
   refreshLobbyBoards();
-  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:endGameSlug},'*');
-  document.getElementById('endMsg').textContent='✓ Score saved!';
+  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:endGameSlug,mode:endGameMode},'*');
+  document.getElementById('endMsg').textContent='Score captured; global upload may be unavailable.';
   setTimeout(()=>fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he')),600);
 }
 function endSkip(){fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he'));}
