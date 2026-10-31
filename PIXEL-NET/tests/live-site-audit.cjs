@@ -19,16 +19,32 @@ async function check(url){
 }
 (async()=>{
  for(const path of paths)results.pages.push({url:ROOT+path,...await check(ROOT+path)});
- // Verify all 19 public game wrappers and all thumbnail asset URLs.
- const catalog=JSON.parse(fs.readFileSync('PIXEL-NET/games.json','utf8'));
- results.catalogCount=catalog.length;
+ // Read the PUBLISHED catalog instead of assuming development assets
+ // already exist on GitHub Pages. The branches are intentionally separate.
+ const localCatalog=JSON.parse(fs.readFileSync('PIXEL-NET/games.json','utf8'));
+ const publicCatalogResponse=await check(ROOT+'/PIXEL-NET/games.json');
+ let catalog=[];
+ try{
+   const r=await fetch(ROOT+'/PIXEL-NET/games.json',{cache:'no-store'});
+   if(r.ok)catalog=await r.json();
+ }catch(e){results.warnings.push('Public catalog unreadable: '+e)}
+ if(!Array.isArray(catalog))catalog=[];
+ results.developmentCatalogCount=localCatalog.length;
+ results.publicCatalogCount=catalog.length;
+ results.improvedBuildPublished=!!catalog.length&&catalog.every(game=>{
+   const planned=localCatalog.find(x=>x.slug===game.slug);
+   return !!planned&&planned.thumb===game.thumb;
+ });
+ if(!results.improvedBuildPublished){
+   results.warnings.push('Public main is not yet the optimized development build; this is expected until release.');
+ }
  results.gameRoutes=await Promise.all(catalog.map(async game=>{
    const url=ROOT+'/PIXEL-NET/'+game.path;
    return {slug:game.slug,url,...await check(url)};
  }));
  results.thumbnails=await Promise.all(catalog.map(async game=>{
    const url=ROOT+'/PIXEL-NET/'+game.thumb;
-   // HEAD avoids pulling the large AI-generated image assets over the network.
+   // HEAD avoids pulling asset bodies. Use only PUBLISHED image URLs.
    try{
      const r=await fetch(url,{method:'HEAD',signal:AbortSignal.timeout(12000)});
      return {slug:game.slug,url,status:r.status,ok:r.ok};
