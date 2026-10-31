@@ -109,7 +109,7 @@ const fulfilled=async route=>route.fulfill({
     rows.push({initials:'ANA',score:50,t:Date.now(),mode:'ANALYSIS'});
     localStorage.setItem('LB_spyder-blackjack',JSON.stringify(rows));
   });
-  await casinoLocal.route(/firebaseio\\.com/,route=>route.fulfill({
+  await casinoLocal.route(/firebaseio\.com/,route=>route.fulfill({
     status:401,contentType:'application/json',body:'{"error":"Permission denied"}'
   }));
   const casinoLocalPage=await casinoLocal.newPage();
@@ -194,7 +194,7 @@ const fulfilled=async route=>route.fulfill({
         configurable:true,get(){throw new DOMException('Storage disabled','SecurityError')}
       });
     });
-    await restricted.route(/firebaseio\\.com/,fulfilled);
+    await restricted.route(/firebaseio\.com/,fulfilled);
     const privatePage=await restricted.newPage();
     const privateErrors=[];
     privatePage.on('pageerror',e=>privateErrors.push(e.message));
