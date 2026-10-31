@@ -142,8 +142,8 @@ const fulfilled=async route=>route.fulfill({
 
   for(const rom of roms){
    const slug=rom.split('/')[0];
-   const res=await page.request.get(BASE+'games/'+slug+'/emu.html');
-   assert.equal(res.status(),200);
+   const res=await fetch(BASE+'games/'+slug+'/emu.html');
+   assert.equal(res.status,200);
    assert.ok((await res.text()).includes("location.replace('./game.html')"));
   }
   results.push('All old emulator HTML routes explicitly redirect to playable native versions');
