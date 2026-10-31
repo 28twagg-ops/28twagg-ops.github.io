@@ -347,7 +347,12 @@ const FIREBASE_WEB_API_KEY = "";
   async function fbFetch(board=slug){
     if(!cloudURL(board))return {ok:false,rows:[],reason:'Global database not configured.'};
     try{
-      const res=await fetch(cloudURL(board),{cache:'no-store'});
+      // Ask Firebase for only the highest scores on ordinary games.
+      // Casino modes still fetch the full mixed-mode board until the
+      // database has been migrated into separate mode partitions.
+      const isCasinoBoard=board==='spyder-blackjack'||board==='spyder-holdem';
+      const url=cloudURL(board)+(isCasinoBoard?'':'?orderBy=%22score%22&limitToLast=50');
+      const res=await fetch(url,{cache:'no-store'});
       if(!res.ok)return {ok:false,rows:[],reason:
         res.status===401||res.status===403?'Database permission denied.':
         'Global scores unavailable (HTTP '+res.status+').'};
