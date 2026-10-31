@@ -44,7 +44,8 @@ async function exercise(browser,profile,game){
      const frame=document.querySelector(id);
      return frame&&frame.contentWindow&&frame.contentWindow.location.href!=='about:blank';
    },profile.frame,{timeout:14000});
-   const frame=await iframe.contentFrame();
+   const frameHandle=await iframe.elementHandle();
+   const frame=await frameHandle.contentFrame();
    assert.ok(frame,'Missing game frame');
    evidence.frameURL=frame.url();
    await page.waitForTimeout(legacyEmulators.has(game.slug)?5500:900);
