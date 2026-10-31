@@ -433,6 +433,11 @@
       return m ? m[1] : "";
     }
 
+    function htmlEsc(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
     function formatHeldDuration(ms){
       const mins = Math.floor(ms / 60000);
       if (mins < 1) return "just now";
@@ -475,17 +480,17 @@
       list.innerHTML = items.slice(0, 5).map((row, i) => `
         <div class="pixel-row">
           <div class="pixel-rank">#${i+1}</div>
-          <div class="pixel-name">${row.initials}</div>
-          <div class="pixel-game">${row.gameName} · held ${formatHeldDuration(Date.now() - row.t)}</div>
-          <div class="pixel-score">${row.score}</div>
+          <div class="pixel-name">${htmlEsc(row.initials)}</div>
+          <div class="pixel-game">${htmlEsc(row.gameName)} · held ${formatHeldDuration(Date.now() - row.t)}</div>
+          <div class="pixel-score">${htmlEsc(row.score)}</div>
         </div>
       `).join("");
       const takeovers = items
         .filter(r => r.takeoverText)
         .slice(0, 5);
       takeoverEl.innerHTML = takeovers.length
-        ? takeovers.map(r => `<div class="takeover-row">${r.takeoverText}</div>`).join("")
-        : items.slice(0,3).map(r => `<div class="takeover-row">${r.initials} currently holds ${r.gameName} (${r.score})</div>`).join("");
+        ? takeovers.map(r => `<div class="takeover-row">${htmlEsc(r.takeoverText)}</div>`).join("")
+        : items.slice(0,3).map(r => `<div class="takeover-row">${htmlEsc(r.initials)} currently holds ${htmlEsc(r.gameName)} (${htmlEsc(r.score)})</div>`).join("");
     }
 
     async function loadTopPixels(games){
@@ -549,7 +554,7 @@
         card.style.color = 'inherit';
         card.innerHTML = `
           <div class="game-thumbnail" style="background-image:url('${withVersion(normalizePath(game.thumb))}')"></div>
-          <div class="game-title"><h4>${game.name || "GAME"}</h4></div>
+          <div class="game-title"><h4>${htmlEsc(game.name || "GAME")}</h4></div>
         `;
         // Native link supports keyboard, screen readers and opening in a new tab.
         if(game.licensed){
