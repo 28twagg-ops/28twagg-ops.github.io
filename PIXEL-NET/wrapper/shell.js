@@ -25,6 +25,12 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // cabinet layout is reused, but these games never access PIXEL-NET Firebase.
   const licensed = CFG.licensed && typeof CFG.licensed === 'object' ? CFG.licensed : null;
   const root = document.documentElement;
+  // Respect iOS safe-area insets without changing the existing visual theme.
+  const viewportMeta = document.querySelector('meta[name="viewport"]');
+  if (viewportMeta && !/viewport-fit=cover/.test(viewportMeta.content)) {
+    viewportMeta.content += ', viewport-fit=cover';
+  }
+
 
   // Apply per-game theme
   if (T.hero)  root.style.setProperty('--hero',  T.hero);
