@@ -50,13 +50,13 @@ const issues=[],checks=[];
         const dpad=frame.locator('#mobile-controls');
         assert.equal(await dpad.isVisible(),false,'Old Creek D-pad still covers Start');
       }
-      if(false && game.slug==='spyder-casino'){
+      if(game.slug==='spyder-casino'){
         const frame=page.frameLocator('#gameMobile');
         await frame.locator('#pnCasinoTouch button').first().waitFor({state:'visible'});
         const inputFocused=await frame.locator('body').evaluate(()=>document.activeElement?.tagName==='INPUT');
         assert.equal(inputFocused,false,'iPhone auto-opened casino keyboard');
         await frame.locator('#pnCasinoTouch button:has-text("BJ STANDARD")').click();
-        await frame.locator('#pnCasinoTouch button:has-text("+$5")').click();
+        await frame.getByRole('button',{name:'+$5',exact:true}).click();
         await frame.locator('#pnCasinoTouch button:has-text("DEAL")').click();
       }
       await page.locator('#maximizeGame').click();
