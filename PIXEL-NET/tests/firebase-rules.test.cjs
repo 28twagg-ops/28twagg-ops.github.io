@@ -3,7 +3,7 @@
 const fs=require('node:fs');
 const assert=require('node:assert/strict');
 const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/rules-unit-testing');
-const {ref,get,set,remove}=require('firebase/database');
+const {ref,get,set,remove,query,orderByChild,limitToLast}=require('firebase/database');
 async function main(){
  const env=await initializeTestEnvironment({
   projectId:'demo-pixelnet',
@@ -27,6 +27,13 @@ async function main(){
   assert.equal(snapshot.val().initials,'TST');
   assert.equal(snapshot.val().score,123);n++;
   console.log('PASS Public cross-player reads saved score');
+  await ok('Second score added to indexed leaderboard',
+    set(ref(player,'lb/neon-chase/pn-demo098765xyz'),{...entry,score:70}));
+  const top=await get(query(ref(publicDb,'lb/neon-chase'),
+    orderByChild('score'),limitToLast(1)));
+  assert.equal(Object.values(top.val()).length,1);
+  assert.equal(Object.values(top.val())[0].score,123);
+  console.log('PASS Indexed top-score query returns highest earned score');n++;
   await denied('Same player cannot modify score',set(ref(player,path),{...entry,score:9000}));
   await denied('Other player cannot modify score',set(ref(opponent,path),{...entry,score:9000}));
   await denied('No one can delete the score',remove(ref(player,path)));
