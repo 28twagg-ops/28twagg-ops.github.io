@@ -973,6 +973,9 @@ Select a game:
      SCRIPT
 ════════════════════════════════════════ -->
 <script>
+function safeArcadeGet(key){try{return localStorage.getItem(key)}catch(_){return null}}
+function safeArcadeSet(key,value){try{localStorage.setItem(key,value)}catch(_){}}
+
 'use strict';
 // ── GLOBAL CONFIG ─────────────────────────────────────────────
 const FB_URL = 'https://pixel-net-arcade-default-rtdb.firebaseio.com';
@@ -984,7 +987,7 @@ const SUIT_SYM = {Hearts:'♥',Diamonds:'♦',Clubs:'♣',Spades:'♠'};
 const RED_S = new Set(['Hearts','Diamonds']);
 
 let visualStyle = 'terminal'; // terminal-only by design (matches Poker Project flow)
-let userInitials = localStorage.getItem('PIXELNET_INITIALS') || localStorage.getItem('playerInitials') || '';
+let userInitials = safeArcadeGet('PIXELNET_INITIALS') || safeArcadeGet('playerInitials') || '';
 let endGameSlug = '', endGameMode = '';
 let heKeyActions = null;
 let heTermHandlers = null;
@@ -2920,12 +2923,12 @@ function showEndScreen(game,score,subtitle,slug){
 
   // Original gameplay flow: no end-of-game initials prompt.
   // If missing, fall back to a stable default and save it once.
-  let ini = (userInitials || localStorage.getItem('PIXELNET_INITIALS') || localStorage.getItem('playerInitials') || 'YOU')
+  let ini = (userInitials || safeArcadeGet('PIXELNET_INITIALS') || safeArcadeGet('playerInitials') || 'YOU')
     .toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
   if(!ini) ini='YOU';
   userInitials = ini;
-  localStorage.setItem('PIXELNET_INITIALS', ini);
-  localStorage.setItem('playerInitials', ini);
+  safeArcadeSet('PIXELNET_INITIALS', ini);
+  safeArcadeSet('playerInitials', ini);
   if(endIni) endIni.value = ini;
   if(endIniPrompt) endIniPrompt.textContent = `Score auto-saves with initials: ${ini}`;
   if(endIni) endIni.style.display = 'none';
@@ -2945,7 +2948,7 @@ function showEndScreen(game,score,subtitle,slug){
 async function endSubmit(){
   let ini=(document.getElementById('endIni').value||userInitials||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
   if(!ini){document.getElementById('endMsg').textContent='Please enter initials.';return;}
-  userInitials=ini;localStorage.setItem('PIXELNET_INITIALS',ini);localStorage.setItem('playerInitials',ini);
+  userInitials=ini;safeArcadeSet('PIXELNET_INITIALS',ini);safeArcadeSet('playerInitials',ini);
   document.getElementById('endMsg').textContent='Submitting...';
   // parse score
   let scoreNum=0;
@@ -2977,7 +2980,7 @@ window.addEventListener('message',e=>{
   }
   if(d.type==='PIXELNET_SET_INITIALS'&&d.initials){
     userInitials=d.initials.toUpperCase().slice(0,3);
-    localStorage.setItem('PIXELNET_INITIALS',userInitials);
+    safeArcadeSet('PIXELNET_INITIALS',userInitials);
   }
 });
 window.addEventListener('keydown', (e) => {
