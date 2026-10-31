@@ -55,19 +55,22 @@ async function touchOpenGames(frame,id){
  return 'tap play, native touch controls and touch restart';
 }
 async function touchLittleJS(page,frame,id){
+ async function tapAt(target,label){
+  const b=await target.boundingBox();
+  assert.ok(b&&b.width>20&&b.height>15,label+' has no interactive hit target');
+  await page.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);
+ }
  const play=frame.locator('button.ljs-menu-item').filter({hasText:/^PLAY$/i}).first();
  await play.waitFor({state:'visible',timeout:18000});
  // A native coordinate tap exercises the real mobile pointer path without
  // Playwright's locator actionability blocking on independently animated menus.
- const buttonBox=await play.boundingBox();
- assert.ok(buttonBox&&buttonBox.width>20&&buttonBox.height>15,'PLAY button has no hit target');
- await page.touchscreen.tap(buttonBox.x+buttonBox.width/2,buttonBox.y+buttonBox.height/2);
+ await tapAt(play,'PLAY');
  if(id==='emoji-survivors'){
    const hero=frame.locator('button.ljs-menu-item[data-item-id^="hero-"]:not([disabled])').first();
    await hero.waitFor({state:'visible',timeout:5000});
-   await hero.tap();
+   await tapAt(hero,'Hero selection');
    const stage=frame.locator('button.ljs-menu-item[data-item-id^="stage-"]:not([disabled])').first();
-   if(await stage.isVisible().catch(()=>false))await stage.tap();
+   if(await stage.isVisible().catch(()=>false))await tapAt(stage,'Stage selection');
  }
  await wait(300);
  const playing=await frame.locator('html').evaluate(()=>typeof isPlaying==='function'?isPlaying():null);
@@ -75,7 +78,7 @@ async function touchLittleJS(page,frame,id){
  const canvas=frame.locator('canvas').first();
  const r=await canvas.boundingBox();
  assert.ok(r&&r.width>50&&r.height>50,'Canvas is not visible');
- await canvas.tap({position:{x:Math.min(70,r.width/2),y:Math.min(70,r.height/2)}});
+ await page.touchscreen.tap(r.x+Math.min(70,r.width/2),r.y+Math.min(70,r.height/2));
  return 'tap PLAY and tap active game canvas';
 }
 async function exercise(browser,target,game){
