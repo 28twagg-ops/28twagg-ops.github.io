@@ -35,10 +35,20 @@ const DEFAULT='#btn';
      });
      assert.equal(response.status(),200);
      const frame=p.frameLocator(device.frame);
-     const selector=startSelectors[game.slug]||DEFAULT;
-     const start=frame.locator(selector).first();
-     await start.waitFor({state:'visible',timeout:8000});
-     await start.click({timeout:6500});
+     if(game.slug==='spyder-casino'){
+       // This cabinet is deliberately terminal-only. Selection 1 enters
+       // Blackjack Standard without using its disabled visual-style toggle.
+       const terminal=frame.locator('#termSelection');
+       await terminal.waitFor({state:'visible',timeout:8000});
+       await terminal.fill('1');
+       await terminal.press('Enter');
+       await frame.locator('#bjScreen.active').waitFor({state:'attached',timeout:5000});
+     }else{
+       const selector=startSelectors[game.slug]||DEFAULT;
+       const start=frame.locator(selector).first();
+       await start.waitFor({state:'visible',timeout:8000});
+       await start.click({timeout:6500});
+     }
      await p.waitForTimeout(300);
      assert.ok(errors.length===0,'Script error: '+errors.join(' | '));
      const body=frame.locator('body');
