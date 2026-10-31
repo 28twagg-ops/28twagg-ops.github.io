@@ -117,6 +117,7 @@ async function exercise(browser,target,game){
   if(sizing.overflow>24)results.warnings.push({game:game.id,device:target.name,overflow:sizing.overflow});
   assert.ok(sizing.iframe>100,'Iframe collapsed');
   assert.deepEqual(events.js,[],'JavaScript exceptions');
+  assert.deepEqual(events.console,[],'Browser console errors');
   assert.deepEqual(events.http,[],'HTTP resource failures');
   assert.deepEqual(events.restricted,[],'Unwanted Firebase requests');
   await page.screenshot({path:screenshot,fullPage:true,timeout:15000});
