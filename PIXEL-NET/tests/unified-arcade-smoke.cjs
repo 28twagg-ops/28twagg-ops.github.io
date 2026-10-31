@@ -46,6 +46,29 @@ for(const g of catalog.filter(x=>x.licensed)){
   await click.click();
   await home.waitForURL('**/games/licensed-2048/wrapper-v2.html');
   await home.close();
+  // The previous Millipede build referenced /js/engine.js, a missing file.
+  // Verify the self-contained game starts and renders without missing assets.
+  const millipede=await browser.newPage();
+  const millErrors=[];
+  millipede.on('pageerror',e=>millErrors.push('JS '+e.message));
+  millipede.on('response',r=>{
+    if(r.url().startsWith(BASE)&&r.status()>=400&&!r.url().endsWith('/favicon.ico'))
+      millErrors.push('HTTP '+r.status()+' '+r.url());
+  });
+  await millipede.goto(BASE+'games/millipede-chaos-v3/wrapper-v2.html',
+    {waitUntil:'domcontentloaded'});
+  const millFrame=millipede.frameLocator('#gameDesktop');
+  const startMill=millFrame.locator('#btnStart');
+  await startMill.waitFor({state:'visible',timeout:9000});
+  await startMill.click();
+  await millFrame.locator('#overlay.hidden').waitFor({state:'attached',timeout:6000});
+  await millipede.waitForTimeout(700);
+  const canvasDims=await millFrame.locator('canvas#c').evaluate(c=>({w:c.width,h:c.height}));
+  assert.ok(canvasDims.w>200&&canvasDims.h>200,'Millipede canvas did not initialize');
+  assert.deepEqual(millErrors,[],'Millipede must not load missing files or crash after START');
+  report.runs.push({name:'MILLIPEDE CHAOS',device:'gameplay',result:'pass'});
+  await millipede.close();
+
   const profiles=[
    {name:'desktop',settings:{viewport:{width:1440,height:900}},frame:'#gameDesktop'},
    {name:'mobile',settings:devices['iPhone 13'],frame:'#gameMobile'}
@@ -119,7 +142,7 @@ for(const g of catalog.filter(x=>x.licensed)){
    await browser.close();
    fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2));
  }
- console.log('UNIFIED_ARCADE '+report.runs.length+'/'+(20+report.original)+' with '+
+ console.log('UNIFIED_ARCADE '+report.runs.length+'/'+(21+report.original)+' with '+
    report.failures.length+' failures');
  if(report.failures.length){
   console.error(JSON.stringify(report.failures,null,2));
