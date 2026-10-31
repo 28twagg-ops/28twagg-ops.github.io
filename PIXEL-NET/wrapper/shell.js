@@ -4,8 +4,7 @@
 // FIREBASE SETUP — Shared cross-device leaderboards (free)
 //
 // 1. Go to https://console.firebase.google.com → Add project
-// 2. Click "Realtime Database" in the left sidebar → Create database
-//    → Start in TEST MODE (sets read/write to true)
+// 2. Use authenticated, validated, create-only writes; never enable public writes.
 // 3. Copy your database URL (looks like:
 //    https://YOUR-PROJECT-default-rtdb.firebaseio.com)
 // 4. Paste it below and replace null:
@@ -109,7 +108,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // Inject markup
   document.body.innerHTML = `
     <div class="topbar">
-      <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a></div>
+      <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a><button class="mobileMaximize" type="button" id="mobileMaximize" aria-label="Maximize game" title="Maximize game">⛶</button></div>
       <div class="gameBadge" id="gameBadge">${title.toUpperCase()}<span class="verTag" id="verTag">version: ...</span></div>
       <div class="playerBtn" id="playerBtn" role="button" aria-label="Set player initials">
         <span class="muted">PLAYER</span><strong id="initials">???</strong>
@@ -158,6 +157,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       </div>
     </div>
 
+    <button class="mobileRestore" type="button" id="mobileRestore" aria-label="Restore arcade layout">↙ Return</button>
     <div class="modalBack" id="modalBack" aria-hidden="true">
       <div class="modalCard" role="dialog" aria-modal="true">
         <button class="modalClose" id="modalClose" type="button">✕</button>
@@ -260,8 +260,40 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const entry = CFG.entry || './game.html';
   const gd = document.getElementById('gameDesktop');
   const gm = document.getElementById('gameMobile');
-  gd.src = entry;
-  gm.src = entry;
+
+  // Never run two copies of a game. Both used to run simultaneously even
+  // though one iframe was invisible; heavy canvas games could crash iOS.
+  const mobileMedia = matchMedia('(max-width:1100px)');
+  let activeEntry = '';
+  let mobileOptIn = false;
+  const needsKeyboard = CFG.mobileKeyboardOnly === true;
+  const mobileCrashCaution = CFG.mobileUnverified === true;
+  const mobileNotice = document.createElement('div');
+  mobileNotice.className = 'mobileOnlyNotice';
+  mobileNotice.hidden = true;
+  mobileNotice.innerHTML = needsKeyboard
+    ? '<h2>Keyboard recommended</h2><p>This game requires physical typing to play. On a phone, connect a keyboard or use a computer.</p><button type="button">Open anyway</button>'
+    : '<h2>Mobile compatibility limited</h2><p>This game has caused crashes in iPhone browsers. Desktop is recommended until touch play is verified.</p><button type="button">Try on this phone</button>';
+  document.getElementById('view-game').appendChild(mobileNotice);
+  const openMobileAnyway = () => { mobileOptIn = true; syncIframes(); };
+  mobileNotice.querySelector('button').addEventListener('click', openMobileAnyway);
+  function syncIframes() {
+    const mobile = mobileMedia.matches;
+    const blocked = mobile && (needsKeyboard || mobileCrashCaution) && !mobileOptIn;
+    const desired = mobile ? gm : gd, inactive = mobile ? gd : gm;
+    // Unload the hidden game to stop background audio, RAF loops and duplicate CPU.
+    if (inactive.hasAttribute('src')) inactive.removeAttribute('src');
+    mobileNotice.hidden = !blocked;
+    if (blocked) {
+      if (desired.hasAttribute('src')) desired.removeAttribute('src');
+    } else if (desired.getAttribute('src') !== entry) {
+      desired.src = entry;
+    }
+  }
+  syncIframes();
+  if (mobileMedia.addEventListener) mobileMedia.addEventListener('change', syncIframes);
+  else mobileMedia.addListener(syncIframes);
+
 
   const focusFrame = el => {
     try { el.focus(); } catch(_) {}
@@ -497,5 +529,21 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (tab === 'game') setTimeout(() => focusFrame(gm), 50);
     if (tab === 'board') refreshBoards();
   };
+
   btns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  const maximize = document.getElementById('mobileMaximize');
+  const restore = document.getElementById('mobileRestore');
+  const endFocus = () => {
+    root.classList.remove('pn-focus-play');
+    maximize.setAttribute('aria-pressed','false');
+    window.dispatchEvent(new Event('resize'));
+  };
+  maximize.addEventListener('click', () => {
+    setTab('game');
+    root.classList.add('pn-focus-play');
+    maximize.setAttribute('aria-pressed','true');
+    window.dispatchEvent(new Event('resize'));
+  });
+  restore.addEventListener('click', endFocus);
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&root.classList.contains('pn-focus-play'))endFocus();});
 })();

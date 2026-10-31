@@ -389,3 +389,56 @@ iframe{ width:100%; height:100%; border:0; display:block; }
 .licensedInfo a{display:block;padding:12px 10px;border:1px solid rgba(109,236,246,.45);border-radius:10px;text-decoration:none;color:#93f8f3;font-weight:750;overflow-wrap:anywhere}
 .licensedInfo a:focus-visible{outline:3px solid #ffcb68;outline-offset:2px}
 .licensedInfo .licensedLandscape{color:#ffd27a;font-weight:700}
+
+
+/* ── PLAYABILITY CLEANUP: PRESERVE EVERY GAME'S PALETTE & CABINET ── */
+.topbar{grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr);gap:8px}
+.gameBadge{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.top-left{min-width:0}
+.mobileMaximize,.mobileRestore{display:none}
+.mobileMaximize{font:700 15px var(--uiFont);color:var(--text);border:1px solid var(--border);border-radius:11px;background:rgba(0,0,0,.2);min-height:38px;min-width:38px;cursor:pointer}
+.mobileRestore{position:fixed;top:calc(env(safe-area-inset-top,0px) + 5px);right:8px;z-index:101;border:1px solid var(--border);background:rgba(0,0,0,.66);color:white;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer}
+.mobileOnlyNotice{position:absolute;inset:0;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;background:var(--panelBg);z-index:8}
+.mobileOnlyNotice[hidden]{display:none}
+.mobileOnlyNotice h2{color:var(--hero);font-size:18px;margin:0}
+.mobileOnlyNotice p{max-width:30rem;font-size:13px;line-height:1.5;margin:0}
+.mobileOnlyNotice button{border:1px solid var(--hero);border-radius:12px;padding:12px 16px;background:rgba(0,0,0,.3);color:white;cursor:pointer}
+@media(max-width:1100px){
+ :root{--topbarH:43px;--mobileBtnH:40px;--mobileBtnGap:5px;--pad:6px}
+ html,body{width:100%;height:100%;overflow:hidden}
+ .topbar{position:relative;z-index:30;height:var(--topbarH);padding:3px 6px;grid-template-columns:auto minmax(0,1fr) auto;gap:5px}
+ .top-left{gap:4px}
+ .exit{padding:5px 7px;font-size:10px;letter-spacing:.02em;border-radius:9px;white-space:nowrap;min-height:32px}
+ .mobileMaximize{display:inline-flex;align-items:center;justify-content:center;min-height:32px;min-width:32px}
+ .gameBadge{padding:6px 7px;font-size:clamp(9px,2.5vw,13px);letter-spacing:.035em;max-width:100%;border-radius:12px;box-shadow:none}
+ .verTag{display:none}
+ .playerBtn{padding:6px 7px;gap:4px;border-radius:11px;min-width:0}
+ .playerBtn .muted{display:none}
+ .playerBtn strong{font-size:12px;letter-spacing:.04em}
+ .mobileWrap{height:calc(100vh - var(--topbarH));height:calc(100dvh - var(--topbarH));padding:var(--pad);padding-bottom:max(5px,env(safe-area-inset-bottom,0px))}
+ .mobileStack{gap:6px}
+ .displayZone{position:relative;align-items:flex-start;justify-content:center;overflow:hidden}
+ .displayCard{max-height:100%;border-radius:14px}
+ .frame{border-radius:14px}
+ .btnbar{padding:4px;border-radius:12px;gap:5px;flex-shrink:0}
+ .tabBtn{font-size:11px;letter-spacing:0;border-radius:9px;min-width:0}
+ .panel .content{overflow-y:auto;-webkit-overflow-scrolling:touch}
+ .modalCard{max-height:calc(100dvh - 30px);overflow-y:auto}
+ .mobileRestore{display:none}
+ html.pn-focus-play .topbar{display:none}
+ html.pn-focus-play .mobileWrap{height:100dvh;padding:3px}
+ html.pn-focus-play .btnbar{display:none}
+ html.pn-focus-play .mobileRestore{display:block}
+ html.pn-focus-play .displayZone{height:100%;align-items:center}
+ html.pn-focus-play .mobileStack{height:100%}
+}
+@media(max-width:1100px) and (orientation:landscape){
+ :root{--topbarH:32px;--mobileBtnH:29px;--pad:3px}
+ .topbar{padding:2px 6px}
+ .exit,.mobileMaximize{min-height:27px}
+ .gameBadge{font-size:10px;padding:3px 7px}
+ .playerBtn{padding:3px 6px}
+ .mobileStack{gap:3px}
+ .btnbar{padding:2px;border-radius:8px}
+ .tabBtn{font-size:10px;border-radius:7px}
+}
