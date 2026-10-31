@@ -5,6 +5,9 @@ on:
   push:
     branches: [audit/complete-arcade-qa-2026-10-31]
   workflow_dispatch:
+concurrency:
+  group: complete-arcade-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -20,6 +23,7 @@ jobs:
         run: |
           node --check PIXEL-NET/wrapper/shell.js
           node --check PIXEL-NET/tests/original-input-audit.cjs
+          node --check PIXEL-NET/tests/score-safety-smoke.cjs
           node PIXEL-NET/tests/arcade-publish-guard.cjs
       - name: Install browser engines
         run: |
@@ -29,6 +33,8 @@ jobs:
         run: |
           python3 -m http.server 8765 --directory PIXEL-NET >/tmp/pixelnet-original-audit.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
+      - name: Verify mocked score pipeline and Casino mode isolation
+        run: node PIXEL-NET/tests/score-safety-smoke.cjs
       - name: Exercise original games on desktop Android and iOS emulation
         run: node PIXEL-NET/tests/original-input-audit.cjs
       - name: Preserve game screenshots and per-title diagnostics
