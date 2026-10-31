@@ -99,6 +99,41 @@ const fulfilled=async route=>route.fulfill({
   results.push('80 high Standard scores do not hide Analysis mode in wrapper OR terminal Casino lobby');
   await casino.close();
 
+  // Regression: Standard mode must not evict an Analysis result from
+  // local Casino history while the global database is unavailable.
+  const casinoLocal=await browser.newContext({viewport:{width:1400,height:900}});
+  await casinoLocal.addInitScript(()=>{
+    const rows=Array.from({length:40},(_,i)=>({
+      initials:'STD',score:100000-i,t:Date.now(),mode:'STANDARD'
+    }));
+    rows.push({initials:'ANA',score:50,t:Date.now(),mode:'ANALYSIS'});
+    localStorage.setItem('LB_spyder-blackjack',JSON.stringify(rows));
+  });
+  await casinoLocal.route(/firebaseio\\.com/,route=>route.fulfill({
+    status:401,contentType:'application/json',body:'{"error":"Permission denied"}'
+  }));
+  const casinoLocalPage=await casinoLocal.newPage();
+  casinoLocalPage.on('pageerror',e=>errors.push(e.message));
+  await casinoLocalPage.goto(BASE+'games/spyder-casino/wrapper-v2.html');
+  await casinoLocalPage.frameLocator('#gameDesktop').locator('body').evaluate(()=>{
+    parent.postMessage({
+      type:'PIXELNET_SCORE',slug:'spyder-blackjack',score:250000,mode:'STANDARD'
+    },location.origin);
+  });
+  await casinoLocalPage.waitForFunction(()=>JSON.parse(
+    localStorage.getItem('LB_spyder-blackjack')||'[]'
+  ).some(r=>r.score===250000));
+  const localCasinoScores=await casinoLocalPage.evaluate(()=>JSON.parse(
+    localStorage.getItem('LB_spyder-blackjack')||'[]'
+  ));
+  assert.ok(localCasinoScores.some(r=>r.initials==='ANA'&&r.mode==='ANALYSIS'),
+    'Local Casino Analysis entry was evicted by Standard scores');
+  assert.ok(localCasinoScores.filter(r=>r.mode==='STANDARD').length<=30);
+  await casinoLocalPage.waitForFunction(()=>document.querySelector(
+    '#boardDesktopBjAn')?.textContent.includes('ANA'));
+  results.push('Offline Casino keeps Analysis leaderboard entries after 40+ Standard scores');
+  await casinoLocal.close();
+
   // Public global boards should never include unsent local rows as top-10.
   // A backlog >100 must not be silently truncated or lost.
   const storage=await browser.newContext({viewport:{width:1350,height:900}});
