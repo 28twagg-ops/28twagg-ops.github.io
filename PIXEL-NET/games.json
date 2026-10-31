@@ -53,7 +53,16 @@
     "slug": "retro-kombat",
     "path": "games/retro-kombat-v2/wrapper-v2.html",
     "thumb": "assets/retro-kombat_thumb-optimized.webp",
-    "description": "Tournament Edition — coming soon."
+    "description": "Neon Circuit: an original round-based fighting game with rival AI, keyboard and touch controls, and automatic game-over high scores.",
+    "tags": [
+      "fighting",
+      "arena",
+      "original",
+      "keyboard",
+      "touch",
+      "action",
+      "survival"
+    ]
   },
   {
     "name": "LOGIC BOMB",
@@ -115,7 +124,7 @@
     "slug": "spyder-casino",
     "path": "games/spyder-casino/wrapper-v2.html",
     "thumb": "assets/spyder-casino_thumb-optimized.webp",
-    "description": "Blackjack + Texas Hold'em hub with classic/polished UI and adaptive bots.",
+    "description": "Terminal-style Blackjack and Texas Hold'em with Standard and Analysis modes, adaptive opponents, and separate leaderboards.",
     "tags": [
       "casino",
       "blackjack",
