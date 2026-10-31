@@ -41,7 +41,7 @@ const catalogOut={checked:[],errors:[]};
   try{
     const home=await browser.newPage();
     await home.goto(BASE+'index.html',{waitUntil:'domcontentloaded'});
-    await home.waitForFunction(()=>document.querySelectorAll('.game-card').length===29);
+    await home.waitForFunction(()=>document.querySelectorAll('.game-card').length===28);
     assert.equal(await home.locator('.licensedTag').count(),10,'Licensed games are missing from the main arcade floor');
     await home.close();
     const gallery=await browser.newPage();

@@ -48,14 +48,6 @@
     ]
   },
   {
-    "name": "RETRO KOMBAT",
-    "type": "iframe",
-    "slug": "retro-kombat",
-    "path": "games/retro-kombat-v2/wrapper-v2.html",
-    "thumb": "assets/retro-kombat_thumb.png",
-    "description": "Tournament Edition — coming soon."
-  },
-  {
     "name": "LOGIC BOMB",
     "type": "iframe",
     "slug": "logic-bomb",
