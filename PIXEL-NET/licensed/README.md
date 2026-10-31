@@ -1,5 +1,8 @@
 # PIXEL-NET licensed-game collection
 
+**Integrated release (v0.0.53):** All ten imported games also appear directly on the regular PIXEL-NET Arcade Floor in `games.json`, under `games/licensed-*/wrapper-v2.html`, using the original shared `wrapper/shell.css` and `wrapper/shell.js` cabinet. The prior `licensed/` gallery remains as a compatibility link, but is no longer the main user journey. Each shared cabinet shows a creator/license panel instead of an unauthorized global leaderboard. Scores remain in the imported game where supported.
+
+
 These ten games are **third-party works**, NOT original AI-generated PIXEL-NET games. The source and its notices have been preserved, and the 19-game original catalog `PIXEL-NET/games.json` remains unchanged. Global Firebase score submissions are deliberately disabled for this gallery; locally saved scores are managed by the individual original games.
 
 ## Sources (pinned revisions)
