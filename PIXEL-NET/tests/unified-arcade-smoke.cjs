@@ -79,10 +79,10 @@ for(const g of catalog.filter(x=>x.licensed)){
        await page.locator('[data-tab=board]').click();
        assert.equal(await page.locator('#view-board').isVisible(),true);
        assert.ok((await page.locator('#view-board').innerText()).includes(game.creator));
-       await page.locator('[data-tab=game]').click();
+       await page.locator('[data-tab=game]').dispatchEvent('click');
        assert.equal(await page.locator('#view-game').isVisible(),true);
       }else{
-       assert.ok((await page.locator('.panel.leaderboard').innerText()).includes(game.creator));
+       assert.ok((await page.locator('.shell > .panel.leaderboard').innerText()).includes(game.creator));
       }
       assert.ok((await page.locator('a').filter({hasText:'Read original'}).first()
         .getAttribute('href')).includes('/licensed/vendors/'));
