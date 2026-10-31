@@ -89,7 +89,9 @@ const log=(name,data)=>report.tests.push({name,...data});
   // worker VM with network fetch forced to fail.
   const vm=require('node:vm');
   const listeners={};
-  const offlineCache={match:async()=>undefined};
+  const simulatedCached=new Map();
+  const offlineCache={match:async req=>simulatedCached.get(
+    typeof req==='string'?req:req.url)};
   const mockSW={
     registration:{scope:'http://127.0.0.1:8765/'},
     location:{origin:'http://127.0.0.1:8765'},
@@ -113,6 +115,22 @@ const log=(name,data)=>report.tests.push({name,...data});
   assert.equal(offlineResponse.status,503);
   assert.ok((await offlineResponse.text()).includes('Game unavailable offline'));
   log('Simulated genuinely offline uncached-game fallback', {status:'pass'});
+  const savedGameURL='http://127.0.0.1:8765/games/neon-chase-v2/wrapper-v2.html';
+  const savedShellURL='http://127.0.0.1:8765/wrapper/shell.js';
+  simulatedCached.set(savedGameURL,new Response('<h1>Saved game cabinet</h1>',{
+    status:200,headers:{'Content-Type':'text/html'}
+  }));
+  simulatedCached.set(savedShellURL,new Response('// Cached shared game shell',{
+    status:200,headers:{'Content-Type':'text/javascript'}
+  }));
+  for(const [url,mode] of [[savedGameURL,'navigate'],[savedShellURL,'no-cors']]){
+    let promise=null;
+    listeners.fetch({request:{url,method:'GET',mode},respondWith:p=>{promise=p}});
+    assert.ok(promise,'Visited game or shared shell fetch was not intercepted: '+url);
+    const res=await promise;
+    assert.equal(res.status,200,'Visited game resource should be readable offline');
+  }
+  log('Previously visited game and shared shell resources replay offline', {status:'pass'});
   await desktop.close();
 
   const iphone=await browser.newContext({
