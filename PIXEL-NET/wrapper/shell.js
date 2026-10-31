@@ -308,7 +308,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // --- Firebase REST helpers (shared leaderboard) ---
   const FB_BASE = FIREBASE_DB_URL ? `${FIREBASE_DB_URL}/lb/${slug}` : null;
 
-  async function fbFetch(slugOverride) {
+  async function fbFetch(slugOverride, allModes = false) {
     if (licensed) return null;
     const base = FIREBASE_DB_URL
       ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
@@ -322,7 +322,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       return Object.values(data)
         .filter(x => x && typeof x.score === 'number')
         .sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0))
-        .slice(0, 10);
+        .slice(0, allModes ? undefined : 10);
     } catch(_) { return null; }
   }
 
@@ -333,12 +333,17 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       : null;
     if (!base) return;
     try {
-      await fetch(`${base}.json`, {
+      const response = await fetch(`${base}.json`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(entry),
       });
-    } catch(_) {}
+      if (!response.ok) {
+        console.warn('PIXEL-NET: global score upload unavailable (' + response.status + ').');
+        return false;
+      }
+      return true;
+    } catch(_) { return false; }
   }
 
   // --- Render leaderboard rows ---
@@ -352,7 +357,13 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       const score = (r.score ?? r.value ?? 0);
       const row = document.createElement('div');
       row.className = 'boardRow' + (i===0 ? ' top1' : '');
-      row.innerHTML = `<div class="rank">${i+1}.</div><div class="name">${name}</div><div class="score">${score}</div>`;
+      // Never interpolate untrusted leaderboard data into HTML.
+      for (const [cls, value] of [['rank', String(i+1)+'.'], ['name', name], ['score', String(score)]]) {
+        const cell = document.createElement('div');
+        cell.className = cls;
+        cell.textContent = value;
+        row.appendChild(cell);
+      }
       el.appendChild(row);
     });
   }
@@ -367,8 +378,10 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const refreshBoards = async () => {
     if (licensed) return;
     if (isSpyderCasino) {
-      const bjRows = ((await fbFetch('spyder-blackjack')) || []).slice(0, 10);
-      const heRows = ((await fbFetch('spyder-holdem')) || []).slice(0, 10);
+      // Fetch both modes before truncating; the top ten of one mode must not
+      // hide all records belonging to the other mode.
+      const bjRows = (await fbFetch('spyder-blackjack', true)) || [];
+      const heRows = (await fbFetch('spyder-holdem', true)) || [];
       const bj = modeSplit(bjRows);
       const he = modeSplit(heRows);
       renderBoard('boardDesktopBjStd', bj.std);
@@ -393,7 +406,9 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   async function addScore(rawScore, scoreSlug) {
     if (licensed) return;
     const initials = getInitials() || '???';
-    const score = Math.max(0, Math.floor(Number(rawScore) || 0));
+    const numeric = Number(rawScore);
+    if (!Number.isFinite(numeric) || numeric < 0 || !Number.isSafeInteger(Math.floor(numeric))) return;
+    const score = Math.floor(numeric);
     const now = Date.now();
     const sig = `${initials}:${score}`;
     if (sig === lastSig && (now - lastAt) < 1200) return;
@@ -421,6 +436,10 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // Listen for score / initials messages from iframed games
   window.addEventListener('message', e => {
     if (licensed) return; // Third-party games cannot submit PIXEL-NET scores.
+    // Accept messages only from the two embedded same-origin game frames.
+    // A different tab, pop-up or unrelated embedded page must not create scores.
+    if (e.origin !== location.origin ||
+        (e.source !== gd.contentWindow && e.source !== gm.contentWindow)) return;
     const d = e.data || {};
     if (!d || !d.type) return;
     if (d.type === 'PIXELNET_SET_INITIALS' && d.initials) {
