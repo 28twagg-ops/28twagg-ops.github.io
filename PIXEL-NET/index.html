@@ -489,12 +489,12 @@
       const list = document.getElementById("topPixelsList");
       const takeoverEl = document.getElementById("takeoverList");
       if(!items.length){
-        meta.textContent = "No leaderboard scores yet. Finish a run to claim first place.";
+        meta.textContent = "No published record holders yet. Global score uploads have not been activated.";
         list.innerHTML = "";
-        takeoverEl.innerHTML = `<div class="takeover-row">No takeovers yet. Be the first to set a record.</div>`;
+        takeoverEl.innerHTML = `<div class="takeover-row">No confirmed global record changes are available.</div>`;
         return;
       }
-      meta.textContent = `Live ${sourceLabel}. Ranked by longest standing top records.`;
+      meta.textContent = `Existing ${sourceLabel} (view only). New global score uploads are not activated. Ranked by longest standing top records.`;
       list.innerHTML = items.slice(0, 5).map((row, i) => `
         <div class="pixel-row">
           <div class="pixel-rank">#${i+1}</div>
