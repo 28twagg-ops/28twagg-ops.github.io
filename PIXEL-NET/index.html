@@ -461,17 +461,17 @@
       return "STANDARD";
     }
 
-    function renderTopPixels(items, sourceLabel){
+    function renderTopPixels(items, sourceLabel, failedReads = 0){
       const meta = document.getElementById("topPixelsMeta");
       const list = document.getElementById("topPixelsList");
       const takeoverEl = document.getElementById("takeoverList");
       if(!items.length){
-        meta.textContent = "No leaderboard scores yet. Finish a run to claim first place.";
+        meta.textContent = failedReads ? 'Global rankings are currently unavailable; scores could not be verified.' : 'No leaderboard scores yet. Finish a run to claim first place.';
         list.innerHTML = "";
         takeoverEl.innerHTML = `<div class="takeover-row">No takeovers yet. Be the first to set a record.</div>`;
         return;
       }
-      meta.textContent = `Live ${sourceLabel}. Ranked by longest standing top records.`;
+      meta.textContent = `${failedReads ? 'Partial' : 'Live'} ${sourceLabel}. Ranked by longest standing top records.${failedReads ? ' Some boards could not be loaded.' : ''}`;
       list.innerHTML = items.slice(0, 5).map((row, i) => `
         <div class="pixel-row">
           <div class="pixel-rank">#${i+1}</div>
@@ -490,6 +490,7 @@
 
     async function loadTopPixels(games){
       const scored = [];
+      let failedReads = 0;
       const withSlug = games.map(g => ({ ...g, slug: g.slug || getSlugFromPath(g.path) })).filter(g => g.slug);
       const topTargets = [];
       withSlug.forEach(g => {
@@ -506,7 +507,7 @@
       });
       const pulls = topTargets.map(async target => {
         const rows = await fetchLeaderboardForSlug(target.slug);
-        if(rows === null) return;
+        if(rows === null) { failedReads += 1; return; }
         const modeRows = target.mode
           ? rows.filter(r => normalizeMode(r.mode) === target.mode)
           : rows;
@@ -534,22 +535,23 @@
       await Promise.all(pulls);
       // Top Pixels = longest-standing current #1 records (oldest top timestamp first).
       scored.sort((a,b) => (a.t - b.t) || (b.score - a.score));
-      renderTopPixels(scored, "record holders");
+      renderTopPixels(scored, "record holders", failedReads);
     }
 
     function renderGrid(list){
       const gamesGrid = document.getElementById("gamesGrid");
       gamesGrid.innerHTML = "";
       list.forEach(game => {
-        const card = document.createElement("div");
+        const card = document.createElement("a");
         card.className = "game-card";
+        card.href = normalizePath(game.path);
+        card.style.textDecoration = 'none';
+        card.style.color = 'inherit';
         card.innerHTML = `
           <div class="game-thumbnail" style="background-image:url('${withVersion(normalizePath(game.thumb))}')"></div>
           <div class="game-title"><h4>${game.name || "GAME"}</h4></div>
         `;
-        card.addEventListener("click", () => {
-          if(game.path) window.location.href = normalizePath(game.path);
-        });
+        // Native link supports keyboard, screen readers and opening in a new tab.
         if(game.licensed){
           const credit=document.createElement('p');
           credit.className='licensedTag';
