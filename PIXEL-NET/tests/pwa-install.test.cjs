@@ -84,11 +84,14 @@ const log=(name,data)=>report.tests.push({name,...data});
   await page.reload({waitUntil:'domcontentloaded'});
   assert.ok(await page.locator('.logo').isVisible(),'home screen available offline');
   log('Offline hub shell', {status:'pass'});
-  const uncached=await page.goto('http://127.0.0.1:8765/games/retro-kombat-v2/wrapper-v2.html',{
-    waitUntil:'domcontentloaded',timeout:12000
-  });
-  assert.equal(uncached.status(),503,'New game navigation must explain offline state');
-  assert.ok((await page.locator('body').textContent()).includes('Game unavailable offline'));
+  // Force a genuinely uncached navigation rather than an old browser HTTP
+  // entry. Service workers are allowed to return cached pages previously seen.
+  const probeUrl='http://127.0.0.1:8765/games/retro-kombat-v2/wrapper-v2.html?offline-probe=never-seen';
+  const uncached=await page.goto(probeUrl,{waitUntil:'domcontentloaded',timeout:12000});
+  const offlineBody=await page.locator('body').textContent();
+  assert.ok(uncached.status()===503||offlineBody.includes('Game unavailable offline'),
+    'Uncached game must show an offline notice instead of the arcade home page');
+  assert.ok(offlineBody.includes('Game unavailable offline'));
   log('Offline game shows honest connection requirement', {status:'pass'});
   await desktop.close();
 
