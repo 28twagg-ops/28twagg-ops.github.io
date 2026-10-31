@@ -23,7 +23,12 @@
           "$other": {
             ".validate": false
           }
-        }
+        },
+        ".indexOn": [
+          "score",
+          "mode",
+          "t"
+        ]
       }
     }
   }
