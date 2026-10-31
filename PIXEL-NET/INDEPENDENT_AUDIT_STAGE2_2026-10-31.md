@@ -11,8 +11,8 @@
 
 ## Testing performed, with honest limitations
 - Built a new five-profile input/evidence runner, not a reuse of green smoke-test claims: desktop Chromium, simulated iPhone WebKit portrait/landscape and Android Chromium portrait/landscape, all 28 public entries.
-- In the original `main` baseline, **28/28 wrapper visits** completed without fatal navigation errors in desktop, iPhone portrait, iPhone landscape and Android landscape. Android portrait results were still pending at report creation.
-- The original browser input probes observed canvas/HUD changes in only **10/28 desktop**, **11/28 iPhone portrait**, **8/28 iPhone landscape**, and **10/28 Android landscape**. These counts are NOT gameplay pass rates; an animated canvas can change without working controls, while a static game may need different scripted start actions.
+- In the original `main` baseline, **28/28 wrapper visits were completed in each of all five emulated profiles**: desktop, iPhone portrait and landscape, Android portrait and landscape (**140/140 navigation visits**, zero fatal navigation errors). This is not a gameplay pass.
+- The original browser input probes observed canvas/HUD changes in only **10/28 desktop**, **11/28 iPhone portrait**, **8/28 iPhone landscape**, **10/28 Android landscape**, and **10/28 Android portrait**. These counts are NOT gameplay pass rates; an animated canvas can change without working controls, while a static game may need different scripted start actions.
 - All environments above are **emulations**. No physical iPhone or Android was accessed, no complete gameplay round certified, and no production Firebase score was written.
 - Before/after screenshots and per-game diagnostics are in GitHub Actions artifacts from the independent baseline, and additional scoring/phone-layout gates are staged on this PR.
 
@@ -80,3 +80,12 @@ The baseline navigation result applies to **all 28** in the four completed emula
 - Verify all 28 titles using desktop keyboard/mouse, iPhone and Android portrait/landscape. Record menus, interactions, pause/restart, actual game-over, scores, screenshots and console/network errors.
 - Retest single iframe performance, iPhone crashes across multiple launch/exit/rotate cycles, Casino phone commands and keyboard desktop parity, and real Firebase readback with secure rules.
 - Document per-game last known-good / breaking revision **only after a controlled historical playtest**. The source commit history is evidence of changes, not evidence a revision works.
+
+## Screenshot review (baseline vs first isolated cleanup)
+The original iPhone portrait screenshots show a 360×360 square game panel centered at y≈230 for Creek/Cats, 360×270 at y≈275 for Knight Flight/Galaxy/Kangaroo/emulators, and the original 90px Astrotype title clipped inside its narrow iframe. The early isolated layout screenshot set shows a compact single-line header and games brought higher, while preserving every palette. The large Astrotype title required a further local CSS patch (`dd5ff61f`). These screenshots are **visual observations**, not full gameplay proof.
+
+- [Original public baseline, five emulated profiles, GitHub Actions run 41252796450](https://github.com/28twagg-ops/28twagg-ops.github.io/actions/runs/41252796450)
+- [First single-iframe/score/layout gated run 41253101620](https://github.com/28twagg-ops/28twagg-ops.github.io/actions/runs/41253101620): **56/56 iPhone portrait/landscape layout checks and mocked score-source checks passed at commit `248f8c8c`.** This earlier run predates the later Casino command-bar and iPhone crash-warning patches, so it does not certify current HEAD.
+
+## Outstanding real-game state assertions
+A new independent test exercises state transitions (not just input existence): Creek tap moves grid position, Caked Up Cats cards remain inside the viewport, Astrotype WAVE and SHIELDS bounding boxes do not overlap, and Casino mobile bet/DEAL + desktop keyboard entry both advance to valid states. Its result is **pending** until the associated workflow reports completion; a passing source syntax check is not a runtime pass.
