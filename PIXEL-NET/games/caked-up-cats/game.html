@@ -288,6 +288,31 @@ Purpose: AI implementation for themes
             box-shadow: 0 0 0 #15803d, inset 0 2px 5px rgba(0,0,0,0.2);
         }
 
+
+    /* Mobile-only menu fit. Keep all existing cat sprites and colors. */
+    @media (max-width: 700px), (max-height: 490px) {
+      .screen { padding: 9px 7px; overflow-y:auto; gap:4px; }
+      .screen h1 { font-size: clamp(19px, 5vw, 29px); }
+      .screen h2 { font-size: 13px; margin-bottom: 4px; }
+      .screen p { font-size: 12px; margin-bottom: 6px; max-width:100%; }
+      #char-select { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+        width:100%;max-width:100%;margin:7px 0 11px;gap:6px; }
+      .char-card { width:auto;min-width:0;max-width:100%;padding:7px 3px; }
+      .char-card.selected { transform:none; }
+      .char-card:hover { transform:none; }
+      .char-preview-canvas { width:44px !important;height:44px !important; }
+      .char-name { font-size:10px; }
+      .char-stats { font-size:9px; }
+      .lock-msg { top:-5px;right:-2px;font-size:8px; }
+      .score-big { font-size:22px;margin:5px 0; }
+      #ui-layer { padding:0 7px;height:42px;font-size:12px; }
+      .ui-group { gap:5px; }
+      #energy-container { width:95px;padding:3px 6px; }
+    }
+    @media (orientation:landscape) and (max-height:480px) {
+      .screen { justify-content:flex-start; }
+      .char-preview-canvas { width:34px!important;height:34px!important; }
+    }
     </style>
 </head>
 <body tabindex="0"> <!-- Added tabindex to ensure body can receive focus -->
