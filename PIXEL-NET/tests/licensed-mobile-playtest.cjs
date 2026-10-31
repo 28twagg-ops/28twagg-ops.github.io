@@ -54,10 +54,14 @@ async function touchOpenGames(frame,id){
  assert.equal((await frame.locator('#score').innerText()).trim(),'0','Restart failed to reset score');
  return 'tap play, native touch controls and touch restart';
 }
-async function touchLittleJS(frame,id){
+async function touchLittleJS(page,frame,id){
  const play=frame.locator('button.ljs-menu-item').filter({hasText:/^PLAY$/i}).first();
  await play.waitFor({state:'visible',timeout:18000});
- await play.tap({timeout:12000});
+ // A native coordinate tap exercises the real mobile pointer path without
+ // Playwright's locator actionability blocking on independently animated menus.
+ const buttonBox=await play.boundingBox();
+ assert.ok(buttonBox&&buttonBox.width>20&&buttonBox.height>15,'PLAY button has no hit target');
+ await page.touchscreen.tap(buttonBox.x+buttonBox.width/2,buttonBox.y+buttonBox.height/2);
  if(id==='emoji-survivors'){
    const hero=frame.locator('button.ljs-menu-item[data-item-id^="hero-"]:not([disabled])').first();
    await hero.waitFor({state:'visible',timeout:5000});
@@ -66,7 +70,7 @@ async function touchLittleJS(frame,id){
    if(await stage.isVisible().catch(()=>false))await stage.tap();
  }
  await wait(300);
- const playing=await frame.evaluate(()=>typeof isPlaying==='function'?isPlaying():null);
+ const playing=await frame.locator('html').evaluate(()=>typeof isPlaying==='function'?isPlaying():null);
  if(playing!==null)assert.ok(playing,'PLAY did not start '+id);
  const canvas=frame.locator('canvas').first();
  const r=await canvas.boundingBox();
@@ -101,7 +105,7 @@ async function exercise(browser,target,game){
   await frame.locator('html').waitFor({state:'attached',timeout:15000});
   const action=game.id==='2048'?await touch2048(frame):
     ['snake','flap'].includes(game.id)?await touchOpenGames(frame,game.id):
-    await touchLittleJS(frame,game.id);
+    await touchLittleJS(page,frame,game.id);
   const sizing=await page.evaluate(()=>({
    width:window.innerWidth,
    overflow:document.documentElement.scrollWidth-window.innerWidth,
