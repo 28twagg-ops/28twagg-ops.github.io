@@ -84,15 +84,35 @@ const log=(name,data)=>report.tests.push({name,...data});
   await page.reload({waitUntil:'domcontentloaded'});
   assert.ok(await page.locator('.logo').isVisible(),'home screen available offline');
   log('Offline hub shell', {status:'pass'});
-  // Force a genuinely uncached navigation rather than an old browser HTTP
-  // entry. Service workers are allowed to return cached pages previously seen.
-  const probeUrl='http://127.0.0.1:8765/games/retro-kombat-v2/wrapper-v2.html?offline-probe=never-seen';
-  const uncached=await page.goto(probeUrl,{waitUntil:'domcontentloaded',timeout:12000});
-  const offlineBody=await page.locator('body').textContent();
-  assert.ok(uncached.status()===503||offlineBody.includes('Game unavailable offline'),
-    'Uncached game must show an offline notice instead of the arcade home page');
-  assert.ok(offlineBody.includes('Game unavailable offline'));
-  log('Offline game shows honest connection requirement', {status:'pass'});
+  // Chromium may still serve loopback HTTP while the context is marked
+  // offline. Assert the service worker's actual catch path in an isolated
+  // worker VM with network fetch forced to fail.
+  const vm=require('node:vm');
+  const listeners={};
+  const offlineCache={match:async()=>undefined};
+  const mockSW={
+    registration:{scope:'http://127.0.0.1:8765/'},
+    location:{origin:'http://127.0.0.1:8765'},
+    addEventListener:(type,fn)=>{listeners[type]=fn},
+    skipWaiting:()=>Promise.resolve(),
+    clients:{claim:()=>Promise.resolve()}
+  };
+  vm.runInNewContext(fs.readFileSync('PIXEL-NET/sw.js','utf8'),{
+    self:mockSW,URL,Request,Response,
+    caches:{open:async()=>offlineCache,keys:async()=>[]},
+    fetch:async()=>{throw new Error('Simulated network offline')}
+  });
+  let intercepted=null;
+  listeners.fetch({
+    request:{url:'http://127.0.0.1:8765/games/retro-kombat-v2/wrapper-v2.html',
+      method:'GET',mode:'navigate'},
+    respondWith:p=>{intercepted=p}
+  });
+  assert.ok(intercepted,'Service worker must intercept uncached navigation');
+  const offlineResponse=await intercepted;
+  assert.equal(offlineResponse.status,503);
+  assert.ok((await offlineResponse.text()).includes('Game unavailable offline'));
+  log('Simulated genuinely offline uncached-game fallback', {status:'pass'});
   await desktop.close();
 
   const iphone=await browser.newContext({
