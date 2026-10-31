@@ -362,37 +362,59 @@ const FIREBASE_WEB_API_KEY = "";
   // Anonymous Firebase Auth: a player needs no account or sign-in form.
   // Tokens expire; create another anonymous session when they do. Firebase
   // security rules must allow authenticated, create-only writes at /lb.
-  const AUTH_CACHE_KEY='PIXELNET_ANON_AUTH_SESSION_V1';
-  let authPromise=null,authExpiry=0;
+  // Keep a renewable anonymous session rather than creating a new anonymous
+  // Firebase account whenever the one-hour access token expires.
+  const AUTH_CACHE_KEY='PIXELNET_ANON_AUTH_SESSION_V2';
+  let authPromise=null,authExpiry=0,authRefreshToken=null;
+  const rememberAuth=(token,refresh,seconds)=>{
+    authExpiry=Date.now()+Math.max(60,Number(seconds)||3600)*1000;
+    if(refresh)authRefreshToken=String(refresh);
+    try{sessionStorage.setItem(AUTH_CACHE_KEY,JSON.stringify({
+      token,refresh:authRefreshToken,exp:authExpiry,key:FIREBASE_WEB_API_KEY
+    }))}catch(_){}
+    return token;
+  };
   async function getScoreToken(){
     if(!FIREBASE_WEB_API_KEY)return null;
-    // A short-lived anonymous session is reused across game navigation.
-    // Avoid creating a new Firebase anonymous user for every arcade cabinet.
     if(!authPromise){
       try{
         const cached=JSON.parse(sessionStorage.getItem(AUTH_CACHE_KEY)||'null');
-        if(cached?.token&&cached?.key===FIREBASE_WEB_API_KEY&&
-           Number(cached.exp)>Date.now()+60000){
-          authExpiry=Number(cached.exp);
-          authPromise=Promise.resolve(cached.token);
+        if(cached?.key===FIREBASE_WEB_API_KEY){
+          authRefreshToken=cached.refresh||null;
+          authExpiry=Number(cached.exp)||0;
+          if(cached.token&&authExpiry>Date.now()+60000)
+            authPromise=Promise.resolve(cached.token);
         }
       }catch(_){}
     }
     if(!authPromise || Date.now()>authExpiry-60000){
       authPromise=(async()=>{
-        const res=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+
+        if(authRefreshToken){
+          try{
+            const response=await fetch('https://securetoken.googleapis.com/v1/token?key='+
+              encodeURIComponent(FIREBASE_WEB_API_KEY),{
+              method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+              body:new URLSearchParams({grant_type:'refresh_token',
+                refresh_token:authRefreshToken}).toString()
+            });
+            if(response.ok){
+              const renewed=await response.json();
+              if(renewed.id_token){
+                return rememberAuth(renewed.id_token,
+                  renewed.refresh_token||authRefreshToken,renewed.expires_in);
+              }
+            }
+          }catch(_){/* Try a fresh anonymous account only if refresh fails. */}
+        }
+        const response=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+
           encodeURIComponent(FIREBASE_WEB_API_KEY),{
           method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({returnSecureToken:true})
         });
-        if(!res.ok)throw new Error('Firebase anonymous sign-in failed');
-        const data=await res.json();
-        authExpiry=Date.now()+Math.max(60,Number(data.expiresIn)||3600)*1000;
-        if(!data.idToken)throw new Error('Missing Firebase identity token');
-        try{sessionStorage.setItem(AUTH_CACHE_KEY,JSON.stringify({
-          token:data.idToken,exp:authExpiry,key:FIREBASE_WEB_API_KEY
-        }))}catch(_){}
-        return data.idToken;
+        if(!response.ok)throw new Error('Firebase anonymous sign-in failed');
+        const created=await response.json();
+        if(!created.idToken)throw new Error('Missing Firebase identity token');
+        return rememberAuth(created.idToken,created.refreshToken,created.expiresIn);
       })().catch(()=>{authExpiry=0;authPromise=null;return null});
     }
     return authPromise;
@@ -414,7 +436,9 @@ const FIREBASE_WEB_API_KEY = "";
         const check=await fetch(url,{cache:'no-store'});
         if(check.ok){
           const remote=await check.json();
-          if(remote&&remote.initials===entry.initials&&remote.score===entry.score)return true;
+          if(remote&&remote.initials===entry.initials&&remote.score===entry.score&&
+             (board!=='spyder-blackjack'&&board!=='spyder-holdem'||
+              cleanMode(remote.mode)===cleanMode(entry.mode)))return true;
         }
       }
       return false;
