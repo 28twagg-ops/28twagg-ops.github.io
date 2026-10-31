@@ -85,9 +85,9 @@ const FIREBASE_WEB_API_KEY = "";
     <div class="topbar">
       <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a></div>
       <div class="gameBadge" id="gameBadge">${title.toUpperCase()}<span class="verTag" id="verTag">version: ...</span></div>
-      <div class="playerBtn" id="playerBtn" role="button" aria-label="Set player initials">
+      <button type="button" class="playerBtn" id="playerBtn" aria-label="Set player initials">
         <span class="muted">PLAYER</span><strong id="initials">???</strong>
-      </div>
+      </button>
     </div>
 
     <div class="shell">
@@ -133,11 +133,11 @@ const FIREBASE_WEB_API_KEY = "";
     </div>
 
     <div class="modalBack" id="modalBack" aria-hidden="true">
-      <div class="modalCard" role="dialog" aria-modal="true">
-        <button class="modalClose" id="modalClose" type="button">✕</button>
+      <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="modalInitialsTitle">
+        <button class="modalClose" id="modalClose" type="button" aria-label="Close initials dialog">✕</button>
         <div class="modalInner">
-          <div class="modalTitle">Enter Initials</div>
-          <input class="modalInput" id="initialsInput" maxlength="3" placeholder="— — —" />
+          <div class="modalTitle" id="modalInitialsTitle">Enter Initials</div>
+          <input class="modalInput" id="initialsInput" maxlength="12" placeholder="— — —" aria-label="Player initials" autocapitalize="characters" spellcheck="false" />
           <button class="modalSave" id="saveInitials" type="button">Save</button>
           <div class="modalHint">Press Enter to save</div>
         </div>
@@ -568,7 +568,9 @@ const FIREBASE_WEB_API_KEY = "";
   // --- Initials modal ---
   const modalBack = document.getElementById('modalBack');
   const input = document.getElementById('initialsInput');
+  let modalReturnFocus=null;
   const openModal = () => {
+    modalReturnFocus=document.activeElement;
     modalBack.style.display = 'flex';
     modalBack.setAttribute('aria-hidden','false');
     input.value = getInitials().replace(/\?/g,'');
@@ -577,7 +579,19 @@ const FIREBASE_WEB_API_KEY = "";
   const closeModal = () => {
     modalBack.style.display = 'none';
     modalBack.setAttribute('aria-hidden','true');
+    (modalReturnFocus instanceof HTMLElement?modalReturnFocus:document.getElementById('playerBtn')).focus();
+    modalReturnFocus=null;
   };
+  input.addEventListener('input',()=>{
+    input.value=clean(input.value);
+  });
+  modalBack.addEventListener('keydown',e=>{
+    if(e.key!=='Tab')return;
+    const controls=[...modalBack.querySelectorAll('button,input')].filter(el=>!el.disabled);
+    const first=controls[0],last=controls[controls.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+  });
   document.getElementById('playerBtn').addEventListener('click', openModal);
   document.getElementById('modalClose').addEventListener('click', closeModal);
   modalBack.addEventListener('click', e => { if (e.target === modalBack) closeModal(); });
