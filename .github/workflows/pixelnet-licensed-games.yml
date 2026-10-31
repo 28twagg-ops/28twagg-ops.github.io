@@ -1,0 +1,37 @@
+name: PIXEL-NET licensed games browser smoke
+on:
+  push:
+    branches: [work/container-fixes-2026-10-27]
+    paths:
+      - 'PIXEL-NET/licensed/**'
+      - 'PIXEL-NET/index.html'
+      - 'PIXEL-NET/tests/licensed-games-smoke.cjs'
+      - '.github/workflows/pixelnet-licensed-games.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  imported-games:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Serve local PIXEL-NET
+        run: |
+          python3 -m http.server 8765 --directory PIXEL-NET >/tmp/pixelnet-licensed.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/licensed/catalog.json >/dev/null && break || sleep 1; done
+      - name: Verify ten licensed games and source assets
+        run: node PIXEL-NET/tests/licensed-games-smoke.cjs
+      - name: Preserve evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pixelnet-licensed-game-audit
+          path: licensed-smoke-results/
