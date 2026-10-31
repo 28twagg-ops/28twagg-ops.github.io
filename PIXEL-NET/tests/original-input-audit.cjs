@@ -57,7 +57,7 @@ async function exercise(browser,profile,game){
    if(await play.count()&&await play.isVisible().catch(()=>false)){
      await play.click({timeout:2500}).then(()=>inputs.push('click start/play')).catch(()=>{});
    }
-   if(nativeRepairs.has(game.slug)){
+   if(nativeRepairs.has(game.slug)||game.slug==='circuit-salvager'){
      assert.ok(inputs.includes('click start/play'),"Native game's START control did not receive input");
      await frame.locator('#overlay.hidden').waitFor({state:'attached',timeout:5000});
      inputs.push('verified game START cleared overlay');
@@ -86,6 +86,9 @@ async function exercise(browser,profile,game){
        await frame.waitForFunction(()=>window.__pnTouchTestKeys>0,null,{timeout:4000});
        inputs.push('verified shared touch left emits ArrowLeft keydown');
        if(game.slug==='circuit-salvager'){
+         const action=frame.locator('[data-pn-touch="fire"]');
+         await action.waitFor({state:'visible'});
+         assert.equal(await action.textContent(),'ROTATE','Stack Drop ACTION must not advertise nonexistent hard drop');
          await frame.locator('[data-pn-touch="hold"]').waitFor({state:'visible'});
          await frame.locator('[data-pn-touch="rotate-back"]').waitFor({state:'visible'});
        }

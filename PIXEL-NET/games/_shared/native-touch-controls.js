@@ -8,6 +8,8 @@
   ['right','ArrowRight','→'],['fire',' ','ACTION']
  ];
  if(location.pathname.includes('/circuit-salvager/')){
+   const actionButton=buttons.find(x=>x[0]==='fire');
+   actionButton[1]='ArrowUp'; actionButton[2]='ROTATE';
    buttons.push(['hold','c','HOLD'],['rotate-back','z','↶']);
  }
  if(location.pathname.includes('/atariforce-hyperlane/')){
@@ -48,8 +50,15 @@
    };
    button.addEventListener('pointerup',release);button.addEventListener('pointercancel',release);
    button.addEventListener('lostpointercapture',release);
-   (name==='fire'?action:pad).appendChild(button);
+   (['fire','hold','rotate-back','burst'].includes(name)?action:pad).appendChild(button);
  }
  window.addEventListener('blur',()=>{for(const key of held.values())emit('keyup',key);held.clear();el.querySelectorAll('button').forEach(b=>b.classList.remove('active'));});
  document.body.appendChild(el);
+ // Do not cover a game's start/restart prompt or intercept its START button.
+ const overlay=document.getElementById('overlay');
+ if(overlay){
+   const sync=()=>{el.style.visibility=overlay.classList.contains('hidden')?'visible':'hidden';};
+   new MutationObserver(sync).observe(overlay,{attributes:true,attributeFilter:['class','style']});
+   sync();
+ }
 })();
