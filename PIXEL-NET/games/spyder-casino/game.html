@@ -675,6 +675,28 @@ body:not(.casino) .res-box{
   .chip{width:44px;height:44px;font-size:9px;}
   .he-hud,.bj-hud{font-size:9px;}
 }
+
+/* Phone-only terminal controls. No changes to desktop green text/keyboard UI. */
+#pnCasinoTouch{display:none}
+@media(pointer:coarse) and (max-width:1100px){
+  body{padding-bottom:58px}
+  .screen{height:calc(100% - 58px);align-items:stretch;justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .screen>.panel{max-width:100%;width:100%;min-width:0;padding:8px;overflow-x:auto;flex-shrink:0}
+  .screen pre{max-width:100%;overflow-x:auto;white-space:pre;font-size:clamp(9px,2.5vw,13px)}
+  .term-screen{width:100%;max-width:100%;min-height:0;overflow:hidden;padding:6px}
+  .term-view{font-size:clamp(9px,2.6vw,13px);line-height:1.25;min-height:0;max-width:100%;overflow:auto}
+  .term-cmd,#termSelRow{display:none}
+  #pnCasinoTouch{position:fixed;display:flex;align-items:center;gap:6px;left:0;right:0;
+    bottom:max(0px,env(safe-area-inset-bottom,0px));height:58px;background:#000;
+    border-top:1px solid var(--g2);padding:6px;overflow-x:auto;z-index:210;touch-action:pan-x}
+  #pnCasinoTouch button{flex:0 0 auto;min-height:43px;padding:7px 12px;font:700 12px 'Courier New',monospace;
+    color:var(--g);border:1px solid var(--g2);background:#000;border-radius:3px;white-space:nowrap}
+  #pnCasinoTouch button:active{background:rgba(0,255,65,.14)}
+}
+@media(pointer:coarse) and (max-width:1100px) and (orientation:landscape){
+  body{padding-bottom:44px}.screen{height:calc(100% - 44px)}
+  #pnCasinoTouch{height:44px}#pnCasinoTouch button{min-height:32px}
+}
 </style>
 </head>
 <body>
@@ -1035,6 +1057,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
+function pnMobileTouch(){return matchMedia('(pointer:coarse)').matches && innerWidth<=1100;}
 function goLobby() {
   showScreen('lobbyScreen');
   applyStyle();
@@ -1043,7 +1066,7 @@ function goLobby() {
   heTermHandlers = null;
   heAwaitingRaiseAmount = false;
   const sel = document.getElementById('termSelection');
-  if (sel && visualStyle === 'terminal') { sel.value=''; sel.focus(); }
+  if (sel && visualStyle === 'terminal') { sel.value=''; if(!pnMobileTouch())sel.focus(); }
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function shuffle(arr) {
@@ -1339,7 +1362,7 @@ function bjReset() {
   document.getElementById('bjDealerCards').innerHTML='';
   document.getElementById('bjDealerTot').textContent='';
   const bInp=document.getElementById('bjTermBetInp'), bMsg=document.getElementById('bjTermBetMsg');
-  if(bInp){ bInp.value=''; if(bjIsTerminal()) setTimeout(()=>bInp.focus(), 0); }
+  if(bInp){ bInp.value=''; if(bjIsTerminal()) setTimeout(()=>{if(!pnMobileTouch())bInp.focus();},0); }
   if(bMsg) bMsg.textContent='';
   const aInp=document.getElementById('bjTermActInp'), aMsg=document.getElementById('bjTermActMsg');
   if(aInp) aInp.value='';
@@ -1409,7 +1432,7 @@ function bjApplyTerminalLayout() {
   if (clearBtn) clearBtn.style.display = terminal ? 'none' : '';
   if (betWrap) betWrap.style.display = terminal ? 'block' : 'none';
   const cmd = document.getElementById('bjTermCmdInp');
-  if (terminal && cmd) setTimeout(()=>cmd.focus(),0);
+  if (terminal && cmd) setTimeout(()=>{if(!pnMobileTouch())cmd.focus();},0);
 }
 function bjTermHandLine(h, idx){
   const pv=bjHV(h.cards);
@@ -1511,7 +1534,7 @@ function bjRenderTerminalView(){
   if (bjScreen) bjScreen.scrollTop = 0;
   el.scrollTop = 0;
   const cmd=document.getElementById('bjTermCmdInp');
-  if(cmd) setTimeout(()=>cmd.focus(),0);
+  if(cmd) setTimeout(()=>{if(!pnMobileTouch())cmd.focus();},0);
 }
 function bjRunTerminalCommand(raw){
   if(!bjIsTerminal()) return;
@@ -2519,7 +2542,7 @@ function heRenderTerminalPrompt() {
   line.textContent = heTermHandlers.toCall > 0
     ? `Action [To call: $${heTermHandlers.toCall}] (C)all, (R)aise, (F)old:`
     : 'Action [(K)eck/(C)all, (R)aise, (F)old]:';
-  setTimeout(() => inp.focus(), 0);
+  setTimeout(()=>{if(!pnMobileTouch())inp.focus();},0);
 }
 function heRenderTerminalView(){
   if(visualStyle!=='terminal') return;
@@ -2657,7 +2680,7 @@ function heRenderTerminalView(){
 
   el.textContent=out.join('\n');
   const inp=document.getElementById('heTermCmdInp');
-  if(inp) setTimeout(()=>inp.focus(),0);
+  if(inp) setTimeout(()=>{if(!pnMobileTouch())inp.focus();},0);
 }
 // Commit a raise with a specific total (amount the player's roundBet should equal).
 // Opens the hidden raise UI, plants the value, and confirms — mirrors Poker Project flow.
@@ -3118,5 +3141,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 goLobby();
 </script>
+<script src="./mobile-touch.js"></script>
 </body>
 </html>
