@@ -526,19 +526,23 @@ const FIREBASE_WEB_API_KEY = "";
     const key='LB_'+target,rows=lbLoadRaw(key);
     rows.push(entry);
     rows.sort((a,b)=>(b.score||0)-(a.score||0)||(a.t||0)-(b.t||0));
-    try{localStorage.setItem(key,JSON.stringify(rows.slice(0,30)))}catch(_){}
+    let historySaved=false;
+    try{localStorage.setItem(key,JSON.stringify(rows.slice(0,30)));historySaved=true}catch(_){}
     const id=queueScore(entry,target);
+    const localSaved=historySaved||!!id;
     await refreshBoards();
     const done=id?await drainPending():[];
     const globalSaved=!!id&&done.includes(id);
     // Let every game display honest global-upload confirmation or fallback.
     if(activeGame?.contentWindow){
       activeGame.contentWindow.postMessage(
-        {type:'PIXELNET_SCORE_STATUS',localSaved:true,globalSaved},location.origin);
+        {type:'PIXELNET_SCORE_STATUS',localSaved,globalSaved},location.origin);
     }
     await refreshBoards();
     if(!globalSaved){
-      const message=!id?'Score saved in this game, but upload queue storage is full or unavailable.'
+      const message=!id?(localSaved
+          ?'Score saved locally, but upload queue storage is full or unavailable.'
+          :'Score could not be retained; local storage and upload queue are unavailable.')
         :!FIREBASE_WEB_API_KEY?'Score saved locally; new global uploads are not activated.'
         :'Score saved on this device; queued for global upload.';
       for(const noticeId of ['boardNoticeDesktop','boardNoticeMobile']){
