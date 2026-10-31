@@ -6,6 +6,10 @@
   <title>PIXEL-NET | Online Arcade Network</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <meta name="theme-color" content="#0a0e27">
+  <meta name="description" content="Play 19 classic-inspired arcade games, compete for high scores, and discover your next favorite cabinet in PIXEL-NET.">
+  <meta property="og:title" content="PIXEL-NET — Online Arcade Network">
+  <meta property="og:description" content="Play arcade games and compete on shared leaderboards.">
+  <meta property="og:type" content="website">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="./icons/arcade-192.png">
@@ -327,7 +331,7 @@
       <div class="meta" id="topPixelsMeta">Loading competitive board…</div>
       <div class="top-pixels-list" id="topPixelsList"></div>
       <div class="takeover-wrap">
-        <div class="takeover-title">Takeover Honor Board</div>
+        <div class="takeover-title">Current Record Leads</div>
         <div id="takeoverList"></div>
       </div>
     </section>
@@ -335,7 +339,7 @@
     <div class="section-header">
       <div>
         <h3>Arcade Floor</h3>
-        <p>Pick a cabinet. Click to play.</p>
+        <p>Choose a cabinet to play, using touch, mouse, or keyboard.</p>
       </div>
       <input type="search" class="search-bar" id="searchBar" placeholder="Search games..." aria-label="Search arcade games">
     </div>
@@ -503,6 +507,7 @@
 
     async function loadTopPixels(games){
       const scored = [];
+      let successfulBoards=0;
       const withSlug = games.map(g => ({ ...g, slug: g.slug || getSlugFromPath(g.path) })).filter(g => g.slug);
       const topTargets = [];
       withSlug.forEach(g => {
@@ -520,6 +525,7 @@
       const pulls = topTargets.map(async target => {
         const rows = await fetchLeaderboardForSlug(target.slug);
         if(rows === null) return;
+        successfulBoards++;
         const modeRows = target.mode
           ? rows.filter(r => normalizeMode(r.mode) === target.mode)
           : rows;
@@ -545,6 +551,12 @@
         }
       });
       await Promise.all(pulls);
+      if(successfulBoards===0){
+        renderTopPixels([], "unavailable");
+        document.getElementById("topPixelsMeta").textContent =
+          "Live leaderboard is temporarily unavailable. Existing scores are not lost.";
+        return;
+      }
       // Top Pixels = longest-standing current #1 records (oldest top timestamp first).
       scored.sort((a,b) => (a.t - b.t) || (b.score - a.score));
       renderTopPixels(scored, "record holders");
