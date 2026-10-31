@@ -17,7 +17,7 @@ for(const g of catalog){
  assert.ok(thumb.startsWith(root+path.sep)&&fs.existsSync(thumb),
    'Missing arcade card art for '+g.slug);
  const wrapper=fs.readFileSync(gamePath,'utf8');
- const entry=wrapper.match(/entry\s*:\s*["']([^"']+)["']/);
+ const entry=wrapper.match(/["']?entry["']?\s*:\s*["']([^"']+)["']/);
  assert.ok(entry,'No game entry configured for '+g.slug);
  const file=path.resolve(path.dirname(gamePath),entry[1]);
  assert.ok(file.startsWith(root+path.sep)&&fs.existsSync(file),
