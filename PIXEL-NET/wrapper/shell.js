@@ -417,8 +417,18 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (licensed) return;
     if (isSpyderCasino) {
       // Split modes before trimming: otherwise 10 Standard scores conceal Analysis.
-      const bjRows = (await fbFetch('spyder-blackjack', true)) || [];
-      const heRows = (await fbFetch('spyder-holdem', true)) || [];
+      // Show local Casino results if cloud reads fail or return empty.
+      // Labeling remains explicit: locally stored != verified global readback.
+      const readCasinoLocal = key => {
+        try {
+          const rows=JSON.parse(localStorage.getItem('LB_'+key) || '[]');
+          return Array.isArray(rows) ? rows.filter(r=>r && Number.isSafeInteger(r.score)) : [];
+        } catch(_) { return []; }
+      };
+      const bjCloud = await fbFetch('spyder-blackjack', true);
+      const heCloud = await fbFetch('spyder-holdem', true);
+      const bjRows = (bjCloud && bjCloud.length) ? bjCloud : readCasinoLocal('spyder-blackjack');
+      const heRows = (heCloud && heCloud.length) ? heCloud : readCasinoLocal('spyder-holdem');
       const bj = modeSplit(bjRows);
       const he = modeSplit(heRows);
       renderBoard('boardDesktopBjStd', bj.std);
@@ -432,7 +442,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       return;
     }
     const cloud = await fbFetch();
-    const rows  = (cloud !== null ? cloud : lbLoad()).slice(0, 10);
+    const rows  = (cloud && cloud.length ? cloud : lbLoad()).slice(0, 10);
     renderBoard('boardDesktop', rows);
     renderBoard('boardMobile', rows);
   };
