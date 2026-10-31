@@ -19,6 +19,7 @@ jobs:
           node --check PIXEL-NET/wrapper/shell.js
           node --check PIXEL-NET/tests/independent-score-safety.cjs
           node --check PIXEL-NET/tests/independent-mobile-layout.cjs
+          node --check PIXEL-NET/tests/independent-gameplay-controls.cjs
           node PIXEL-NET/tests/arcade-publish-guard.cjs
       - name: Install browsers
         run: |
@@ -30,6 +31,8 @@ jobs:
           for i in $(seq 1 35); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
       - name: Verify spoofed and genuine score messages against denied Firebase writes
         run: node PIXEL-NET/tests/independent-score-safety.cjs
+      - name: Verify actual state transitions in four repaired games
+        run: node PIXEL-NET/tests/independent-gameplay-controls.cjs
       - name: Test all 28 cabinets on simulated iPhone portrait/landscape
         run: node PIXEL-NET/tests/independent-mobile-layout.cjs
       - name: Save screenshots and diagnostics
@@ -37,5 +40,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: independent-mobile-layout-evidence
-          path: mobile-layout-results/
+          path: |
+            mobile-layout-results/
+            targeted-gameplay-evidence/
           if-no-files-found: ignore
