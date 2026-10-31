@@ -1056,35 +1056,53 @@ function shuffle(arr) {
 }
 
 // ── FIREBASE LEADERBOARD ──────────────────────────────────────
-async function fbFetch(slug, top=10) {
-  try {
-    const r = await fetch(`${FB_URL}/lb/${slug}.json`);
-    if (!r.ok) return [];
-    const data = await r.json();
-    if (!data || typeof data !== 'object') return [];
-    return Object.values(data)
-      .filter(x => x && typeof x.score === 'number')
-      .sort((a,b) => (b.score||0)-(a.score||0)||(a.t||0)-(b.t||0))
-      .slice(0, top);
-  } catch(_) { return []; }
+async function fbFetch(slug,top=10,mode=null){
+  try{
+    const response=await fetch(FB_URL+'/lb/'+encodeURIComponent(slug)+'.json',{cache:'no-store'});
+    if(!response.ok)return [];
+    const data=await response.json();
+    if(!data||typeof data!=='object')return [];
+    const rows=Object.values(data)
+      .filter(x=>x&&Number.isFinite(Number(x.score)))
+      .sort((x,y)=>Number(y.score)-Number(x.score)||(Number(x.t)||0)-(Number(y.t)||0));
+    // Filter by mode BEFORE applying top-N, otherwise 40 high Standard
+    // scores can hide every valid Analysis score in the terminal lobby.
+    if(mode){
+      const analysis=String(mode).toUpperCase().startsWith('A');
+      return rows.filter(x=>isAnalysisMode(x)===analysis).slice(0,top);
+    }
+    if(slug===BJ_SLUG||slug===HE_SLUG){
+      return [...rows.filter(x=>!isAnalysisMode(x)).slice(0,top),
+        ...rows.filter(x=>isAnalysisMode(x)).slice(0,top)];
+    }
+    return rows.slice(0,top);
+  }catch(_){return []}
 }
-async function fbPost(slug, entry) {
-  try {
-    await fetch(`${FB_URL}/lb/${slug}.json`, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(entry)
-    });
-  } catch(_) {}
-}
-function renderLb(rows, elId, type) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  if (!rows || !rows.length) { el.innerHTML = '<div class="mut" style="font-size:9px;text-align:center">No scores yet.</div>'; return; }
-  el.innerHTML = rows.slice(0,5).map((r,i) => {
-    const nm = (r.initials||r.name||'???').toString().toUpperCase().slice(0,3);
-    const md = (r.mode||'STD').toString().toUpperCase().slice(0,6);
-    const sc = type==='bj' ? `$${parseFloat(r.score||0).toFixed(0)}` : `${Math.round(r.score||0)} chips`;
-    return `<div class="lb-row${i===0?' t1':''}"><div class="lb-rk">#${i+1}</div><div class="lb-nm">${nm}</div><div class="lb-md">${md}</div><div class="lb-sc">${sc}</div></div>`;
-  }).join('');
+function renderLb(rows,elId,type){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  el.replaceChildren();
+  if(!rows?.length){
+    const empty=document.createElement('div');
+    empty.className='mut';empty.style.cssText='font-size:9px;text-align:center';
+    empty.textContent='No scores yet.';el.appendChild(empty);return;
+  }
+  rows.slice(0,5).forEach((r,i)=>{
+    const row=document.createElement('div');
+    row.className='lb-row'+(i===0?' t1':'');
+    const add=(className,label)=>{
+      const node=document.createElement('div');
+      node.className=className;node.textContent=label;row.appendChild(node);
+    };
+    const initials=String(r.initials||r.name||'???').toUpperCase()
+      .replace(/[^A-Z0-9]/g,'').slice(0,3)||'???';
+    const score=Math.max(0,Math.floor(Number(r.score)||0));
+    add('lb-rk','#'+(i+1));
+    add('lb-nm',initials);
+    add('lb-md',isAnalysisMode(r)?'ANALYSIS':'STANDARD');
+    add('lb-sc',type==='bj'?'$'+score:score+' chips');
+    el.appendChild(row);
+  });
 }
 function fmtMoney(x){
   const n = Number(x||0);
@@ -1092,7 +1110,7 @@ function fmtMoney(x){
 }
 function terminalRow(i, row, type){
   if(!row) return `#${i+1} ...`;
-  const nm = (row.initials||row.name||'...').toString().toUpperCase().slice(0,3);
+  const nm = (row.initials||row.name||'...').toString().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3)||'???';
   const md = (row.mode||'STANDARD').toString().toUpperCase().slice(0,8);
   if(type==='bj'){
     const sc = fmtMoney(row.score||0).padStart(10,' ');
@@ -1104,7 +1122,7 @@ function terminalRow(i, row, type){
 function terminalPairRow(i, stdRow, anRow, type){
   const fmt = (row) => {
     if(!row) return '...';
-    const nm = (row.initials||row.name||'...').toString().toUpperCase().slice(0,3);
+    const nm = (row.initials||row.name||'...').toString().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3)||'???';
     const score = type==='bj'
       ? fmtMoney(row.score||0)
       : `${Math.round(Number(row.score||0))} chips`;
@@ -2943,7 +2961,7 @@ function showEndScreen(game,score,subtitle,slug){
     slug:slug,mode:endGameMode},location.origin);
   endMsg.textContent='Saving score for '+ini+'…';
   refreshLobbyBoards();
-  fbFetch(slug,5).then(r=>renderLb(r,'endLb',slug===BJ_SLUG?'bj':'he'));
+  fbFetch(slug,5,endGameMode).then(r=>renderLb(r,'endLb',slug===BJ_SLUG?'bj':'he'));
 }
 async function endSubmit(){
   let ini=(document.getElementById('endIni').value||userInitials||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
@@ -2959,9 +2977,9 @@ async function endSubmit(){
   window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,
     slug:endGameSlug,mode:endGameMode},location.origin);
   document.getElementById('endMsg').textContent='Saving score…';
-  setTimeout(()=>fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he')),600);
+  setTimeout(()=>fbFetch(endGameSlug,5,endGameMode).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he')),600);
 }
-function endSkip(){fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he'));}
+function endSkip(){fbFetch(endGameSlug,5,endGameMode).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he'));}
 
 // ════════════════════════════════════════════
 // INIT
