@@ -150,7 +150,8 @@ const fulfilled=async route=>route.fulfill({
   for(const path of [
     'games/caked-up-cats/wrapper-v2.html',
     'games/astrotype-v2/wrapper-v2.html',
-    'games/spyder-casino/wrapper-v2.html'
+    'games/spyder-casino/wrapper-v2.html',
+    'games/neon-chase-v2/wrapper-v2.html'
   ]){
     const restricted=await browser.newContext({viewport:{width:1280,height:800}});
     await restricted.addInitScript(()=>{
@@ -165,6 +166,13 @@ const fulfilled=async route=>route.fulfill({
     await privatePage.goto(BASE+path,{waitUntil:'domcontentloaded',timeout:13000});
     await privatePage.frameLocator('#gameDesktop').locator('body').waitFor({state:'attached'});
     await privatePage.waitForTimeout(250);
+    if(path.includes('neon-chase')){
+      await privatePage.frameLocator('#gameDesktop').locator('body').evaluate(()=>{
+        parent.postMessage({type:'GAME_OVER_SCORE',score:999},location.origin);
+      });
+      await privatePage.waitForFunction(()=>document.querySelector('#boardNoticeDesktop')
+        ?.textContent.includes('Score could not be retained'),null,{timeout:6000});
+    }
     assert.deepEqual(privateErrors,[],'Restricted browser failed: '+path);
     await restricted.close();
   }
