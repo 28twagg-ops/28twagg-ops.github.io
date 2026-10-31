@@ -14,7 +14,7 @@ const report={url:root+'index.html',games:[],error:null};
   // This cookie suppresses the CDN's automated anti-phishing confirmation
   // for a controlled QA browser. Real visitors may see a confirmation page.
   const context=await browser.newContext({viewport:{width:1200,height:830}});
-  await context.addCookies([{name:'__Http-phish',value:'1',domain:'rawcdn.githack.com',path:'/'}]);
+  await context.addCookies([{name:'__Http-phish',value:'1',url:'https://rawcdn.githack.com/',secure:true,httpOnly:true,sameSite:'Lax'}]);
   const page=await context.newPage();
   const r=await page.goto(root+'index.html',{waitUntil:'domcontentloaded',timeout:45000});
   assert.equal(r.status(),200,'Preview HTML not served');
