@@ -91,7 +91,12 @@ const fulfilled=async route=>route.fulfill({
   });
   assert.ok((await casinoPage.locator('#boardDesktopBjStd').textContent()).includes('STD'));
   assert.ok((await casinoPage.locator('#boardDesktopBjAn').textContent()).includes('ANA'));
-  results.push('80 high Standard scores do not hide lower Analysis-mode rankings');
+  await casinoPage.frameLocator('#gameDesktop').locator('#terminalLbBoard').waitFor({state:'attached'});
+  await casinoPage.waitForFunction(()=>{
+    const game=document.querySelector('#gameDesktop')?.contentDocument;
+    return game?.querySelector('#terminalLbBoard')?.textContent.includes('ANA');
+  },null,{timeout:8000});
+  results.push('80 high Standard scores do not hide Analysis mode in wrapper OR terminal Casino lobby');
   await casino.close();
 
   // Public global boards should never include unsent local rows as top-10.
