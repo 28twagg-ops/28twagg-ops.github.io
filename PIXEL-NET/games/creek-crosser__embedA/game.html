@@ -206,9 +206,12 @@ Purpose: AI implementation for themes
         .d-left { top: 55px; left: 0; }
         .d-right { top: 55px; right: 0; }
 
+        /* Hide floating D-pad until game start so it never intercepts Start taps. */
+        body:not(.playing) #mobile-controls { display: none !important; }
         @media (hover: none) and (pointer: coarse) {
             #mobile-controls { display: block; }
         }
+        .d-btn { color: #fff; font: inherit; cursor: pointer; touch-action: manipulation; }
         
         #mute-btn {
             background: transparent;
@@ -268,10 +271,10 @@ Purpose: AI implementation for themes
     </div>
 
     <div id="mobile-controls">
-        <div class="d-btn d-up" id="btn-up">▲</div>
-        <div class="d-btn d-left" id="btn-left">◀</div>
-        <div class="d-btn d-right" id="btn-right">▶</div>
-        <div class="d-btn d-down" id="btn-down">▼</div>
+        <button type="button" class="d-btn d-up" id="btn-up" aria-label="Move up">▲</button>
+        <button type="button" class="d-btn d-left" id="btn-left" aria-label="Move left">◀</button>
+        <button type="button" class="d-btn d-right" id="btn-right" aria-label="Move right">▶</button>
+        <button type="button" class="d-btn d-down" id="btn-down" aria-label="Move down">▼</button>
     </div>
 
 <script>
@@ -1393,6 +1396,7 @@ function init() { canvas.width = CANVAS_WIDTH; canvas.height = CANVAS_HEIGHT; in
 init();
 function startGameplay() {
     gameHasStarted = true;
+    document.body.classList.add('playing');
     const startScreen = document.getElementById('start-screen');
     if (startScreen) startScreen.style.display = 'none';
     window.focus();
