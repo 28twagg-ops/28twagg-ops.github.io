@@ -527,7 +527,13 @@ const FIREBASE_WEB_API_KEY = "";
     rows.push(entry);
     rows.sort((a,b)=>(b.score||0)-(a.score||0)||(a.t||0)-(b.t||0));
     let historySaved=false;
-    try{localStorage.setItem(key,JSON.stringify(rows.slice(0,30)));historySaved=true}catch(_){}
+    // Keep separate local history caps for each Casino mode. A long run of
+    // high-scoring Standard games must not evict all Analysis records.
+    const history=isSpyderCasino
+      ? [...rows.filter(r=>cleanMode(r.mode)==='STANDARD').slice(0,30),
+         ...rows.filter(r=>cleanMode(r.mode)==='ANALYSIS').slice(0,30)]
+      : rows.slice(0,30);
+    try{localStorage.setItem(key,JSON.stringify(history));historySaved=true}catch(_){}
     const id=queueScore(entry,target);
     const localSaved=historySaved||!!id;
     await refreshBoards();
