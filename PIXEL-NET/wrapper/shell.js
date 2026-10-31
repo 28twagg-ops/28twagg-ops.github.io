@@ -403,7 +403,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
   // --- Score intake (dedup burst within 1.2 s) ---
   let lastSig = '', lastAt = 0;
-  async function addScore(rawScore, scoreSlug) {
+  async function addScore(rawScore, scoreSlug, scoreMode) {
     if (licensed) return;
     const initials = getInitials() || '???';
     const numeric = Number(rawScore);
@@ -417,7 +417,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     const entry = { initials, score, t: now };
 
     if (isSpyderCasino && scoreSlug) {
-      const entry = { initials, score, t: now };
+      const entry = { initials, score, mode: /^ANALYSIS$/i.test(String(scoreMode || '')) ? 'ANALYSIS' : 'STANDARD', t: now };
       fbPost(entry, scoreSlug).finally(() => refreshBoards());
       refreshBoards();
       return;
@@ -450,7 +450,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (d.type === 'GAME_OVER_SCORE' || d.type === 'GAME_OVER' ||
         d.type === 'PIXELNET_SCORE'  || d.type === 'PIXELNET_SUBMIT_SCORE') {
       const s = d.score != null ? d.score : (d.finalScore != null ? d.finalScore : d.value);
-      if (s != null) addScore(s, d.slug);
+      if (s != null) addScore(s, d.slug, d.mode);
     }
   });
 
