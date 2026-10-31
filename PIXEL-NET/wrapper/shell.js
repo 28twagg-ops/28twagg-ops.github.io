@@ -109,7 +109,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // Inject markup
   document.body.innerHTML = `
     <div class="topbar">
-      <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a></div>
+      <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a><button type="button" class="pn-maximize-btn" id="maximizeGame" aria-label="Maximize game" title="Maximize game">⛶</button></div>
       <div class="gameBadge" id="gameBadge">${title.toUpperCase()}<span class="verTag" id="verTag">version: ...</span></div>
       <div class="playerBtn" id="playerBtn" role="button" aria-label="Set player initials">
         <span class="muted">PLAYER</span><strong id="initials">???</strong>
@@ -158,6 +158,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       </div>
     </div>
 
+    <button type="button" class="pn-restore-btn" id="restoreGame" aria-label="Restore arcade navigation">↙ Back to arcade view</button>
     <div class="modalBack" id="modalBack" aria-hidden="true">
       <div class="modalCard" role="dialog" aria-modal="true">
         <button class="modalClose" id="modalClose" type="button">✕</button>
@@ -248,10 +249,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (e.key === KEY_MAIN || e.key === KEY_ALT) renderInitials();
   });
 
-  // Exit: prefer history.back, fallback to home
-  document.getElementById('exitBtn').addEventListener('click', e => {
-    if (history.length > 1) { e.preventDefault(); history.back(); }
-  });
+  // Exit always returns to this arcade, including from a ChatGPT deep link.
 
   // --- Iframe setup ---
   const entry = CFG.entry || './game.html';
@@ -486,4 +484,22 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (tab === 'board') refreshBoards();
   };
   btns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  // CSS maximize is supported in iPhone webviews where Fullscreen API is absent.
+  const maximizeGame = document.getElementById('maximizeGame');
+  const restoreGame = document.getElementById('restoreGame');
+  const restore = () => {
+    document.documentElement.classList.remove('pn-maximized');
+    maximizeGame.setAttribute('aria-pressed','false');
+    window.dispatchEvent(new Event('resize'));
+  };
+  maximizeGame.addEventListener('click', () => {
+    setTab('game');
+    document.documentElement.classList.add('pn-maximized');
+    maximizeGame.setAttribute('aria-pressed','true');
+    window.dispatchEvent(new Event('resize'));
+  });
+  restoreGame.addEventListener('click', restore);
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.documentElement.classList.contains('pn-maximized')) restore();
+  });
 })();
