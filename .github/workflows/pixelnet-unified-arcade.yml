@@ -5,6 +5,9 @@ on:
   push:
     branches: [feature/unify-licensed-arcade-2026-10-31, main]
   workflow_dispatch:
+concurrency:
+  group: pixelnet-unified-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
