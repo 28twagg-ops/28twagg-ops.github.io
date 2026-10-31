@@ -506,3 +506,15 @@ iframe{ width:100%; height:100%; border:0; display:block; background:#05050b; }
   }
   #view-howto>.content,#view-board>.content{position:relative;z-index:1}
 }
+
+
+/* Keyboard players should be able to see every control they are tabbing to. */
+.playerBtn:focus-visible,.exit:focus-visible,.tabBtn:focus-visible,
+.modalClose:focus-visible,.modalSave:focus-visible,.px-install-btn:focus-visible {
+  outline:3px solid var(--hero2);
+  outline-offset:3px;
+}
+.playerBtn{font-family:inherit;color:inherit}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
