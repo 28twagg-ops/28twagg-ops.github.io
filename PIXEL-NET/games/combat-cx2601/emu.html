@@ -1,59 +1,9 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Combat — PIXEL-NET</title>
-<link rel="stylesheet" href="../_shared/emu-shell.css">
-<style>
-  :root{ --hero:#ffdd66; --ink:#fff0c2; }
-</style>
-</head>
-<body tabindex="0">
-<div id="game"></div>
-
-<div id="topbar">
-  <div id="hint">P1: ARROWS + SPACE &nbsp;|&nbsp; P2: WASD + Q &nbsp;|&nbsp; Reset: F2</div>
-  <button id="submit">SUBMIT SCORE</button>
-</div>
-
-<div id="actions">
-  <button data-act="reset">RESET (F2)</button>
-  <button data-act="select">SELECT (F3)</button>
-  <button data-act="fire">FIRE</button>
-</div>
-
-<div id="errorOv" class="hidden">
-  <div class="card">
-    <h1>EMULATOR COULDN'T BOOT</h1>
-    <p class="msg"></p>
-    <p class="tip">The 2600 ROM should be compatible. Check your connection to <kbd>cdn.emulatorjs.org</kbd>.</p>
-  </div>
-</div>
-
-<script>
-  window.EJS_player = '#game';
-  window.EJS_core = 'atari2600';
-  window.EJS_gameUrl = './rom/combat.a26';
-  window.EJS_gameName = 'Combat';
-  window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-  window.EJS_startOnLoaded = true;
-  window.EJS_color = '#ffdd66';
-  window.EJS_volume = 0.45;
-
-  // Atari 2600 libretro: 0=B (fire), 2=SELECT (GAME SELECT), 3=START (RESET)
-  window.EMU_ACTIONS = {
-    reset:  { btn: 3, hold: 200, key: "F2", code: "F2", keyCode: 113 },
-    select: { btn: 2, hold: 200, key: "F3", code: "F3", keyCode: 114 },
-    fire:   { btn: 0, hold: 160, key: " ",  code: "Space", keyCode: 32 }
-  };
-
-  window.EMU_AUTOSTART_INIT = 2800;
-  window.EMU_AUTOSTART = [
-    window.EMU_ACTIONS.reset
-  ];
-</script>
-<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
-<script src="../_shared/emu-controls.js"></script>
-</body>
-</html>
+<meta http-equiv="refresh" content="0;url=./game.html">
+<title>combat cx2601 — Play native edition</title>
+</head><body style="margin:0;background:#070a19;color:#fff;font:16px system-ui;display:grid;place-items:center;min-height:100vh">
+<main><p>Opening the native, auto-scoring game…</p>
+<p><a style="color:#69e9ff" href="./game.html">Play game</a></p></main>
+<script>location.replace('./game.html')</script></body></html>
