@@ -1,0 +1,39 @@
+name: PIXEL-NET complete original desktop/mobile input audit
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [audit/complete-arcade-qa-2026-10-31]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-input:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate arcade scripts
+        run: |
+          node --check PIXEL-NET/wrapper/shell.js
+          node --check PIXEL-NET/tests/original-input-audit.cjs
+          node PIXEL-NET/tests/arcade-publish-guard.cjs
+      - name: Install browser engines
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Serve PIXEL-NET locally
+        run: |
+          python3 -m http.server 8765 --directory PIXEL-NET >/tmp/pixelnet-original-audit.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
+      - name: Exercise original games on desktop Android and iOS emulation
+        run: node PIXEL-NET/tests/original-input-audit.cjs
+      - name: Preserve game screenshots and per-title diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-input-audit-results
+          path: original-input-audit-results/
