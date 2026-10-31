@@ -675,6 +675,33 @@ body:not(.casino) .res-box{
   .chip{width:44px;height:44px;font-size:9px;}
   .he-hud,.bj-hud{font-size:9px;}
 }
+
+/* Mobile: original terminal green, not a casino theme redesign. */
+#pnCasinoTouch{display:none}
+@media(pointer:coarse) and (max-width:1100px){
+ body{padding-bottom:60px}
+ .screen{height:calc(100% - 60px);align-items:stretch;justify-content:flex-start;
+   overflow:auto;-webkit-overflow-scrolling:touch}
+ .screen>.panel{max-width:100%;width:100%;min-width:0;padding:8px;overflow-x:auto;flex-shrink:0}
+ .screen pre{max-width:100%;overflow-x:auto;white-space:pre;font-size:clamp(9px,2.5vw,12px)}
+ #terminalBanner{font-size:clamp(8px,2vw,11px);letter-spacing:0}
+ .term-screen{width:100%;max-width:100%;padding:6px;overflow:hidden;min-height:0}
+ .term-view{font-size:clamp(9px,2.6vw,13px);line-height:1.25;min-height:0;max-width:100%;
+   overflow:auto;-webkit-overflow-scrolling:touch}
+ .term-cmd{display:none}
+ #termSelRow{display:none}
+ #pnCasinoTouch{position:fixed;display:flex;align-items:center;gap:5px;bottom:0;left:0;right:0;height:60px;
+   background:#000;border-top:1px solid var(--g2);padding:5px;overflow-x:auto;z-index:210;touch-action:pan-x}
+ #pnCasinoTouch button{flex:0 0 auto;min-height:44px;padding:7px 11px;font:700 11px 'Courier New',monospace;
+   color:var(--g);border:1px solid var(--g2);background:#000;border-radius:3px;white-space:nowrap}
+ #pnCasinoTouch button:active{background:rgba(0,255,65,.14)}
+ .screen.active .bj-hud,.screen.active .he-hud{width:100%}
+}
+@media(pointer:coarse) and (max-width:1100px) and (orientation:landscape){
+ body{padding-bottom:48px}.screen{height:calc(100% - 48px)}
+ #pnCasinoTouch{height:48px}
+ #pnCasinoTouch button{min-height:36px}
+}
 </style>
 </head>
 <body>
@@ -1035,6 +1062,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
+function pnMobileTouch(){return matchMedia('(pointer:coarse)').matches&&innerWidth<=1100;}
 function goLobby() {
   showScreen('lobbyScreen');
   applyStyle();
@@ -1043,7 +1071,7 @@ function goLobby() {
   heTermHandlers = null;
   heAwaitingRaiseAmount = false;
   const sel = document.getElementById('termSelection');
-  if (sel && visualStyle === 'terminal') { sel.value=''; sel.focus(); }
+  if (sel && visualStyle === 'terminal') { sel.value=''; if(!pnMobileTouch())sel.focus(); }
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function shuffle(arr) {
@@ -1077,8 +1105,8 @@ function renderLb(rows, elId, type) {
   if (!el) return;
   if (!rows || !rows.length) { el.innerHTML = '<div class="mut" style="font-size:9px;text-align:center">No scores yet.</div>'; return; }
   el.innerHTML = rows.slice(0,5).map((r,i) => {
-    const nm = (r.initials||r.name||'???').toString().toUpperCase().slice(0,3);
-    const md = (r.mode||'STD').toString().toUpperCase().slice(0,6);
+    const nm = (r.initials||r.name||'???').toString().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+    const md = (r.mode||'STD').toString().toUpperCase().replace(/[^A-Z]/g,'').slice(0,6);
     const sc = type==='bj' ? `$${parseFloat(r.score||0).toFixed(0)}` : `${Math.round(r.score||0)} chips`;
     return `<div class="lb-row${i===0?' t1':''}"><div class="lb-rk">#${i+1}</div><div class="lb-nm">${nm}</div><div class="lb-md">${md}</div><div class="lb-sc">${sc}</div></div>`;
   }).join('');
@@ -1339,7 +1367,7 @@ function bjReset() {
   document.getElementById('bjDealerCards').innerHTML='';
   document.getElementById('bjDealerTot').textContent='';
   const bInp=document.getElementById('bjTermBetInp'), bMsg=document.getElementById('bjTermBetMsg');
-  if(bInp){ bInp.value=''; if(bjIsTerminal()) setTimeout(()=>bInp.focus(), 0); }
+  if(bInp){ bInp.value=''; if(bjIsTerminal()) setTimeout(()=>{if(!pnMobileTouch()) bInp.focus();},0); }
   if(bMsg) bMsg.textContent='';
   const aInp=document.getElementById('bjTermActInp'), aMsg=document.getElementById('bjTermActMsg');
   if(aInp) aInp.value='';
@@ -1409,7 +1437,7 @@ function bjApplyTerminalLayout() {
   if (clearBtn) clearBtn.style.display = terminal ? 'none' : '';
   if (betWrap) betWrap.style.display = terminal ? 'block' : 'none';
   const cmd = document.getElementById('bjTermCmdInp');
-  if (terminal && cmd) setTimeout(()=>cmd.focus(),0);
+  if (terminal && cmd) setTimeout(()=>{if(!pnMobileTouch()) cmd.focus();},0);
 }
 function bjTermHandLine(h, idx){
   const pv=bjHV(h.cards);
@@ -1511,7 +1539,7 @@ function bjRenderTerminalView(){
   if (bjScreen) bjScreen.scrollTop = 0;
   el.scrollTop = 0;
   const cmd=document.getElementById('bjTermCmdInp');
-  if(cmd) setTimeout(()=>cmd.focus(),0);
+  if(cmd) setTimeout(()=>{if(!pnMobileTouch()) cmd.focus();},0);
 }
 function bjRunTerminalCommand(raw){
   if(!bjIsTerminal()) return;
@@ -2519,7 +2547,7 @@ function heRenderTerminalPrompt() {
   line.textContent = heTermHandlers.toCall > 0
     ? `Action [To call: $${heTermHandlers.toCall}] (C)all, (R)aise, (F)old:`
     : 'Action [(K)eck/(C)all, (R)aise, (F)old]:';
-  setTimeout(() => inp.focus(), 0);
+  setTimeout(()=>{if(!pnMobileTouch()) inp.focus();},0);
 }
 function heRenderTerminalView(){
   if(visualStyle!=='terminal') return;
@@ -2657,7 +2685,7 @@ function heRenderTerminalView(){
 
   el.textContent=out.join('\n');
   const inp=document.getElementById('heTermCmdInp');
-  if(inp) setTimeout(()=>inp.focus(),0);
+  if(inp) setTimeout(()=>{if(!pnMobileTouch()) inp.focus();},0);
 }
 // Commit a raise with a specific total (amount the player's roundBet should equal).
 // Opens the hidden raise UI, plants the value, and confirms — mirrors Poker Project flow.
@@ -2934,10 +2962,10 @@ function showEndScreen(game,score,subtitle,slug){
   const scoreNum=slug===BJ_SLUG
     ? Math.round(parseFloat(score.replace('$','')))
     : parseInt(score)||0;
-  fbPost(slug,{initials:ini,score:scoreNum,mode:endGameMode,t:Date.now()});
-  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:slug},'*');
+  // Submit exactly once through the shared PIXEL-NET wrapper, not directly and again via the wrapper.
+  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:slug,mode:endGameMode},'*');
   refreshLobbyBoards();
-  endMsg.textContent=`✓ Score saved for ${ini}`;
+  endMsg.textContent=`Score captured for ${ini}; global upload may be unavailable.`;
   fbFetch(slug,5).then(r=>renderLb(r,'endLb',slug===BJ_SLUG?'bj':'he'));
 }
 async function endSubmit(){
@@ -2950,11 +2978,11 @@ async function endSubmit(){
   if(endGameSlug===BJ_SLUG) scoreNum=Math.round(parseFloat(document.getElementById('endScore').textContent.replace('$','')));
   else scoreNum=parseInt(document.getElementById('endScore').textContent)||0;
   const entry={initials:ini,score:scoreNum,mode:endGameMode,t:Date.now()};
-  await fbPost(endGameSlug,entry);
+  // The wrapper owns database writes; never duplicate the score here.
   // Keep lobby leaderboards up-to-date immediately after any submit.
   refreshLobbyBoards();
-  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:endGameSlug},'*');
-  document.getElementById('endMsg').textContent='✓ Score saved!';
+  window.parent.postMessage({type:'PIXELNET_SCORE',score:scoreNum,slug:endGameSlug,mode:endGameMode},'*');
+  document.getElementById('endMsg').textContent='Score captured; global upload may be unavailable.';
   setTimeout(()=>fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he')),600);
 }
 function endSkip(){fbFetch(endGameSlug,5).then(r=>renderLb(r,'endLb',endGameSlug===BJ_SLUG?'bj':'he'));}
@@ -3121,5 +3149,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 goLobby();
 </script>
+<script src="./mobile-touch.js"></script>
 </body>
 </html>

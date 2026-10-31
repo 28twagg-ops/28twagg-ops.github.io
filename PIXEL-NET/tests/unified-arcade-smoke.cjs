@@ -90,6 +90,9 @@ for(const g of catalog.filter(x=>x.licensed)){
       const wrapper=await page.evaluate(()=>window.PX_WRAPPER);
       assert.equal(wrapper.slug,game.slug);
       assert.equal(wrapper.licensed?.creator,game.creator);
+      if(profile.name==='mobile' && ['licensed-astroblast','licensed-missile-defense'].includes(game.slug)) {
+        await page.locator('.mobileOnlyNotice button').click({timeout:4000});
+      }
       const frame=page.locator(profile.frame);
       await page.waitForFunction(({id,end})=>{
        const f=document.querySelector(id);

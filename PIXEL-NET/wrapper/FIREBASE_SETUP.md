@@ -1,102 +1,26 @@
-# Firebase Shared Leaderboard Setup
+# PIXEL-NET Firebase — production safety / release blocker
 
-Follow these steps once. It takes about 5 minutes and costs $0 forever on the free Spark plan.
+**Status (2026-10-31): GLOBAL SCORE WRITES NOT CERTIFIED.**
 
----
+The public `main` shell uses a historical unauthenticated Firebase REST `POST` to `/lb/{game}.json`. Existing production rules may reject it. A local score appearing in the game does **not** prove the score reached Firebase or another device.
 
-## Step 1 — Create a Firebase project
+## Critical warning
 
-1. Go to https://console.firebase.google.com
-2. Click **Add project** → name it (e.g. `pixel-net-arcade`) → Continue → Create project
-3. In the left sidebar, click **Build → Realtime Database**
-4. Click **Create Database**
-5. Choose a location (US is fine) → **Next**
-6. Select **Start in TEST mode** → **Enable**
-   (This sets rules to allow all reads/writes — fine for a public arcade)
+**Never enable anonymous public `.write: true` or use Firebase TEST mode** to make score uploads appear to work. The previous instructions on this page were unsafe and have been retired. A public-write database permits score fabrication, mass spam, and overwrites/deletes unless additional rules or server-side controls block them.
 
----
+## Correct target architecture
 
-## Step 2 — Copy your database URL
+1. Use the separately developed authenticated, create-only candidate flow under [the 2026-10-27 release branch](https://github.com/28twagg-ops/28twagg-ops.github.io/tree/work/container-fixes-2026-10-27/PIXEL-NET/firebase), not the historic unauthenticated `POST` workflow. Merge the backend code only after reconciling its 19-title catalog with the **current 28-title public catalog**.
+2. Enable Firebase Anonymous Authentication via authorized project administration; use public web-app config only, never service-account credentials in client code or git.
+3. Apply reviewed Realtime Database rules that allow reads and authenticated, validated, **create-only** writes. Keep the ten independently licensed titles **local-only** until their score integration is explicitly implemented and tested.
+4. Verify every original game and the Casino's four modes against the RTDB emulator. Reject unknown games, malformed records, overwrites, deletions, unauthorized requests, and invalid Casino modes.
+5. On a controlled preview, earn a genuine test score through gameplay. Prove exactly one production write; read it from a second browser; confirm unauthorized and overwrite attempts fail; remove the labeled QA record using authorized admin tools.
+6. Protect against abuse (rate limiting, quotas, plausibility checks, moderation), and set budget/usage alerts before public competition.
+7. Only then announce that live worldwide score submissions work. Until that gate passes, clearly distinguish verified global scores, locally saved results, and failed/pending uploads.
 
-After the database is created, you'll see a URL at the top of the page that looks like:
+## Development references
 
-```
-https://pixel-net-arcade-default-rtdb.firebaseio.com
-```
+- [Candidate Firebase rollout](https://github.com/28twagg-ops/28twagg-ops.github.io/blob/work/container-fixes-2026-10-27/PIXEL-NET/firebase/ROLLOUT.md)
+- [2026-10-31 release audit](https://github.com/28twagg-ops/28twagg-ops.github.io/blob/work/container-fixes-2026-10-27/PIXEL-NET/RELEASE_AUDIT_2026-10-31.md)
 
-Copy that URL.
-
----
-
-## Step 3 — Paste into shell.js
-
-Open `PIXEL-NET/wrapper/shell.js` and find line 17 near the top:
-
-```js
-const FIREBASE_DB_URL = null;
-```
-
-Replace `null` with your URL in quotes:
-
-```js
-const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
-```
-
----
-
-## Step 4 — Push to GitHub
-
-```bash
-git add PIXEL-NET/wrapper/shell.js
-git commit -m "feat(leaderboard): connect Firebase shared leaderboard"
-git push
-```
-
-That's it! All 9 games will now write scores to Firebase. Any player on any device will see the same top-10 leaderboard for each game.
-
----
-
-## Security rules (optional hardening)
-
-The default TEST mode rules expire after 30 days. To make them permanent (still public read/write, fine for an arcade):
-
-1. In Firebase console → Realtime Database → **Rules** tab
-2. Replace the rules with:
-
-```json
-{
-  "rules": {
-    "lb": {
-      ".read": true,
-      ".write": true
-    }
-  }
-}
-```
-
-3. Click **Publish**
-
----
-
-## Free tier limits (Spark plan)
-
-| Resource | Free limit |
-|---|---|
-| Storage | 1 GB |
-| Downloads / month | 10 GB |
-| Simultaneous connections | 100 |
-
-For an indie arcade game this is effectively unlimited. A score entry is ~50 bytes. 1 GB = ~20 million score entries.
-
----
-
-## FAQ
-
-**Q: What happens if Firebase is down?**
-A: shell.js always saves to localStorage too, so the leaderboard still shows local scores as a fallback.
-
-**Q: Old scores from localStorage — will they migrate?**
-A: Not automatically. New scores from each device go to Firebase going forward. Old local scores stay local until overwritten. You can manually migrate if needed.
-
-**Q: Can I reset a game's leaderboard?**
-A: In the Firebase console, navigate to `lb / <slug>` and delete the node.
+This audit branch makes no production database writes, changes no live Firebase rules, and does not publish new scores.
