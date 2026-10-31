@@ -95,6 +95,8 @@ async function runInput(page,frame,slug,steps){
    try{
     const response=await page.goto(base+game.path,{waitUntil:'domcontentloaded',timeout:22000});
     if(response.status()!==200)throw Error('Wrapper HTTP '+response.status());
+    if(mobile && ['astrotype','licensed-astroblast','licensed-missile-defense'].includes(game.slug))
+      await page.locator('.pn-mobile-gate button').click({timeout:5000});
     const id=mobile?'#gameMobile':'#gameDesktop';
     await page.waitForFunction(s=>{let e=document.querySelector(s);return !!e?.contentWindow && e.contentWindow.location.href!=='about:blank'},id,{timeout:16000});
     const h=await page.locator(id).elementHandle(),frame=await h.contentFrame();

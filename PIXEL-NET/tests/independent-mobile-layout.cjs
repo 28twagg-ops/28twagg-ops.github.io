@@ -24,6 +24,8 @@ const issues=[],checks=[];
     try{
       if(mode==='landscape')await page.setViewportSize({width:844,height:390});
       await page.goto('http://127.0.0.1:8765/'+game.path,{waitUntil:'domcontentloaded',timeout:25000});
+      if(['astrotype','licensed-astroblast','licensed-missile-defense'].includes(game.slug))
+        await page.locator('.pn-mobile-gate button').click({timeout:5000});
       await page.waitForFunction(()=>{let f=document.querySelector('#gameMobile');return !!f?.getAttribute('src')&&f.contentWindow?.location.href!=='about:blank'},null,{timeout:14000});
       const dims=await page.evaluate(()=>{
        const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};};

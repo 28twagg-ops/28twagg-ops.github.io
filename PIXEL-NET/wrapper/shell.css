@@ -434,3 +434,14 @@ html,body{height:100%;height:100dvh}
 }
 .pn-maximize-btn{display:none;align-items:center;justify-content:center;width:31px;height:31px;background:rgba(0,0,0,.18);color:var(--text);border:1px solid var(--border);border-radius:10px;cursor:pointer}
 .pn-restore-btn{display:none;position:fixed;right:calc(7px + env(safe-area-inset-right,0px));top:calc(5px + env(safe-area-inset-top,0px));z-index:100;padding:8px 10px;border:1px solid var(--border);border-radius:10px;color:var(--text);background:rgba(0,0,0,.75);font:700 12px var(--uiFont);cursor:pointer}
+
+/* Nonintrusive, opt-in mobile limitation notice using the existing arcade palette. */
+@media(max-width:1100px){
+  #view-game{position:relative}
+  .pn-mobile-gate:not([hidden]){position:absolute;inset:0;z-index:12;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:12px;padding:18px;text-align:center;background:var(--panelBg);color:var(--text)}
+  .pn-mobile-gate h2{font-size:18px;color:var(--hero);margin:0}
+  .pn-mobile-gate p{font-size:13px;line-height:1.5;max-width:30rem;margin:0}
+  .pn-mobile-gate button{color:var(--text);background:rgba(0,0,0,.25);border:1px solid var(--hero);
+    border-radius:10px;padding:12px 16px;cursor:pointer;min-height:44px}
+}

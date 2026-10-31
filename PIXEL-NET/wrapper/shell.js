@@ -273,11 +273,34 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // Only one game instance may run at a time. Previously both iframes
   // started rendering even when CSS hid one (double canvas/audio/CPU).
   const mobileBreak = matchMedia('(max-width: 1100px)');
+  const requiresKeyboard = CFG.mobileKeyboardOnly === true;
+  const crashCaution = CFG.mobileUnverified === true;
+  let mobileOptedIn = false;
+  const mobileGate = document.createElement('div');
+  mobileGate.className = 'pn-mobile-gate';
+  mobileGate.hidden = true;
+  const gateTitle = document.createElement('h2');
+  gateTitle.textContent = requiresKeyboard ? 'Keyboard recommended' : 'Mobile compatibility warning';
+  const gateText = document.createElement('p');
+  gateText.textContent = requiresKeyboard
+    ? 'This typing game works best with a physical keyboard. You may try the iPhone keyboard or play on a computer.'
+    : 'This game has caused crashes in iPhone browsers. A desktop browser is recommended until physical-phone testing is complete.';
+  const gateButton = document.createElement('button');
+  gateButton.type = 'button'; gateButton.textContent = 'Try on this phone anyway';
+  mobileGate.append(gateTitle,gateText,gateButton);
+  document.getElementById('view-game').appendChild(mobileGate);
+  gateButton.addEventListener('click',()=>{mobileOptedIn=true;syncActiveGame();});
   function syncActiveGame() {
     const active = mobileBreak.matches ? gm : gd;
     const inactive = mobileBreak.matches ? gd : gm;
     if (inactive.hasAttribute('src')) inactive.removeAttribute('src');
-    if (active.getAttribute('src') !== entry) active.setAttribute('src', entry);
+    const blocked = mobileBreak.matches && (requiresKeyboard || crashCaution) && !mobileOptedIn;
+    mobileGate.hidden = !blocked;
+    if (blocked) {
+      if (active.hasAttribute('src')) active.removeAttribute('src');
+    } else if (active.getAttribute('src') !== entry) {
+      active.setAttribute('src', entry);
+    }
   }
   syncActiveGame();
   if (mobileBreak.addEventListener) mobileBreak.addEventListener('change', syncActiveGame);
