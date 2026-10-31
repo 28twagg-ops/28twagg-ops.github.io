@@ -223,6 +223,15 @@ Purpose: AI implementation for themes
         }
 
 
+    /* On a 360px game iframe the original 90px title was completely clipped.
+       Retain the same lettering and colors; only make the menu fit. */
+    @media(max-width:700px) {
+      .title-container{max-width:96vw;margin-bottom:14px}
+      h1{font-size:clamp(28px,8vw,56px);letter-spacing:clamp(1px,.9vw,6px)}
+      .subtitle{font-size:11px;letter-spacing:2px;margin-top:1px}
+      .info-panel{max-width:94vw;padding:12px 13px;margin-bottom:12px}
+      .info-panel p{font-size:12px;line-height:1.35;margin:5px 0}
+    }
     /* Keep the lunar HUD readable at phone widths; never overlay WAVE and SHIELDS. */
     @media(max-width:700px) {
       #ui-layer{padding:8px}
