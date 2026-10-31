@@ -460,7 +460,9 @@
     async function fetchLeaderboardForSlug(slug){
       if(!slug || !FIREBASE_DB_URL) return null;
       try{
-        const r = await fetch(`${FIREBASE_DB_URL}/lb/${slug}.json`, { cache: "no-store" });
+        const isCasino=slug==="spyder-blackjack"||slug==="spyder-holdem";
+        const limit=isCasino?"":"?orderBy=%22score%22&limitToLast=25";
+        const r = await fetch(`${FIREBASE_DB_URL}/lb/${encodeURIComponent(slug)}.json${limit}`, { cache: "no-store" });
         if(!r.ok) return null;
         const data = await r.json();
         if(!data || typeof data !== "object") return [];
