@@ -1,0 +1,58 @@
+name: PIXEL-NET optimize release thumbnails
+on:
+  push:
+    branches: [work/container-fixes-2026-10-27]
+    paths:
+      - '.github/workflows/pixelnet-optimize-thumbnails.yml'
+      - 'PIXEL-NET/tools/optimize-thumbnails.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/container-fixes-2026-10-27
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image encoder
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Convert catalog thumbnails to optimized WebP
+        run: python PIXEL-NET/tools/optimize-thumbnails.py
+      - name: Validate optimized images and catalog references
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image
+          root=Path("PIXEL-NET")
+          data=json.loads((root/"games.json").read_text())
+          assert len(data)==19
+          seen=set()
+          for game in data:
+              assert game["slug"] not in seen
+              seen.add(game["slug"])
+              p=root/game["thumb"]
+              assert p.is_file(),p
+              if p.suffix==".webp":
+                  with Image.open(p) as im:
+                      assert im.width<=640 and im.height<=640,(p,im.size)
+                  assert p.stat().st_size<230_000,(p,p.stat().st_size)
+          print("All 19 game preview thumbnails valid")
+          PY
+      - name: Commit optimized previews only to development branch
+        run: |
+          if git status --porcelain PIXEL-NET/assets PIXEL-NET/games.json | grep -q .; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add PIXEL-NET/assets PIXEL-NET/games.json
+            git commit -m "perf: shrink all game preview images for fast arcade loading"
+            git push origin HEAD:work/container-fixes-2026-10-27
+          else
+            echo "Already optimized"
+          fi
