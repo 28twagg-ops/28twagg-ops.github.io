@@ -223,13 +223,14 @@ const FIREBASE_WEB_API_KEY = "";
   const KEY_MAIN = 'PIXELNET_INITIALS';
   const KEY_ALT  = 'playerInitials';
   const clean = s => (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
-  const getInitials = () =>
-    localStorage.getItem(KEY_MAIN) || localStorage.getItem(KEY_ALT) ||
-    sessionStorage.getItem(KEY_ALT) || '???';
+  const getInitials = () => {
+    try{return localStorage.getItem(KEY_MAIN)||localStorage.getItem(KEY_ALT)||
+      sessionStorage.getItem(KEY_ALT)||'???';}
+    catch(_){return '???';}
+  };
   const setInitialsAll = v => {
-    localStorage.setItem(KEY_MAIN, v);
-    localStorage.setItem(KEY_ALT, v);
-    sessionStorage.setItem(KEY_ALT, v);
+    try{localStorage.setItem(KEY_MAIN,v);localStorage.setItem(KEY_ALT,v)}catch(_){}
+    try{sessionStorage.setItem(KEY_ALT,v)}catch(_){}
   };
   const renderInitials = () => {
     const el = document.getElementById('initials');
@@ -329,12 +330,19 @@ const FIREBASE_WEB_API_KEY = "";
       if(e){e.textContent=message;e.dataset.status=ok?'online':'error'}
     }
   };
-  const normalizeRows=data=>{
+  const normalizeRows=(data,board=slug)=>{
     if(!data||typeof data!=='object')return [];
-    return Object.values(data).filter(x=>x&&Number.isFinite(Number(x.score)))
+    const sorted=Object.values(data).filter(x=>x&&Number.isFinite(Number(x.score)))
       .map(x=>({initials:clean(x.initials||x.name)||'???',
         score:cleanScore(x.score),mode:cleanMode(x.mode),t:Number(x.t)||0}))
-      .sort((a,b)=>b.score-a.score||a.t-b.t).slice(0,40);
+      .sort((a,b)=>b.score-a.score||a.t-b.t);
+    // Do not truncate the casino before separating modes. When many
+    // STANDARD scores exist, ANALYSIS scores must remain discoverable.
+    if(board==='spyder-blackjack'||board==='spyder-holdem'){
+      return [...sorted.filter(r=>r.mode==='STANDARD').slice(0,10),
+        ...sorted.filter(r=>r.mode==='ANALYSIS').slice(0,10)];
+    }
+    return sorted.slice(0,50);
   };
   async function fbFetch(board=slug){
     if(!cloudURL(board))return {ok:false,rows:[],reason:'Global database not configured.'};
@@ -343,7 +351,7 @@ const FIREBASE_WEB_API_KEY = "";
       if(!res.ok)return {ok:false,rows:[],reason:
         res.status===401||res.status===403?'Database permission denied.':
         'Global scores unavailable (HTTP '+res.status+').'};
-      return {ok:true,rows:normalizeRows(await res.json())};
+      return {ok:true,rows:normalizeRows(await res.json(),board)};
     }catch(_){return {ok:false,rows:[],reason:'Global database connection unavailable.'}}
   }
   // Anonymous Firebase Auth: a player needs no account or sign-in form.
@@ -391,19 +399,24 @@ const FIREBASE_WEB_API_KEY = "";
     }catch(_){return false}
   }
   const PENDING_KEY='PIXELNET_PENDING_SCORES_V1';
+  const MAX_PENDING=500;
   const pendingLoad=()=>{
     try{const a=JSON.parse(localStorage.getItem(PENDING_KEY)||'[]');
       return Array.isArray(a)?a.filter(x=>x&&x.id&&x.board&&x.entry):[]}
     catch(_){return []}
   };
-  const pendingSave=a=>{try{localStorage.setItem(PENDING_KEY,JSON.stringify(a.slice(-100)))}catch(_){}};
+  // Never silently drop unsent scores. Notify players if storage is full.
+  const pendingSave=a=>{
+    if(a.length>MAX_PENDING)return false;
+    try{localStorage.setItem(PENDING_KEY,JSON.stringify(a));return true}
+    catch(_){return false}
+  };
   const pendingRows=board=>pendingLoad().filter(x=>x.board===board)
     .map(x=>({...x.entry,pending:true}));
   const queueScore=(entry,board)=>{
-    const id='pn-'+(crypto.randomUUID ? crypto.randomUUID() :
+    const id='pn-'+(globalThis.crypto?.randomUUID ? crypto.randomUUID() :
       Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,14));
-    pendingSave([...pendingLoad(),{id,board,entry}]);
-    return id;
+    return pendingSave([...pendingLoad(),{id,board,entry}])?id:null;
   };
   let draining=null;
   async function drainPending(){
@@ -449,8 +462,10 @@ const FIREBASE_WEB_API_KEY = "";
     if(isSpyderCasino){
       const [bj,he]=await Promise.all([fbFetch('spyder-blackjack'),fbFetch('spyder-holdem')]);
       if(id!==refreshId)return;
-      const b=modeSplit(bj.ok?[...bj.rows,...pendingRows('spyder-blackjack')]:lbLoadRaw('LB_spyder-blackjack'));
-      const h=modeSplit(he.ok?[...he.rows,...pendingRows('spyder-holdem')]:lbLoadRaw('LB_spyder-holdem'));
+      // Confirmed online results must never be displaced by unsent local
+      // entries: the latter appear only if the online board cannot load.
+      const b=modeSplit(bj.ok?bj.rows:lbLoadRaw('LB_spyder-blackjack'));
+      const h=modeSplit(he.ok?he.rows:lbLoadRaw('LB_spyder-holdem'));
       for(const type of ['Desktop','Mobile']){
         renderBoard('board'+type+'BjStd',b.std);
         renderBoard('board'+type+'BjAn',b.an);
@@ -458,17 +473,22 @@ const FIREBASE_WEB_API_KEY = "";
         renderBoard('board'+type+'HeAn',h.an);
       }
       const ok=bj.ok&&he.ok;
-      setStatus(ok,ok?'Live shared Blackjack and Hold’em rankings.':
-        'Casino leaderboard is offline. Showing locally saved scores where available.');
+      const waiting=pendingLoad().filter(x=>['spyder-blackjack','spyder-holdem'].includes(x.board)).length;
+      setStatus(ok,ok
+        ?'Live shared Blackjack and Hold’em rankings. '+(FIREBASE_WEB_API_KEY?'Online upload enabled.':'New score uploads are not activated.')+
+          (waiting?' '+waiting+' score(s) awaiting upload.':'')
+        :'Casino leaderboard is offline. Showing locally saved scores where available.');
       return;
     }
     const cloud=await fbFetch();
     if(id!==refreshId)return;
-    const rows=cloud.ok?[...cloud.rows,...pendingRows(slug)]
-      .sort((a,b)=>b.score-a.score||a.t-b.t):lbLoad();
+    const rows=cloud.ok?cloud.rows:lbLoad();
     renderBoard('boardDesktop',rows);renderBoard('boardMobile',rows);
-    setStatus(cloud.ok,cloud.ok?'Live global scores shared across devices.':
-      cloud.reason+' Showing scores saved on this device.');
+    const waiting=pendingLoad().filter(x=>x.board===slug).length;
+    setStatus(cloud.ok,cloud.ok
+      ?'Live global rankings. '+(FIREBASE_WEB_API_KEY?'Online score upload enabled.':'New score uploads are not activated.')+
+        (waiting?' '+waiting+' score(s) awaiting upload.':'')
+      :cloud.reason+' Showing scores saved on this device.');
   };
   refreshBoards();
   let lastSig='',lastAt=0;
@@ -487,8 +507,8 @@ const FIREBASE_WEB_API_KEY = "";
     try{localStorage.setItem(key,JSON.stringify(rows.slice(0,30)))}catch(_){}
     const id=queueScore(entry,target);
     await refreshBoards();
-    const done=await drainPending();
-    const globalSaved=done.includes(id);
+    const done=id?await drainPending():[];
+    const globalSaved=!!id&&done.includes(id);
     // Let every game display honest global-upload confirmation or fallback.
     if(activeGame?.contentWindow){
       activeGame.contentWindow.postMessage(
@@ -496,10 +516,12 @@ const FIREBASE_WEB_API_KEY = "";
     }
     await refreshBoards();
     if(!globalSaved){
+      const message=!id?'Score saved in this game, but upload queue storage is full or unavailable.'
+        :!FIREBASE_WEB_API_KEY?'Score saved locally; new global uploads are not activated.'
+        :'Score saved on this device; queued for global upload.';
       for(const noticeId of ['boardNoticeDesktop','boardNoticeMobile']){
         const node=document.getElementById(noticeId);
-        if(node){node.dataset.status='error';
-          node.textContent='Score saved on this device; queued for global upload.';}
+        if(node){node.dataset.status='error';node.textContent=message;}
       }
     }
   }
