@@ -222,6 +222,20 @@ Purpose: AI implementation for themes
             transform: scale(1.2);
         }
 
+
+    /* Keep the lunar HUD readable at phone widths; never overlay WAVE and SHIELDS. */
+    @media(max-width:700px) {
+      #ui-layer{padding:8px}
+      #ui-layer>div:first-child{gap:8px;align-items:flex-start}
+      #score-display,#streak-display,#lives-display{font-size:clamp(11px,3vw,15px);white-space:nowrap}
+      #streak-display{margin-top:4px}
+      #level-display{position:absolute;top:58px;left:50%;transform:translateX(-50%);
+        width:auto;font-size:clamp(12px,3vw,16px);padding:2px 7px;
+        background:rgba(0,0,0,.55);border-radius:4px;white-space:nowrap}
+    }
+    @media(max-width:700px) and (orientation:landscape){
+      #level-display{top:46px}
+    }
     </style>
 </head>
 <body>
