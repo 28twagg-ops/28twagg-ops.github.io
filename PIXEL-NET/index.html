@@ -526,7 +526,7 @@
             const topIni = (top.initials || top.name || "???").toString().toUpperCase().slice(0,3);
             const secIni = (second.initials || second.name || "???").toString().toUpperCase().slice(0,3);
             const margin = (Number(top.score) || 0) - (Number(second.score) || 0);
-            takeoverText = `${topIni} took over ${target.name} from ${secIni} (+${margin})`;
+            takeoverText = `${topIni} currently leads ${target.name} ahead of ${secIni} (+${margin})`;
           }
           scored.push({
             initials: (top.initials || top.name || "???").toString().toUpperCase().slice(0,3),
