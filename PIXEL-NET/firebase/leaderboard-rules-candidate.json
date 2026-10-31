@@ -7,7 +7,7 @@
         ".read": true,
         "$entry": {
           ".write": "auth != null && !data.exists() && newData.exists() && $entry.matches(/^[-A-Za-z0-9_]{10,80}$/) && ($game === 'caked-up-cats' || $game === 'creek-crosser' || $game === 'astrotype' || $game === 'knight-flight' || $game === 'logic-bomb' || $game === 'neon-chase' || $game === 'retro-kombat' || $game === 'robo-arena' || $game === 'millipede-chaos' || $game === 'galaxy-swarm-2084' || $game === 'circuit-salvager' || $game === 'dig-dug-delve' || $game === 'combat-cx2601' || $game === 'atariforce-hyperlane' || $game === 'jungle-jr-rescue' || $game === 'kangaroo-climb' || $game === 'track-field-blitz' || $game === 'orbit-siege' || $game === 'spyder-blackjack' || $game === 'spyder-holdem')",
-          ".validate": "newData.hasChildren(['initials','score','t'])",
+          ".validate": "newData.hasChildren(['initials','score','t']) && (($game === 'spyder-blackjack' || $game === 'spyder-holdem') ? newData.hasChild('mode') : !newData.hasChild('mode'))",
           "initials": {
             ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{1,3}$/)"
           },
