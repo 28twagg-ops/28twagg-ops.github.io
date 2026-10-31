@@ -77,7 +77,7 @@ async function exercise(browser,profile,game){
          window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')window.__pnTouchTestKeys++;});
        });
        await left.tap({timeout:4000});
-       await frame.waitForFunction(()=>window.__pnTouchTestKeys>0,{timeout:4000});
+       await frame.waitForFunction(()=>window.__pnTouchTestKeys>0,null,{timeout:4000});
        inputs.push('verified native touch left emits ArrowLeft keydown');
      }
      const arrow=frame.locator('[data-direction="left"], #btnLeft, .dpad button').first();
