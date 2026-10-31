@@ -1,78 +1,9 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Track &amp; Field — PIXEL-NET</title>
-<link rel="stylesheet" href="../_shared/emu-shell.css">
-<style>
-  :root{ --hero:#5de0ff; --ink:#d9eeff; }
-</style>
-</head>
-<body tabindex="0">
-<div id="game"></div>
-
-<div id="topbar">
-  <div id="hint">Sprint: A/D &nbsp;|&nbsp; Action: SPACE &nbsp;|&nbsp; If stuck at READY, click RUN</div>
-  <button id="submit">SUBMIT SCORE</button>
-</div>
-
-<div id="actions">
-  <button data-act="run">RUN (ENTER)</button>
-  <button data-act="space">SPACE</button>
-  <button data-act="reset">RESET</button>
-</div>
-
-<div id="errorOv" class="hidden">
-  <div class="card">
-    <h1>EMULATOR COULDN'T BOOT</h1>
-    <p class="msg"></p>
-    <p class="tip">The C64 disk image should work with VICE. Check network access to <kbd>cdn.emulatorjs.org</kbd>.</p>
-  </div>
-</div>
-
-<script>
-  window.EJS_player = '#game';
-  window.EJS_core = 'c64';
-  window.EJS_gameUrl = './rom/Track__Field_1983_Konami.d64';
-  window.EJS_gameName = 'Track & Field (C64)';
-  window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-  window.EJS_startOnLoaded = true;
-  window.EJS_color = '#5de0ff';
-  window.EJS_volume = 0.45;
-
-  // VICE options: true drive emulation + warp so the disk loads fast.
-  window.EJS_defaultOptions = Object.assign({}, window.EJS_defaultOptions || {}, {
-    "vice_autostart": "enabled",
-    "vice_drive_true_emulation": "enabled",
-    "vice_warp_boost": "enabled",
-    "vice_autostart_warp": "enabled"
-  });
-
-  // On-screen buttons fall through to synthetic keypresses for the C64.
-  // VICE core doesn't expose simulateInput the same way as joypad cores,
-  // so these primarily rely on keyboard events.
-  window.EMU_ACTIONS = {
-    run: {
-      keys: [
-        { key: "r", code: "KeyR", keyCode: 82, delay: 180, hold: 120 },
-        { key: "u", code: "KeyU", keyCode: 85, delay: 180, hold: 120 },
-        { key: "n", code: "KeyN", keyCode: 78, delay: 180, hold: 120 },
-        { key: "Enter", code: "Enter", keyCode: 13, delay: 260, hold: 180 }
-      ]
-    },
-    space: { key: " ", code: "Space", keyCode: 32, hold: 180 },
-    reset: { key: "F2", code: "F2", keyCode: 113, hold: 200 }
-  };
-
-  // Auto-entry: wait past LOAD, then fire RUN+Enter, then SPACE after intro.
-  window.EMU_AUTOSTART_INIT = 16000;
-  window.EMU_AUTOSTART = [
-    window.EMU_ACTIONS.run,
-    Object.assign({ delay: 6000 }, window.EMU_ACTIONS.space)
-  ];
-</script>
-<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
-<script src="../_shared/emu-controls.js"></script>
-</body>
-</html>
+<meta http-equiv="refresh" content="0;url=./game.html">
+<title>track field blitz — Play native edition</title>
+</head><body style="margin:0;background:#070a19;color:#fff;font:16px system-ui;display:grid;place-items:center;min-height:100vh">
+<main><p>Opening the native, auto-scoring game…</p>
+<p><a style="color:#69e9ff" href="./game.html">Play game</a></p></main>
+<script>location.replace('./game.html')</script></body></html>
