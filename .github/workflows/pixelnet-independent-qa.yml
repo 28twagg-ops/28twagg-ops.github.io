@@ -1,0 +1,41 @@
+name: PIXEL-NET independent baseline
+on:
+  push:
+    branches: [audit/independent-qa-2026-10-31]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [desktop, iphonePortrait, iphoneLandscape, androidPortrait, androidLandscape]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: node --check PIXEL-NET/tests/independent-functional-audit.cjs
+      - name: Install Chromium and WebKit
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Start local arcade
+        run: |
+          python3 -m http.server 8765 --directory PIXEL-NET >/tmp/qa.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
+      - name: Script controls and capture evidence
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: node PIXEL-NET/tests/independent-functional-audit.cjs
+      - name: Attach evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-${{ matrix.profile }}
+          path: independent-qa-evidence/${{ matrix.profile }}/
+          if-no-files-found: warn

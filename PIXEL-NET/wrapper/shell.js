@@ -72,7 +72,8 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     return `<div class="instrCard"><div class="instrDetail"><span class="i">${icon}</span> ${fmt(raw)}</div></div>`;
   };
 
-  const globalBadge = !licensed && FIREBASE_DB_URL ? '<span class="badge">GLOBAL</span>' : '';
+  // A configured URL is not proof that Firebase accepted any score.
+  const globalBadge = !licensed && FIREBASE_DB_URL ? '<span class="badge">ONLINE UNVERIFIED</span>' : '';
   const verifiedHref=(value,allowLocal=false)=>{
     const url=String(value||'');
     return /^https:\/\//.test(url) || (allowLocal && /^\.\.\/\.\.\/licensed\/vendors\/[a-z0-9/_\-.]+$/i.test(url))
@@ -109,7 +110,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // Inject markup
   document.body.innerHTML = `
     <div class="topbar">
-      <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a></div>
+      <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a><button type="button" class="pn-maximize-btn" id="maximizeGame" aria-label="Maximize game" title="Maximize game">⛶</button></div>
       <div class="gameBadge" id="gameBadge">${title.toUpperCase()}<span class="verTag" id="verTag">version: ...</span></div>
       <div class="playerBtn" id="playerBtn" role="button" aria-label="Set player initials">
         <span class="muted">PLAYER</span><strong id="initials">???</strong>
@@ -158,6 +159,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       </div>
     </div>
 
+    <button type="button" class="pn-restore-btn" id="restoreGame" aria-label="Restore arcade navigation">↙ Back to arcade view</button>
     <div class="modalBack" id="modalBack" aria-hidden="true">
       <div class="modalCard" role="dialog" aria-modal="true">
         <button class="modalClose" id="modalClose" type="button">✕</button>
@@ -170,6 +172,20 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       </div>
     </div>
   `;
+  // Distinguish local save, an HTTP-accepted upload and a failed upload.
+  // None of these status messages assert a cross-device readback occurred.
+  const scoreStatusNodes = [];
+  if (!licensed) document.querySelectorAll('.panel.leaderboard .content').forEach(el=>{
+    const line = document.createElement('p');
+    line.style.cssText = 'margin:6px 0 10px;color:var(--muted);font-size:11px;line-height:1.4';
+    line.setAttribute('role','status');
+    line.textContent = 'Online scoreboard status not yet verified.';
+    el.prepend(line);
+    scoreStatusNodes.push(line);
+  });
+  function setScoreStatus(message) {
+    scoreStatusNodes.forEach(el=>{el.textContent=message;});
+  }
   async function loadVersionTag() {
     const el = document.getElementById('verTag');
     if (!el) return;
@@ -248,17 +264,47 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (e.key === KEY_MAIN || e.key === KEY_ALT) renderInitials();
   });
 
-  // Exit: prefer history.back, fallback to home
-  document.getElementById('exitBtn').addEventListener('click', e => {
-    if (history.length > 1) { e.preventDefault(); history.back(); }
-  });
+  // Exit always returns to this arcade, including from a ChatGPT deep link.
 
   // --- Iframe setup ---
   const entry = CFG.entry || './game.html';
   const gd = document.getElementById('gameDesktop');
   const gm = document.getElementById('gameMobile');
-  gd.src = entry;
-  gm.src = entry;
+  // Only one game instance may run at a time. Previously both iframes
+  // started rendering even when CSS hid one (double canvas/audio/CPU).
+  const mobileBreak = matchMedia('(max-width: 1100px)');
+  const requiresKeyboard = CFG.mobileKeyboardOnly === true;
+  const crashCaution = CFG.mobileUnverified === true;
+  let mobileOptedIn = false;
+  const mobileGate = document.createElement('div');
+  mobileGate.className = 'pn-mobile-gate';
+  mobileGate.hidden = true;
+  const gateTitle = document.createElement('h2');
+  gateTitle.textContent = requiresKeyboard ? 'Keyboard recommended' : 'Mobile compatibility warning';
+  const gateText = document.createElement('p');
+  gateText.textContent = requiresKeyboard
+    ? 'This typing game works best with a physical keyboard. You may try the iPhone keyboard or play on a computer.'
+    : 'This game has caused crashes in iPhone browsers. A desktop browser is recommended until physical-phone testing is complete.';
+  const gateButton = document.createElement('button');
+  gateButton.type = 'button'; gateButton.textContent = 'Try on this phone anyway';
+  mobileGate.append(gateTitle,gateText,gateButton);
+  document.getElementById('view-game').appendChild(mobileGate);
+  gateButton.addEventListener('click',()=>{mobileOptedIn=true;syncActiveGame();});
+  function syncActiveGame() {
+    const active = mobileBreak.matches ? gm : gd;
+    const inactive = mobileBreak.matches ? gd : gm;
+    if (inactive.hasAttribute('src')) inactive.removeAttribute('src');
+    const blocked = mobileBreak.matches && (requiresKeyboard || crashCaution) && !mobileOptedIn;
+    mobileGate.hidden = !blocked;
+    if (blocked) {
+      if (active.hasAttribute('src')) active.removeAttribute('src');
+    } else if (active.getAttribute('src') !== entry) {
+      active.setAttribute('src', entry);
+    }
+  }
+  syncActiveGame();
+  if (mobileBreak.addEventListener) mobileBreak.addEventListener('change', syncActiveGame);
+  else mobileBreak.addListener(syncActiveGame);
 
   const focusFrame = el => {
     try { el.focus(); } catch(_) {}
@@ -308,7 +354,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // --- Firebase REST helpers (shared leaderboard) ---
   const FB_BASE = FIREBASE_DB_URL ? `${FIREBASE_DB_URL}/lb/${slug}` : null;
 
-  async function fbFetch(slugOverride) {
+  async function fbFetch(slugOverride, complete = false) {
     if (licensed) return null;
     const base = FIREBASE_DB_URL
       ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
@@ -322,23 +368,21 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       return Object.values(data)
         .filter(x => x && typeof x.score === 'number')
         .sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0))
-        .slice(0, 10);
+        .slice(0, complete ? undefined : 10);
     } catch(_) { return null; }
   }
 
   async function fbPost(entry, slugOverride) {
-    if (licensed) return;
-    const base = FIREBASE_DB_URL
-      ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
-      : null;
-    if (!base) return;
+    if (licensed || !FIREBASE_DB_URL) return false;
+    const base = `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`;
     try {
-      await fetch(`${base}.json`, {
+      const response = await fetch(`${base}.json`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(entry),
       });
-    } catch(_) {}
+      return response.ok;
+    } catch(_) { return false; }
   }
 
   // --- Render leaderboard rows ---
@@ -352,7 +396,12 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       const score = (r.score ?? r.value ?? 0);
       const row = document.createElement('div');
       row.className = 'boardRow' + (i===0 ? ' top1' : '');
-      row.innerHTML = `<div class="rank">${i+1}.</div><div class="name">${name}</div><div class="score">${score}</div>`;
+      for (const [cls,value] of [['rank',String(i+1)+'.'],['name',name],['score',String(score)]]) {
+        const cell = document.createElement('div');
+        cell.className = cls;
+        cell.textContent = value;
+        row.appendChild(cell);
+      }
       el.appendChild(row);
     });
   }
@@ -367,8 +416,19 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const refreshBoards = async () => {
     if (licensed) return;
     if (isSpyderCasino) {
-      const bjRows = ((await fbFetch('spyder-blackjack')) || []).slice(0, 10);
-      const heRows = ((await fbFetch('spyder-holdem')) || []).slice(0, 10);
+      // Split modes before trimming: otherwise 10 Standard scores conceal Analysis.
+      // Show local Casino results if cloud reads fail or return empty.
+      // Labeling remains explicit: locally stored != verified global readback.
+      const readCasinoLocal = key => {
+        try {
+          const rows=JSON.parse(localStorage.getItem('LB_'+key) || '[]');
+          return Array.isArray(rows) ? rows.filter(r=>r && Number.isSafeInteger(r.score)) : [];
+        } catch(_) { return []; }
+      };
+      const bjCloud = await fbFetch('spyder-blackjack', true);
+      const heCloud = await fbFetch('spyder-holdem', true);
+      const bjRows = (bjCloud && bjCloud.length) ? bjCloud : readCasinoLocal('spyder-blackjack');
+      const heRows = (heCloud && heCloud.length) ? heCloud : readCasinoLocal('spyder-holdem');
       const bj = modeSplit(bjRows);
       const he = modeSplit(heRows);
       renderBoard('boardDesktopBjStd', bj.std);
@@ -382,7 +442,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       return;
     }
     const cloud = await fbFetch();
-    const rows  = (cloud !== null ? cloud : lbLoad()).slice(0, 10);
+    const rows  = (cloud && cloud.length ? cloud : lbLoad()).slice(0, 10);
     renderBoard('boardDesktop', rows);
     renderBoard('boardMobile', rows);
   };
@@ -390,21 +450,36 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
   // --- Score intake (dedup burst within 1.2 s) ---
   let lastSig = '', lastAt = 0;
-  async function addScore(rawScore, scoreSlug) {
+  async function addScore(rawScore, scoreSlug, scoreMode) {
     if (licensed) return;
-    const initials = getInitials() || '???';
-    const score = Math.max(0, Math.floor(Number(rawScore) || 0));
+    const score = Number(rawScore);
+    if (!Number.isSafeInteger(score) || score < 0) return;
+    const initials = clean(getInitials()) || '???';
     const now = Date.now();
-    const sig = `${initials}:${score}`;
+    const mode = /^ANALYSIS$/i.test(String(scoreMode || '')) ? 'ANALYSIS' : 'STANDARD';
+    const sig = `${scoreSlug || slug}:${mode}:${initials}:${score}`;
     if (sig === lastSig && (now - lastAt) < 1200) return;
     lastSig = sig; lastAt = now;
 
-    const entry = { initials, score, t: now };
+    const entry = { initials, score, mode, t: now };
 
     if (isSpyderCasino && scoreSlug) {
-      const entry = { initials, score, t: now };
-      fbPost(entry, scoreSlug).finally(() => refreshBoards());
-      refreshBoards();
+      let localSaved = false;
+      try {
+        const key = 'LB_' + scoreSlug;
+        const rows = JSON.parse(localStorage.getItem(key) || '[]');
+        const valid = Array.isArray(rows) ? rows : [];
+        valid.push(entry);
+        valid.sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
+        localStorage.setItem(key, JSON.stringify(valid.slice(0,30)));
+        localSaved = true;
+      } catch (_) {}
+      fbPost(entry,scoreSlug).then(ok=>{
+        setScoreStatus(ok ? 'Upload accepted; global visibility not yet independently verified.'
+          : (localSaved ? 'Saved locally; online upload unavailable.' : 'Online upload unavailable; local save failed.'));
+        refreshBoards();
+      });
+      setScoreStatus(localSaved ? 'Saved locally; online upload pending.' : 'Online upload pending; local save unavailable.');
       return;
     }
     // Always save locally (works offline / no Firebase configured)
@@ -414,13 +489,20 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     lbSave(rows.slice(0,10));
 
     // Also push to Firebase (fire-and-forget, then refresh)
-    fbPost(entry).finally(() => refreshBoards());
+    setScoreStatus('Saved locally; online upload pending.');
+    fbPost(entry).then(ok => {
+      setScoreStatus(ok ? 'Upload accepted; global visibility not yet independently verified.'
+        : 'Saved locally; online upload unavailable.');
+      refreshBoards();
+    });
     refreshBoards(); // show local result immediately; Firebase update follows
   }
 
   // Listen for score / initials messages from iframed games
   window.addEventListener('message', e => {
     if (licensed) return; // Third-party games cannot submit PIXEL-NET scores.
+    const currentFrame = mobileBreak.matches ? gm : gd;
+    if (e.origin !== location.origin || e.source !== currentFrame.contentWindow) return;
     const d = e.data || {};
     if (!d || !d.type) return;
     if (d.type === 'PIXELNET_SET_INITIALS' && d.initials) {
@@ -431,7 +513,13 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (d.type === 'GAME_OVER_SCORE' || d.type === 'GAME_OVER' ||
         d.type === 'PIXELNET_SCORE'  || d.type === 'PIXELNET_SUBMIT_SCORE') {
       const s = d.score != null ? d.score : (d.finalScore != null ? d.finalScore : d.value);
-      if (s != null) addScore(s, d.slug);
+      if (s == null) return;
+      if (isSpyderCasino) {
+        if (!['spyder-blackjack','spyder-holdem'].includes(d.slug)) return;
+        addScore(s,d.slug,d.mode);
+      } else if (!d.slug || d.slug === slug) {
+        addScore(s,null,null);
+      }
     }
   });
 
@@ -476,4 +564,22 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (tab === 'board') refreshBoards();
   };
   btns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  // CSS maximize is supported in iPhone webviews where Fullscreen API is absent.
+  const maximizeGame = document.getElementById('maximizeGame');
+  const restoreGame = document.getElementById('restoreGame');
+  const restore = () => {
+    document.documentElement.classList.remove('pn-maximized');
+    maximizeGame.setAttribute('aria-pressed','false');
+    window.dispatchEvent(new Event('resize'));
+  };
+  maximizeGame.addEventListener('click', () => {
+    setTab('game');
+    document.documentElement.classList.add('pn-maximized');
+    maximizeGame.setAttribute('aria-pressed','true');
+    window.dispatchEvent(new Event('resize'));
+  });
+  restoreGame.addEventListener('click', restore);
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.documentElement.classList.contains('pn-maximized')) restore();
+  });
 })();

@@ -206,8 +206,10 @@ Purpose: AI implementation for themes
         .d-left { top: 55px; left: 0; }
         .d-right { top: 55px; right: 0; }
 
+        /* Old D-pad covered the START button and road. Swipe/tap now handles touch. */
         @media (hover: none) and (pointer: coarse) {
-            #mobile-controls { display: block; }
+            #mobile-controls { display: none !important; }
+            #gameCanvas { touch-action: none; }
         }
         
         #mute-btn {
@@ -1398,7 +1400,27 @@ function startGameplay() {
     window.focus();
 }
 document.getElementById('start-btn').addEventListener('click', startGameplay);
-canvas.addEventListener('pointerdown', () => { if (!gameHasStarted) startGameplay(); });
+// Mouse/keyboard stay intact. Touch tap advances one row; swipe moves
+// in the dragged direction without covering the START overlay.
+let pnTouchOrigin = null;
+canvas.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'mouse') {
+        if (!gameHasStarted) startGameplay();
+        return;
+    }
+    pnTouchOrigin = {x:event.clientX,y:event.clientY,wasPlaying:gameHasStarted};
+    if (!gameHasStarted) startGameplay();
+});
+canvas.addEventListener('pointerup', event => {
+    if (!pnTouchOrigin || event.pointerType === 'mouse') return;
+    const start = pnTouchOrigin; pnTouchOrigin = null;
+    if (!start.wasPlaying || gameState.isGameOver) return;
+    const dx = event.clientX-start.x, dy = event.clientY-start.y;
+    if (Math.abs(dx)<16 && Math.abs(dy)<16) player.move('up');
+    else if (Math.abs(dx)>Math.abs(dy)) player.move(dx>0?'right':'left');
+    else player.move(dy>0?'down':'up');
+});
+canvas.addEventListener('pointercancel', () => { pnTouchOrigin=null; });
 </script>
 </body>
 </html>

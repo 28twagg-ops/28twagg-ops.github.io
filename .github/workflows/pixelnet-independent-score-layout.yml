@@ -1,0 +1,46 @@
+name: PIXEL-NET independent score and layout gates
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  score-and-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate scripts
+        run: |
+          node --check PIXEL-NET/wrapper/shell.js
+          node --check PIXEL-NET/tests/independent-score-safety.cjs
+          node --check PIXEL-NET/tests/independent-mobile-layout.cjs
+          node --check PIXEL-NET/tests/independent-gameplay-controls.cjs
+          node PIXEL-NET/tests/arcade-publish-guard.cjs
+      - name: Install browsers
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Serve arcade
+        run: |
+          python3 -m http.server 8765 --directory PIXEL-NET >/tmp/arcade-qa.log 2>&1 &
+          for i in $(seq 1 35); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
+      - name: Verify spoofed and genuine score messages against denied Firebase writes
+        run: node PIXEL-NET/tests/independent-score-safety.cjs
+      - name: Verify actual state transitions in four repaired games
+        run: node PIXEL-NET/tests/independent-gameplay-controls.cjs
+      - name: Test all 28 cabinets on simulated iPhone portrait/landscape
+        run: node PIXEL-NET/tests/independent-mobile-layout.cjs
+      - name: Save screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-mobile-layout-evidence
+          path: |
+            mobile-layout-results/
+            targeted-gameplay-evidence/
+          if-no-files-found: ignore
