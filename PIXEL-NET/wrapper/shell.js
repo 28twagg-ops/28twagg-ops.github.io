@@ -231,13 +231,16 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const KEY_MAIN = 'PIXELNET_INITIALS';
   const KEY_ALT  = 'playerInitials';
   const clean = s => (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
-  const getInitials = () =>
-    localStorage.getItem(KEY_MAIN) || localStorage.getItem(KEY_ALT) ||
-    sessionStorage.getItem(KEY_ALT) || '???';
+  let memoryInitials = '???';
+  const getInitials = () => {
+    try { return localStorage.getItem(KEY_MAIN) || localStorage.getItem(KEY_ALT) ||
+      sessionStorage.getItem(KEY_ALT) || memoryInitials; }
+    catch (_) { return memoryInitials; }
+  };
   const setInitialsAll = v => {
-    localStorage.setItem(KEY_MAIN, v);
-    localStorage.setItem(KEY_ALT, v);
-    sessionStorage.setItem(KEY_ALT, v);
+    memoryInitials = v;
+    try { localStorage.setItem(KEY_MAIN, v); localStorage.setItem(KEY_ALT, v); } catch (_) {}
+    try { sessionStorage.setItem(KEY_ALT, v); } catch (_) {}
   };
   const renderInitials = () => {
     const el = document.getElementById('initials');
