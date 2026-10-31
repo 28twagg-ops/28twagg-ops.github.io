@@ -197,8 +197,12 @@
     .pixel-game{color:rgba(255,255,255,.72);}
     .pixel-score{color:var(--neon-cyan);font-weight:700;}
     .game-card{
+      display:block;color:inherit;text-decoration:none;
       background:rgba(0,0,0,.4);border:2px solid transparent;border-radius:15px;overflow:hidden;cursor:pointer;
       transition:all .4s cubic-bezier(.175,.885,.32,1.275);position:relative;
+    }
+    .game-card:focus-visible,.player-initials-display:focus-visible{
+      outline:3px solid var(--neon-yellow);outline-offset:4px;
     }
     .game-card::before{
       content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--neon-cyan),var(--neon-pink));
@@ -209,7 +213,7 @@
       box-shadow:0 15px 40px rgba(0,245,255,.4),0 0 20px rgba(255,0,110,.3);
     }
     .game-card:hover::before{opacity:.1;}
-    .game-thumbnail{width:100%;aspect-ratio:1/1;background-size:cover;background-position:center;position:relative;overflow:hidden;}
+    .game-thumbnail{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:center;background:#151631;}
     .game-title{padding:20px;text-align:center;background:rgba(0,0,0,.6);}
     .game-title h4{
       font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;
@@ -278,16 +282,20 @@
       .modal{padding:30px 20px;}
       .initials-input{font-size:1.2rem;letter-spacing:10px;}
     }
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+      .game-card:hover{transform:none;}
+    }
   </style>
 </head>
 <body>
   <!-- Initial Input Modal -->
-  <div class="modal-overlay" id="initialModal">
+  <div class="modal-overlay" id="initialModal" role="dialog" aria-modal="true" aria-labelledby="initialsTitle">
     <div class="modal">
-      <button class="modal-close" onclick="closeModal()">×</button>
-      <h2>Enter Initials</h2>
+      <button class="modal-close" type="button" aria-label="Close initials dialog" onclick="closeModal()">×</button>
+      <h2 id="initialsTitle">Enter Initials</h2>
       <div class="initials-input-container">
-        <input type="text" class="initials-input" id="initialsInput" maxlength="3" placeholder="___" autocomplete="off">
+        <input type="text" class="initials-input" id="initialsInput" maxlength="3" placeholder="___" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Three player initials">
       </div>
       <button class="btn-save" onclick="saveInitials()">SAVE</button>
       <p class="hint-text">Press Enter to save</p>
@@ -299,7 +307,7 @@
       <h1 class="logo">PIXEL-NET</h1>
       <p class="tagline">Online Arcade Network</p>
       <p class="site-version" id="siteVersion">version: loading...</p>
-      <div class="player-initials-display" id="playerInitials" onclick="showModal()">???</div>
+      <button type="button" class="player-initials-display" id="playerInitials" onclick="showModal()" aria-label="Change player initials">???</button>
     </header>
 
     <section class="featured-section">
@@ -329,7 +337,7 @@
         <h3>Arcade Floor</h3>
         <p>Pick a cabinet. Click to play.</p>
       </div>
-      <input type="text" class="search-bar" id="searchBar" placeholder="Search games...">
+      <input type="search" class="search-bar" id="searchBar" placeholder="Search games..." aria-label="Search arcade games">
     </div>
 
     <div class="games-grid" id="gamesGrid"></div>
@@ -463,6 +471,9 @@
       return "STANDARD";
     }
 
+    const htmlEscape = value => String(value ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[ch]));
     function renderTopPixels(items, sourceLabel){
       const meta = document.getElementById("topPixelsMeta");
       const list = document.getElementById("topPixelsList");
@@ -477,17 +488,17 @@
       list.innerHTML = items.slice(0, 5).map((row, i) => `
         <div class="pixel-row">
           <div class="pixel-rank">#${i+1}</div>
-          <div class="pixel-name">${row.initials}</div>
-          <div class="pixel-game">${row.gameName} · held ${formatHeldDuration(Date.now() - row.t)}</div>
-          <div class="pixel-score">${row.score}</div>
+          <div class="pixel-name">${htmlEscape(row.initials)}</div>
+          <div class="pixel-game">${htmlEscape(row.gameName)} · held ${htmlEscape(formatHeldDuration(Math.max(0,Date.now() - row.t)))}</div>
+          <div class="pixel-score">${htmlEscape(row.score)}</div>
         </div>
       `).join("");
       const takeovers = items
         .filter(r => r.takeoverText)
         .slice(0, 5);
       takeoverEl.innerHTML = takeovers.length
-        ? takeovers.map(r => `<div class="takeover-row">${r.takeoverText}</div>`).join("")
-        : items.slice(0,3).map(r => `<div class="takeover-row">${r.initials} currently holds ${r.gameName} (${r.score})</div>`).join("");
+        ? takeovers.map(r => `<div class="takeover-row">${htmlEscape(r.takeoverText)}</div>`).join("")
+        : items.slice(0,3).map(r => `<div class="takeover-row">${htmlEscape(r.initials)} currently holds ${htmlEscape(r.gameName)} (${htmlEscape(r.score)})</div>`).join("");
     }
 
     async function loadTopPixels(games){
@@ -522,7 +533,7 @@
             const topIni = (top.initials || top.name || "???").toString().toUpperCase().slice(0,3);
             const secIni = (second.initials || second.name || "???").toString().toUpperCase().slice(0,3);
             const margin = (Number(top.score) || 0) - (Number(second.score) || 0);
-            takeoverText = `${topIni} took over ${target.name} from ${secIni} (+${margin})`;
+            takeoverText = `${topIni} leads ${target.name} ahead of ${secIni} (+${margin})`;
           }
           scored.push({
             initials: (top.initials || top.name || "???").toString().toUpperCase().slice(0,3),
@@ -541,17 +552,26 @@
 
     function renderGrid(list){
       const gamesGrid = document.getElementById("gamesGrid");
-      gamesGrid.innerHTML = "";
+      gamesGrid.replaceChildren();
       list.forEach(game => {
-        const card = document.createElement("div");
+        // Real anchors support keyboard navigation, browser history,
+        // link previews, long-press and opening cabinets in new tabs.
+        const card = document.createElement("a");
         card.className = "game-card";
-        card.innerHTML = `
-          <div class="game-thumbnail" style="background-image:url('${withVersion(normalizePath(game.thumb))}')"></div>
-          <div class="game-title"><h4>${game.name || "GAME"}</h4></div>
-        `;
-        card.addEventListener("click", () => {
-          if(game.path) window.location.href = normalizePath(game.path);
-        });
+        card.href = normalizePath(game.path || "index.html");
+        card.setAttribute("aria-label","Play "+String(game.name || "GAME"));
+        const thumbnail = document.createElement("img");
+        thumbnail.className = "game-thumbnail";
+        thumbnail.src = withVersion(normalizePath(game.thumb));
+        thumbnail.alt = "";
+        thumbnail.loading = "lazy";
+        thumbnail.decoding = "async";
+        const titleWrap = document.createElement("div");
+        titleWrap.className = "game-title";
+        const title = document.createElement("h4");
+        title.textContent = game.name || "GAME";
+        titleWrap.appendChild(title);
+        card.append(thumbnail,titleWrap);
         gamesGrid.appendChild(card);
       });
     }
@@ -562,16 +582,18 @@
     const playerInitials = document.getElementById("playerInitials");
 
     input.addEventListener("input", (e) => {
-      const value = e.target.value.toUpperCase().slice(0,3);
+      const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
       e.target.value = value;
     });
     input.addEventListener("keypress", (e) => { if(e.key === "Enter") saveInitials(); });
 
     function saveInitials(){
-      const initials = input.value.toUpperCase();
+      const initials = input.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
       if(initials.length === 3){
-        localStorage.setItem("playerInitials", initials);
-        localStorage.setItem("PIXELNET_INITIALS", initials);
+        try{
+          localStorage.setItem("playerInitials", initials);
+          localStorage.setItem("PIXELNET_INITIALS", initials);
+        }catch(_){ /* Browsers that disable storage can still play locally. */ }
         updatePlayerInitials(initials);
         closeModal();
       } else {
@@ -588,16 +610,30 @@
       try{ localStorage.setItem("playerInitials", v); localStorage.setItem("PIXELNET_INITIALS", v); }catch(e){}
     }
 
+    let modalReturnFocus = null;
     function showModal(){
+      modalReturnFocus = document.activeElement;
       modal.style.display = "flex";
       modal.style.animation = "fadeIn .3s ease";
-      setTimeout(()=>input.focus(), 100);
+      input.value=(playerInitials.textContent||"").replace(/[^A-Z0-9]/g,"").slice(0,3);
+      input.focus();
     }
 
     function closeModal(){
-      modal.style.animation = "fadeOut .3s ease";
-      setTimeout(()=>{ modal.style.display = "none"; }, 300);
+      modal.style.display = "none";
+      modal.style.animation = "none";
+      (modalReturnFocus instanceof HTMLElement ? modalReturnFocus : playerInitials).focus();
+      modalReturnFocus = null;
     }
+    modal.addEventListener("keydown",e=>{
+      if(e.key==="Escape"){e.preventDefault();closeModal();return}
+      if(e.key!=="Tab")return;
+      const focusable=[...modal.querySelectorAll("button,input")].filter(el=>!el.disabled);
+      if(!focusable.length)return;
+      const first=focusable[0],last=focusable[focusable.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+    });
 
     window.addEventListener("storage", (e)=>{
       if(e.key === "playerInitials" || e.key === "PIXELNET_INITIALS"){
@@ -607,11 +643,11 @@
     });
 
     window.addEventListener("load", async () => {
-      const saved = (localStorage.getItem("playerInitials") || localStorage.getItem("PIXELNET_INITIALS") || "").toString().trim().toUpperCase();
+      let saved="";
+      try{saved=(localStorage.getItem("playerInitials") || localStorage.getItem("PIXELNET_INITIALS") || "").toString().trim().toUpperCase().replace(/[^A-Z0-9]/g,"");}catch(_){}
       if(saved && saved.length >= 3){
         const v = saved.slice(0,3);
-        localStorage.setItem("playerInitials", v);
-        localStorage.setItem("PIXELNET_INITIALS", v);
+        try{localStorage.setItem("playerInitials", v);localStorage.setItem("PIXELNET_INITIALS", v)}catch(_){}
         updatePlayerInitials(v);
         modal.style.display = "none";
       } else {
