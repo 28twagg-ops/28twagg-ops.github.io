@@ -1,5 +1,5 @@
 # PIXEL-NET — authenticated anonymous leaderboard rollout (NOT DEPLOYED)
-Date: 2026-10-27
+Updated: 2026-10-31
 
 The live read-only rule is currently the safe production state. **Do not publish the candidate rules below until authentication is wired and tested.**
 
@@ -15,7 +15,7 @@ The live read-only rule is currently the safe production state. **Do not publish
 1. Authentication → Sign-in method → enable **Anonymous**.
 2. Project settings → General → Web app → retrieve the Firebase **Web API key** (public client configuration, not a service account secret). Never share private service account JSON.
 3. Test anonymous sign-in using `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=API_KEY` with `{"returnSecureToken":true}` on a test project. The returned `idToken` is a user credential: never commit it.
-4. Update the wrapper to use anonymous sign-in and submit `POST /lb/slug.json?auth=ID_TOKEN` (or Firebase SDK) with automatic token refresh. No changes to production are authorized by this document.
+4. The development wrapper uses anonymous sign-in and submits idempotent `PUT /lb/{slug}/{pn-record-id}.json?auth=ID_TOKEN`. It temporarily caches the anonymous session in browser session storage, and renews after token expiry. Do not embed private credentials. The real production write rules and the public client Web API key remain unconfigured; no changes to production are authorized by this document.
 5. Validate the rule syntax and test read, authorized create, unauthenticated write denial, overwrites, malformed values, and abuse before publishing.
 6. Only then deploy the development branch after approval, keeping `main` and backup untouched.
 
