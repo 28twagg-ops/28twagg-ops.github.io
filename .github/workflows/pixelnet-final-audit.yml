@@ -29,6 +29,8 @@ jobs:
         run: node PIXEL-NET/tests/real-gameplay-smoke.cjs
       - name: Play Retro Kombat with keyboard and touch controls
         run: node PIXEL-NET/tests/retro-kombat-playtest.cjs
+      - name: Run release hardening and storage/accessibility safeguards
+        run: node PIXEL-NET/tests/release-hardening.cjs
       - name: Verify each game's real game-over score reaches an authenticated mock database
         run: node PIXEL-NET/tests/leaderboard-all-games.cjs
       - uses: actions/upload-artifact@v4
