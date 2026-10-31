@@ -3,6 +3,9 @@ on:
   push:
     branches: [work/container-fixes-2026-10-27]
   workflow_dispatch:
+  # Scheduled checks only take effect once this workflow is on main.
+  schedule:
+    - cron: '17 13 * * *'
 permissions:
   contents: read
 jobs:
