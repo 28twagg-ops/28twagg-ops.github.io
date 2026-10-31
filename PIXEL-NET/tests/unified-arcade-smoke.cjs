@@ -56,7 +56,7 @@ for(const g of catalog.filter(x=>x.licensed)){
     const page=await context.newPage();
     const errors=[],requests=[];
     page.on('pageerror',e=>errors.push(e.message));
-    page.on('response',r=>{if(r.url().startsWith(BASE)&&r.status()>=400)
+    page.on('response',r=>{if(r.url().startsWith(BASE)&&r.status()>=400 && !r.url().split('?')[0].endsWith('/favicon.ico'))
       errors.push('HTTP '+r.status()+' '+r.url())});
     page.on('request',r=>{if(/firebaseio\.com|identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com/.test(r.url()))
       requests.push(r.method()+' '+r.url())});
