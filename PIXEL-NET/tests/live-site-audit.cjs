@@ -68,6 +68,25 @@ async function check(url){
  fs.mkdirSync('live-audit-results',{recursive:true});
  results.gameRouteProblems=results.gameRoutes.filter(x=>!x.ok).map(x=>({slug:x.slug,status:x.status,error:x.error}));
  results.thumbnailProblems=results.thumbnails.filter(x=>!x.ok).map(x=>({slug:x.slug,status:x.status,error:x.error}));
+ // An audit that reports broken routes but exits successfully is not monitoring.
+ // Keep intentional release differences informational, not failures.
+ const errors=[];
+ for(const page of results.pages.filter(x=>!x.ok))
+   errors.push('Core page failed: '+page.url+' ('+(page.status||page.error)+')');
+ if(!results.publicCatalogCount)
+   errors.push('Public games catalog is missing or empty.');
+ for(const route of results.gameRouteProblems)
+   errors.push('Game route failed: '+route.slug+' ('+(route.status||route.error)+')');
+ for(const thumb of results.thumbnailProblems)
+   errors.push('Thumbnail missing: '+thumb.slug+' ('+(thumb.status||thumb.error)+')');
+ for(const board of results.leaderboards.filter(x=>!x.ok))
+   errors.push('Leaderboard GET failed: '+board.slug+' ('+(board.status||board.error)+')');
+ results.errors=errors;
+ results.healthy=errors.length===0;
  fs.writeFileSync('live-audit-results/report.json',JSON.stringify(results,null,2));
  console.log(JSON.stringify(results,null,2));
+ if(errors.length){
+   console.error('PIXEL-NET LIVE AUDIT FAILED: '+errors.join(' | '));
+   process.exitCode=1;
+ }
 })().catch(e=>{console.error(e);process.exitCode=1});
