@@ -101,7 +101,7 @@ const check=(condition,msg)=>{if(!condition)throw Error(msg)};
       check(measurements.wrapper.width<=measurements.zone.width+3,'Frame exceeds container width');
       check(measurements.wrapper.height<=measurements.zone.height+3,'Frame exceeds container height');
       check(measurements.pageScrollWidth<=view.viewport.width+3,'Horizontal page overflow');
-      check(measurements.statuses.includes('GLOBAL LIVE'),'Mocked global leaderboard failed');
+      check(measurements.statuses.includes('GLOBAL VIEW ONLY'),'Mocked read-only global board failed');
       const invisible=view.device==='desktop'?'mobileSrc':'desktopSrc';
       check(!measurements[invisible],'Duplicated hidden game instance');
 
