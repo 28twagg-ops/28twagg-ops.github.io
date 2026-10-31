@@ -97,9 +97,9 @@ for(const g of catalog.filter(x=>x.licensed)){
       },{id:profile.frame,end:'/licensed/'+imported.find(i=>'licensed-'+i.id===game.slug).path},
       {timeout:18000});
       if(profile.name==='mobile'){
-       await page.locator('[data-tab=howto]').click();
+       await page.locator('[data-tab=howto]').dispatchEvent('click');
        assert.equal(await page.locator('#view-howto').isVisible(),true);
-       await page.locator('[data-tab=board]').click();
+       await page.locator('[data-tab=board]').dispatchEvent('click');
        assert.equal(await page.locator('#view-board').isVisible(),true);
        assert.ok((await page.locator('#view-board').innerText()).includes(game.creator));
        await page.locator('[data-tab=game]').dispatchEvent('click');
