@@ -324,7 +324,7 @@ Purpose: AI implementation for themes
     
     let stars = [];
     let moonSurface = [];
-    let highScore = localStorage.getItem('astrotype_high_score') || 0;
+    let highScore = 0; try{highScore=Number(localStorage.getItem('astrotype_high_score'))||0}catch(_){}
     
     let state = {
         screen: 'MENU', score: 0, lives: 3, streak: 0, currentWordPerfect: true,
@@ -585,7 +585,7 @@ Purpose: AI implementation for themes
         // Save high score
         if (state.score > highScore) {
             highScore = state.score;
-            localStorage.setItem('astrotype_high_score', highScore);
+            try{localStorage.setItem('astrotype_high_score', highScore)}catch(_){}
             document.getElementById('menu-high-score').innerText = `HIGH SCORE: ${highScore}`;
         }
         document.getElementById('final-score').innerText = state.score;
