@@ -14,7 +14,7 @@
 - **38/38 browser game-start cases** (19 games × desktop/mobile) passed after fixing Creek Crosser touch obstruction and the Casino terminal-only test path.
 - **22/22 score-contract browser cases** passed: game-over event → wrapper → authenticated mock PUT → independent-browser leaderboard readback. **The database in this test is mocked; these results do not establish production uploads.**
 - **9/9 expanded release hardening checks** passed, including access, game catalog, mode exhaustion, 500-record queue limit, disabled browser storage, and old URL redirects.
-- **20/20 Firebase emulator rule checks** had passed before the newest requirement to enforce Casino-only mode fields; the latest extended rules suite adds two checks. Confirm newest Actions result before final signoff.
+- **22/22 Firebase Realtime Database emulator security checks** passed on the tightened rules, including required Casino modes, rejected non-Casino modes, indexed queries, authorized score creates, and denial of overwrite/delete/unauthorized submissions.
 - **97% preview size reduction** verified: 49,145,755 bytes → 1,488,498 bytes across 19 WebP thumbnails. This reduces actual catalog transfer size, but original larger assets remain in git for rollback.
 - Live Firebase **public GET** works; **production authenticated PUT has NOT been enabled**. The public key is still blank and production rules are read-only.
 - **70 targeted findings** in the prioritized register below. Status counts at report generation: BLOCKED 6; OPEN 25; TESTED — NOT LIVE 4; FIXED — DEV 35.
@@ -37,7 +37,7 @@ Statuses: FIXED — DEV = change applied to development branch, not public; TEST
 | R06 | P0 | BLOCKED | Public rollout and final production browser QA not executed | Approve clean draft PR only after R02-R04; then audit public paths, PWA update and real devices |
 | R07 | P1 | OPEN | Anyone controlling game JavaScript can fabricate client scores | Use trusted server-side scoring authority / signed gameplay events, plausibility checks and independent game verification |
 | R08 | P1 | OPEN | Anonymous authentication does not prevent many fake accounts or request floods | App Check, endpoint-level throttling, quotas, abuse alerts, optional Cloud Functions/Cloud Run verification |
-| R09 | P1 | TESTED — NOT LIVE | No overwrite/delete by ordinary clients | Candidate RTDB rules enforce auth and create-only; 22 emulator checks pending latest run (prior 20 passed) |
+| R09 | P1 | TESTED — NOT LIVE | No overwrite/delete by ordinary clients | Candidate RTDB rules enforce auth and create-only; 22 emulator security checks passed |
 | R10 | P1 | TESTED — NOT LIVE | Invalid initials, fractional/oversized scores, timestamps and extra fields | Candidate RTDB .validate rules and negative tests; publish only after authorized production integration |
 | R11 | P1 | TESTED — NOT LIVE | Unknown game IDs or malformed record keys could corrupt board | Allowlisted 20 score paths including two Casino boards; record-ID grammar checks in candidate rules |
 | R12 | P1 | TESTED — NOT LIVE | Casino requires mode but other games should reject mode | New rule validation requires mode for Blackjack/Hold'em, forbids elsewhere; test added |
@@ -135,7 +135,7 @@ This branch removes six bundled ROM binaries and redirects their legacy emulator
 - [Real Firebase database emulator CI](https://github.com/28twagg-ops/28twagg-ops.github.io/blob/work/container-fixes-2026-10-27/.github/workflows/pixelnet-firebase-rules.yml)
 - [Verified thumbnail optimizer run](https://github.com/28twagg-ops/28twagg-ops.github.io/actions/runs/41225599543)
 - [Verified 38/38 starts, 9 hardening, 22 mock uploads run](https://github.com/28twagg-ops/28twagg-ops.github.io/actions/runs/41226733364)
-- [Previous Firebase emulator with indexed query checks](https://github.com/28twagg-ops/28twagg-ops.github.io/actions/runs/41226273581)
+- [Latest Firebase emulator: 22/22 security checks](https://github.com/28twagg-ops/28twagg-ops.github.io/actions/runs/41227002442)
 - [Firebase setup/deployment requirements](https://github.com/28twagg-ops/28twagg-ops.github.io/blob/work/container-fixes-2026-10-27/PIXEL-NET/wrapper/FIREBASE_SETUP.md)
 
 ## Coverage gaps and confidence
