@@ -140,6 +140,31 @@ const fulfilled=async route=>route.fulfill({
   results.push('Full upload queue preserves 500 existing scores and warns instead of discarding');
   await overflow.close();
 
+  // Restricted/private browsers may throw when storage is accessed.
+  // The game and cabinet must still load instead of crashing on startup.
+  for(const path of [
+    'games/caked-up-cats/wrapper-v2.html',
+    'games/astrotype-v2/wrapper-v2.html',
+    'games/spyder-casino/wrapper-v2.html'
+  ]){
+    const restricted=await browser.newContext({viewport:{width:1280,height:800}});
+    await restricted.addInitScript(()=>{
+      Object.defineProperty(window,'localStorage',{
+        configurable:true,get(){throw new DOMException('Storage disabled','SecurityError')}
+      });
+    });
+    await restricted.route(/firebaseio\\.com/,fulfilled);
+    const privatePage=await restricted.newPage();
+    const privateErrors=[];
+    privatePage.on('pageerror',e=>privateErrors.push(e.message));
+    await privatePage.goto(BASE+path,{waitUntil:'domcontentloaded',timeout:13000});
+    await privatePage.frameLocator('#gameDesktop').locator('body').waitFor({state:'attached'});
+    await privatePage.waitForTimeout(250);
+    assert.deepEqual(privateErrors,[],'Restricted browser failed: '+path);
+    await restricted.close();
+  }
+  results.push('Native arcade and Casino boot when localStorage is disabled');
+
   for(const rom of roms){
    const slug=rom.split('/')[0];
    const res=await fetch(BASE+'games/'+slug+'/emu.html');
