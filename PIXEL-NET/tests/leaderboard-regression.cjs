@@ -119,6 +119,60 @@ const fs=require('node:fs');
   summary.tests.push('Offline score uploads retry automatically with the same idempotent Firebase record ID');
   await retry.close();
 
+  // Expired anonymous tokens must use their refresh token rather than
+  // registering a different anonymous account on every visit.
+  const renewable=await browser.newContext({viewport:{width:1400,height:900}});
+  let refreshed=0,created=0,refreshedWrite=false;
+  await renewable.addInitScript(()=>{
+    try{sessionStorage.setItem('PIXELNET_ANON_AUTH_SESSION_V2',JSON.stringify({
+      token:'old-expired-token',refresh:'saved-refresh-token',
+      exp:Date.now()-5000,key:'TEST_KEY'
+    }))}catch(_){}
+  });
+  await renewable.route('**/wrapper/shell.js',async route=>{
+    const response=await route.fetch();
+    await route.fulfill({response,contentType:'application/javascript',
+      body:(await response.text()).replace('const FIREBASE_WEB_API_KEY = "";',
+        'const FIREBASE_WEB_API_KEY = "TEST_KEY";')});
+  });
+  await renewable.route(/securetoken\\.googleapis\\.com/,route=>{
+    refreshed++;
+    const body=new URLSearchParams(route.request().postData());
+    assert.equal(body.get('grant_type'),'refresh_token');
+    assert.equal(body.get('refresh_token'),'saved-refresh-token');
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      id_token:'renewed-token',refresh_token:'rotated-refresh-token',expires_in:'3600'
+    })});
+  });
+  await renewable.route(/identitytoolkit\\.googleapis\\.com/,route=>{
+    created++;
+    return route.fulfill({status:200,contentType:'application/json',body:'{}'});
+  });
+  await renewable.route(/firebaseio\\.com/,route=>{
+    if(route.request().method()==='PUT'){
+      refreshedWrite=new URL(route.request().url()).searchParams.get('auth')==='renewed-token';
+      return route.fulfill({status:200,contentType:'application/json',body:'{}'});
+    }
+    return route.fulfill({status:200,contentType:'application/json',body:'{}'});
+  });
+  const renewedPage=await renewable.newPage();
+  await renewedPage.goto(local+'games/neon-chase-v2/wrapper-v2.html',
+    {waitUntil:'domcontentloaded'});
+  await renewedPage.frameLocator('#gameDesktop').locator('body').evaluate(()=>{
+    window.parent.postMessage({type:'GAME_OVER_SCORE',score:987},location.origin);
+  });
+  await renewedPage.waitForFunction(()=>
+    JSON.parse(localStorage.getItem('PIXELNET_PENDING_SCORES_V1')||'[]').length===0&&
+    JSON.parse(localStorage.getItem('LB_neon-chase')||'[]').some(x=>x.score===987));
+  assert.equal(refreshed,1,'Expired session should refresh exactly once');
+  assert.equal(created,0,'A valid refresh token must not create a new account');
+  assert.ok(refreshedWrite,'Expected authenticated write with renewed token');
+  const renewedSession=await renewedPage.evaluate(()=>
+    JSON.parse(sessionStorage.getItem('PIXELNET_ANON_AUTH_SESSION_V2')||'{}'));
+  assert.equal(renewedSession.refresh,'rotated-refresh-token');
+  summary.tests.push('Expired Firebase session refreshes securely and preserves the anonymous account');
+  await renewable.close();
+
   fs.mkdirSync('leaderboard-regression-results',{recursive:true});
   fs.writeFileSync('leaderboard-regression-results/results.json',JSON.stringify(summary,null,2));
   console.log('PASS '+summary.tests.join('; '));
