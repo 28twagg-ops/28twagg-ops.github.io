@@ -1367,7 +1367,7 @@ function bjReset() {
   document.getElementById('bjDealerCards').innerHTML='';
   document.getElementById('bjDealerTot').textContent='';
   const bInp=document.getElementById('bjTermBetInp'), bMsg=document.getElementById('bjTermBetMsg');
-  if(bInp){ bInp.value=''; if(bjIsTerminal()) setTimeout(()=>bInp.focus(), 0); }
+  if(bInp){ bInp.value=''; if(bjIsTerminal()) setTimeout(()=>{if(!pnMobileTouch()) bInp.focus();},0); }
   if(bMsg) bMsg.textContent='';
   const aInp=document.getElementById('bjTermActInp'), aMsg=document.getElementById('bjTermActMsg');
   if(aInp) aInp.value='';
@@ -1437,7 +1437,7 @@ function bjApplyTerminalLayout() {
   if (clearBtn) clearBtn.style.display = terminal ? 'none' : '';
   if (betWrap) betWrap.style.display = terminal ? 'block' : 'none';
   const cmd = document.getElementById('bjTermCmdInp');
-  if (terminal && cmd) setTimeout(()=>cmd.focus(),0);
+  if (terminal && cmd) setTimeout(()=>{if(!pnMobileTouch()) cmd.focus();},0);
 }
 function bjTermHandLine(h, idx){
   const pv=bjHV(h.cards);
@@ -1539,7 +1539,7 @@ function bjRenderTerminalView(){
   if (bjScreen) bjScreen.scrollTop = 0;
   el.scrollTop = 0;
   const cmd=document.getElementById('bjTermCmdInp');
-  if(cmd) setTimeout(()=>cmd.focus(),0);
+  if(cmd) setTimeout(()=>{if(!pnMobileTouch()) cmd.focus();},0);
 }
 function bjRunTerminalCommand(raw){
   if(!bjIsTerminal()) return;
@@ -2547,7 +2547,7 @@ function heRenderTerminalPrompt() {
   line.textContent = heTermHandlers.toCall > 0
     ? `Action [To call: $${heTermHandlers.toCall}] (C)all, (R)aise, (F)old:`
     : 'Action [(K)eck/(C)all, (R)aise, (F)old]:';
-  setTimeout(() => inp.focus(), 0);
+  setTimeout(()=>{if(!pnMobileTouch()) inp.focus();},0);
 }
 function heRenderTerminalView(){
   if(visualStyle!=='terminal') return;
@@ -2685,7 +2685,7 @@ function heRenderTerminalView(){
 
   el.textContent=out.join('\n');
   const inp=document.getElementById('heTermCmdInp');
-  if(inp) setTimeout(()=>inp.focus(),0);
+  if(inp) setTimeout(()=>{if(!pnMobileTouch()) inp.focus();},0);
 }
 // Commit a raise with a specific total (amount the player's roundBet should equal).
 // Opens the hidden raise UI, plants the value, and confirms — mirrors Poker Project flow.
