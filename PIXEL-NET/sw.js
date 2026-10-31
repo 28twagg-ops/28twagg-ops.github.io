@@ -1,7 +1,7 @@
 // PIXEL-NET installed arcade: online updates are network-first, not frozen.
 // Game source files and leaderboards are always requested live; cached
 // homepage, catalog, and icons provide only a limited offline shell.
-const CACHE='pixelnet-install-v2';
+const CACHE='pixelnet-install-v3';
 const ROOT=new URL('./',self.registration.scope);
 const HOME=new URL('index.html',ROOT).href;
 const CATALOG=new URL('games.json',ROOT).href;
@@ -43,7 +43,24 @@ self.addEventListener('fetch',event=>{
       return response;
     }catch(_){
       const cache=await caches.open(CACHE);
-      if(navigation)return (await cache.match(req))||(await cache.match(HOME))||Response.error();
+      if(navigation){
+        const cached=await cache.match(req);
+        if(cached)return cached;
+        // A game that was never downloaded cannot run offline. Do not
+        // silently replace its game page with the arcade homepage.
+        if(url.href===HOME || url.pathname===ROOT.pathname){
+          return (await cache.match(HOME))||Response.error();
+        }
+        const home=new URL('index.html',ROOT).pathname;
+        return new Response('<!doctype html><html lang="en"><meta charset="utf-8">'+
+          '<meta name="viewport" content="width=device-width,initial-scale=1">'+
+          '<title>Game unavailable offline</title>'+
+          '<body style="background:#0a0e27;color:#fff;font:18px system-ui;padding:2rem">'+
+          '<h1>Game unavailable offline</h1>'+
+          '<p>This game requires an internet connection the first time it loads.</p>'+
+          '<a style="color:#55f5ff" href="'+home+'">Return to PIXEL-NET</a></body></html>',
+          {status:503,headers:{'Content-Type':'text/html; charset=utf-8'}});
+      }
       return (await cache.match(req))||Response.error();
     }
   })());
