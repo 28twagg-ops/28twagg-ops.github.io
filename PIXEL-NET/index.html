@@ -231,6 +231,8 @@
     .footer-links a{color:var(--neon-cyan);text-decoration:none;font-weight:600;transition:all .3s ease;position:relative;}
     .footer-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:2px;background:var(--neon-pink);transition:width .3s ease;}
     .footer-links a:hover::after{width:100%;}
+    .footer-reset{border:0;background:transparent;color:var(--neon-cyan);font:inherit;font-weight:600;cursor:pointer}
+    .footer-reset:focus-visible{outline:3px solid var(--neon-yellow);outline-offset:4px}
 
     .modal-overlay{
       position:fixed;inset:0;background:rgba(0,0,0,.9);backdrop-filter:blur(10px);
@@ -328,7 +330,7 @@
 
     <section class="top-pixels">
       <h4>Top Pixels</h4>
-      <div class="meta" id="topPixelsMeta">Loading competitive board…</div>
+      <div class="meta" id="topPixelsMeta" aria-live="polite">Loading competitive board…</div>
       <div class="top-pixels-list" id="topPixelsList"></div>
       <div class="takeover-wrap">
         <div class="takeover-title">Current Record Leads</div>
@@ -352,7 +354,7 @@
         <a href="./">PIXEL-NET</a>
         <a href="https://github.com/28twagg-ops/28twagg-ops.github.io">GitHub</a>
         <a href="./privacy.html">Privacy and scores</a>
-        <a href="#" onclick="localStorage.removeItem('playerInitials'); localStorage.removeItem('PIXELNET_INITIALS'); sessionStorage.removeItem('playerInitials'); location.reload(); return false;">Reset Initials</a>
+        <button type="button" class="footer-reset" id="resetInitials">Reset Initials</button>
       </div>
     </footer>
   </div>
@@ -568,6 +570,13 @@
     function renderGrid(list){
       const gamesGrid = document.getElementById("gamesGrid");
       gamesGrid.replaceChildren();
+      if(!list.length){
+        const empty=document.createElement("p");
+        empty.textContent="No games match that search. Try a different title or genre.";
+        empty.style.cssText="padding:1.2rem;color:#c4c7dc";
+        gamesGrid.appendChild(empty);
+        return;
+      }
       list.forEach(game => {
         // Real anchors support keyboard navigation, browser history,
         // link previews, long-press and opening cabinets in new tabs.
@@ -679,6 +688,15 @@ try{
         document.getElementById("featuredTitle").textContent = "Error loading games";
         document.getElementById("featuredDescription").textContent = "Check games.json path.";
       }
+    });
+
+    document.getElementById("resetInitials").addEventListener("click",()=>{
+      try{
+        localStorage.removeItem("playerInitials");
+        localStorage.removeItem("PIXELNET_INITIALS");
+      }catch(_){}
+      try{sessionStorage.removeItem("playerInitials")}catch(_){}
+      location.reload();
     });
 
     // Search filter
