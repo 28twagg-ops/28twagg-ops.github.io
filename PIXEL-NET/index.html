@@ -204,6 +204,7 @@
       box-shadow:0 15px 40px rgba(0,245,255,.4),0 0 20px rgba(255,0,110,.3);
     }
     .game-card:hover::before{opacity:.1;}
+    .licensedTag{color:#78f7f0;font-size:.68rem;letter-spacing:.12em;font-weight:750;line-height:1.5;margin:8px 0 0}
     .game-thumbnail{width:100%;aspect-ratio:1/1;background-size:cover;background-position:center;position:relative;overflow:hidden;}
     .game-title{padding:20px;text-align:center;background:rgba(0,0,0,.6);}
     .game-title h4{
@@ -322,7 +323,7 @@
     <div class="section-header">
       <div>
         <h3>Arcade Floor</h3>
-        <p style="margin:12px 0 0;font-size:1rem"><a href="./licensed/" style="color:#00f5ff;font-weight:800">Play 10 creator-licensed arcade games →</a> <span style="opacity:.7;font-size:.82rem">(separate local scores)</span></p>
+        <p style="margin:12px 0 0;font-size:.95rem;color:rgba(255,255,255,.75)">Including creator-licensed classics. Play every game from the cabinets below.</p>
         <p>Pick a cabinet. Click to play.</p>
       </div>
       <input type="text" class="search-bar" id="searchBar" placeholder="Search games...">
@@ -377,7 +378,7 @@
       featuredGame = selectFeaturedGame(allGames);
       renderFeatured();
       renderGrid(allGames);
-      loadTopPixels(allGames);
+      loadTopPixels(allGames.filter(g => !g.licensed));
     }
     async function loadVersionTag(){
       const el = document.getElementById("siteVersion");
@@ -420,6 +421,7 @@
       return [
         (g.name || ""),
         (g.description || ""),
+        (g.creator || ""),
         tags.join(" "),
         aliases.join(" ")
       ].join(" ").toLowerCase();
@@ -548,6 +550,12 @@
         card.addEventListener("click", () => {
           if(game.path) window.location.href = normalizePath(game.path);
         });
+        if(game.licensed){
+          const credit=document.createElement('p');
+          credit.className='licensedTag';
+          credit.textContent='LICENSED · '+(game.creator||'Original creator');
+          card.querySelector('.game-title')?.appendChild(credit);
+        }
         gamesGrid.appendChild(card);
       });
     }

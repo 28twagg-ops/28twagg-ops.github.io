@@ -21,6 +21,9 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 (() => {
   const CFG = (window.PX_WRAPPER || {});
   const T = CFG.theme || {};
+  // Imported third-party titles keep their original score storage. The shared
+  // cabinet layout is reused, but these games never access PIXEL-NET Firebase.
+  const licensed = CFG.licensed && typeof CFG.licensed === 'object' ? CFG.licensed : null;
   const root = document.documentElement;
 
   // Apply per-game theme
@@ -69,10 +72,24 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     return `<div class="instrCard"><div class="instrDetail"><span class="i">${icon}</span> ${fmt(raw)}</div></div>`;
   };
 
-  const globalBadge = FIREBASE_DB_URL ? '<span class="badge">GLOBAL</span>' : '';
+  const globalBadge = !licensed && FIREBASE_DB_URL ? '<span class="badge">GLOBAL</span>' : '';
+  const verifiedHref=(value,allowLocal=false)=>{
+    const url=String(value||'');
+    return /^https:\/\//.test(url) || (allowLocal && /^\.\.\/\.\.\/licensed\/vendors\/[a-z0-9/_\-.]+$/i.test(url))
+      ? esc(url) : '#';
+  };
+  const licensedInfo=licensed ? `<div class="licensedInfo" role="region" aria-label="Creator and license">
+    <div class="licensedStamp">INDEPENDENT CREATOR · ${esc(licensed.license||'MIT')}</div>
+    <div class="licensedCreator">${esc(licensed.creator||'Original creator')}</div>
+    <p>This game is an attributed third-party title, not a PIXEL-NET original.</p>
+    <p>Scores remain within the original game (on this device where supported). <strong>No PIXEL-NET global score uploads.</strong></p>
+    ${licensed.orientation==='landscape'?'<p class="licensedLandscape">↻ Phone: rotate to landscape and turn off portrait lock if necessary.</p>':''}
+    <a href="${verifiedHref(licensed.source)}" target="_blank" rel="noopener noreferrer">Original creator &amp; source</a>
+    <a href="${verifiedHref(licensed.notice,true)}" target="_blank" rel="noopener noreferrer">Read original ${esc(licensed.license||'license')} notice</a>
+  </div>` : '';
   const stepsHTML   = instructions.map(buildInstructionCard).join('');
   const isSpyderCasino = (CFG.slug || '').toLowerCase() === 'spyder-casino';
-  const desktopBoardHTML = isSpyderCasino
+  const desktopBoardHTML = licensed ? licensedInfo : isSpyderCasino
     ? `<div style="display:grid;grid-template-columns:1fr;gap:10px">
          <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack · Standard ${globalBadge}</h3><div class="boardStack" id="boardDesktopBjStd"></div></div>
          <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack · Analysis ${globalBadge}</h3><div class="boardStack" id="boardDesktopBjAn"></div></div>
@@ -80,7 +97,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
          <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Hold'em · Analysis ${globalBadge}</h3><div class="boardStack" id="boardDesktopHeAn"></div></div>
        </div>`
     : `<div class="boardStack" id="boardDesktop"></div>`;
-  const mobileBoardHTML = isSpyderCasino
+  const mobileBoardHTML = licensed ? licensedInfo : isSpyderCasino
     ? `<div style="display:grid;grid-template-columns:1fr;gap:10px">
          <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack · Standard ${globalBadge}</h3><div class="boardStack" id="boardMobileBjStd"></div></div>
          <div><h3 style="margin:0 0 6px 0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);">Blackjack · Analysis ${globalBadge}</h3><div class="boardStack" id="boardMobileBjAn"></div></div>
@@ -112,7 +129,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
         </div>
       </div>
       <div class="panel leaderboard">
-        <h3>Leaderboard ${globalBadge}</h3>
+        <h3>${licensed?'Creator &amp; License':'Leaderboard '+globalBadge}</h3>
         <div class="content">${desktopBoardHTML}</div>
       </div>
     </div>
@@ -129,14 +146,14 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
             </div>
           </div>
           <div class="panel leaderboard displayCard hidden" id="view-board">
-            <h3 style="margin:0;padding:11px 14px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);border-bottom:1px solid rgba(255,255,255,.08);">Leaderboard ${globalBadge}</h3>
+            <h3 style="margin:0;padding:11px 14px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);border-bottom:1px solid rgba(255,255,255,.08);">${licensed?'Creator &amp; License':'Leaderboard '+globalBadge}</h3>
             <div class="content">${mobileBoardHTML}</div>
           </div>
         </div>
         <div class="btnbar">
           <button class="tabBtn active" data-tab="game" type="button">▶ Game</button>
           <button class="tabBtn" data-tab="howto" type="button">? How To</button>
-          <button class="tabBtn" data-tab="board" type="button">🏆 Scores</button>
+          <button class="tabBtn" data-tab="board" type="button">${licensed?'ⓘ Credits':'🏆 Scores'}</button>
         </div>
       </div>
     </div>
@@ -292,6 +309,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const FB_BASE = FIREBASE_DB_URL ? `${FIREBASE_DB_URL}/lb/${slug}` : null;
 
   async function fbFetch(slugOverride) {
+    if (licensed) return null;
     const base = FIREBASE_DB_URL
       ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
       : null;
@@ -309,6 +327,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   }
 
   async function fbPost(entry, slugOverride) {
+    if (licensed) return;
     const base = FIREBASE_DB_URL
       ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
       : null;
@@ -346,6 +365,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     an:  rows.filter(r =>  isAnalysisMode(r)).slice(0, 10),
   });
   const refreshBoards = async () => {
+    if (licensed) return;
     if (isSpyderCasino) {
       const bjRows = ((await fbFetch('spyder-blackjack')) || []).slice(0, 10);
       const heRows = ((await fbFetch('spyder-holdem')) || []).slice(0, 10);
@@ -371,6 +391,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   // --- Score intake (dedup burst within 1.2 s) ---
   let lastSig = '', lastAt = 0;
   async function addScore(rawScore, scoreSlug) {
+    if (licensed) return;
     const initials = getInitials() || '???';
     const score = Math.max(0, Math.floor(Number(rawScore) || 0));
     const now = Date.now();
@@ -399,6 +420,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
 
   // Listen for score / initials messages from iframed games
   window.addEventListener('message', e => {
+    if (licensed) return; // Third-party games cannot submit PIXEL-NET scores.
     const d = e.data || {};
     if (!d || !d.type) return;
     if (d.type === 'PIXELNET_SET_INITIALS' && d.initials) {

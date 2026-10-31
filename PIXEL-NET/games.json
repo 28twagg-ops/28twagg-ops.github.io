@@ -14,7 +14,12 @@
     "path": "games/creek-crosser__embedA/wrapper-v2.html",
     "thumb": "assets/creek-crosser_thumb.png",
     "description": "Arcade lane-dodger with creek, traffic, and timed crossings.",
-    "tags": ["frogger", "crossy", "crossing", "river"]
+    "tags": [
+      "frogger",
+      "crossy",
+      "crossing",
+      "river"
+    ]
   },
   {
     "name": "ASTROTYPE",
@@ -23,7 +28,11 @@
     "path": "games/astrotype-v2/wrapper-v2.html",
     "thumb": "assets/astrotype_thumb.png",
     "description": "Type the codes. Defend the moon.",
-    "tags": ["typing", "space", "letters"]
+    "tags": [
+      "typing",
+      "space",
+      "letters"
+    ]
   },
   {
     "name": "KNIGHT FLIGHT",
@@ -32,7 +41,11 @@
     "path": "games/knight-flight-v2/wrapper-v2.html",
     "thumb": "assets/knight-flight_thumb.png",
     "description": "Retro arcade jousting in the skies.",
-    "tags": ["joust", "flying", "retro"]
+    "tags": [
+      "joust",
+      "flying",
+      "retro"
+    ]
   },
   {
     "name": "RETRO KOMBAT",
@@ -40,7 +53,7 @@
     "slug": "retro-kombat",
     "path": "games/retro-kombat-v2/wrapper-v2.html",
     "thumb": "assets/retro-kombat_thumb.png",
-    "description": "Tournament Edition \u2014 coming soon."
+    "description": "Tournament Edition — coming soon."
   },
   {
     "name": "LOGIC BOMB",
@@ -49,7 +62,11 @@
     "path": "games/logic-bomb-v2/wrapper-v2.html",
     "thumb": "assets/logic-bomb_thumb.png",
     "description": "Defuse by thinking fast (v2).",
-    "tags": ["bomberman", "maze", "strategy"]
+    "tags": [
+      "bomberman",
+      "maze",
+      "strategy"
+    ]
   },
   {
     "name": "NEON CHASE",
@@ -58,7 +75,12 @@
     "path": "games/neon-chase-v2/wrapper-v2.html",
     "thumb": "assets/neon-chase_thumb.png",
     "description": "High-speed neon survival (v2).",
-    "tags": ["pacman", "pac-man", "maze chase", "neonchase"]
+    "tags": [
+      "pacman",
+      "pac-man",
+      "maze chase",
+      "neonchase"
+    ]
   },
   {
     "name": "ROBO-ARENA",
@@ -67,7 +89,11 @@
     "path": "games/robo-arena-v2/wrapper-v2.html",
     "thumb": "assets/robo-arena_thumb.jpg",
     "description": "Top-down neon arena combat (v2).",
-    "tags": ["robot", "shooter", "arena"]
+    "tags": [
+      "robot",
+      "shooter",
+      "arena"
+    ]
   },
   {
     "name": "MILLIPEDE CHAOS",
@@ -76,7 +102,12 @@
     "path": "games/millipede-chaos-v3/wrapper-v2.html",
     "thumb": "assets/millipede_thumb.png",
     "description": "Millipede Chaos remake (v3).",
-    "tags": ["centipede", "millipede", "shooter", "arcade"]
+    "tags": [
+      "centipede",
+      "millipede",
+      "shooter",
+      "arcade"
+    ]
   },
   {
     "name": "SPYDER CASINO",
@@ -85,7 +116,13 @@
     "path": "games/spyder-casino/wrapper-v2.html",
     "thumb": "assets/spyder-casino_thumb.png",
     "description": "Blackjack + Texas Hold'em hub with classic/polished UI and adaptive bots.",
-    "tags": ["casino", "blackjack", "holdem", "poker", "cards"],
+    "tags": [
+      "casino",
+      "blackjack",
+      "holdem",
+      "poker",
+      "cards"
+    ],
     "featured": true
   },
   {
@@ -95,8 +132,17 @@
     "path": "games/galaxy-swarm-2084/wrapper-v2.html",
     "thumb": "assets/galaxy-swarm-2084_thumb.png",
     "description": "Formation shooter with wave escalation and reactive enemy fire.",
-    "tags": ["space shooter", "formation shooter", "arcade shooter", "galaxy", "invader style"],
-    "aliases": ["swarm shooter", "space wave"]
+    "tags": [
+      "space shooter",
+      "formation shooter",
+      "arcade shooter",
+      "galaxy",
+      "invader style"
+    ],
+    "aliases": [
+      "swarm shooter",
+      "space wave"
+    ]
   },
   {
     "name": "STACK DROP DX",
@@ -105,8 +151,17 @@
     "path": "games/circuit-salvager/wrapper-v2.html",
     "thumb": "assets/stack-drop-dx_thumb.png",
     "description": "Neon block puzzler: rotate, stack, clear lines, and survive speed ramps.",
-    "tags": ["block puzzler", "line clear", "stacking", "falling blocks", "arcade puzzle"],
-    "aliases": ["stack drop", "block stacker"]
+    "tags": [
+      "block puzzler",
+      "line clear",
+      "stacking",
+      "falling blocks",
+      "arcade puzzle"
+    ],
+    "aliases": [
+      "stack drop",
+      "block stacker"
+    ]
   },
   {
     "name": "DIG DUG DELVE",
@@ -115,8 +170,18 @@
     "path": "games/dig-dug-delve/wrapper-v2.html",
     "thumb": "assets/dig-dug-delve_thumb.png",
     "description": "Tunnel-digging arcade action with pump combat, falling rocks, and fire-breathing enemies.",
-    "tags": ["digging", "maze action", "pump attack", "retro arcade", "underground"],
-    "aliases": ["dig dug", "digdug", "tunnel game"]
+    "tags": [
+      "digging",
+      "maze action",
+      "pump attack",
+      "retro arcade",
+      "underground"
+    ],
+    "aliases": [
+      "dig dug",
+      "digdug",
+      "tunnel game"
+    ]
   },
   {
     "name": "COMBAT 77 ARENA",
@@ -125,8 +190,17 @@
     "path": "games/combat-cx2601/wrapper-v2.html",
     "thumb": "assets/combat-cx2601_thumb.jpg",
     "description": "Ricochet tank duel inspired by classic 2600 combat arenas.",
-    "tags": ["tank duel", "ricochet shooter", "arena combat", "retro action"],
-    "aliases": ["combat", "atari combat", "tank battle"]
+    "tags": [
+      "tank duel",
+      "ricochet shooter",
+      "arena combat",
+      "retro action"
+    ],
+    "aliases": [
+      "combat",
+      "atari combat",
+      "tank battle"
+    ]
   },
   {
     "name": "ATARIFORCE HYPERLANE",
@@ -135,8 +209,16 @@
     "path": "games/atariforce-hyperlane/wrapper-v2.html",
     "thumb": "assets/atariforce-hyperlane_thumb.jpg",
     "description": "Comic-space shooter with chapter waves, burst dashes, and shard multipliers.",
-    "tags": ["space shooter", "comic scifi", "chapter waves", "arcade action"],
-    "aliases": ["atariforce", "hyperlane shooter"]
+    "tags": [
+      "space shooter",
+      "comic scifi",
+      "chapter waves",
+      "arcade action"
+    ],
+    "aliases": [
+      "atariforce",
+      "hyperlane shooter"
+    ]
   },
   {
     "name": "JUNGLE JR RESCUE",
@@ -145,8 +227,17 @@
     "path": "games/jungle-jr-rescue/wrapper-v2.html",
     "thumb": "assets/jungle-jr-rescue_thumb.png",
     "description": "Vine-climbing platform challenge with link collection and cage rescue objective.",
-    "tags": ["jungle platformer", "vine climb", "rescue", "arcade classic style"],
-    "aliases": ["dk junior", "jungle jr", "vine rescue"]
+    "tags": [
+      "jungle platformer",
+      "vine climb",
+      "rescue",
+      "arcade classic style"
+    ],
+    "aliases": [
+      "dk junior",
+      "jungle jr",
+      "vine rescue"
+    ]
   },
   {
     "name": "KANGAROO CLIMB",
@@ -155,8 +246,17 @@
     "path": "games/kangaroo-climb/wrapper-v2.html",
     "thumb": "assets/kangaroo-climb_thumb.jpg",
     "description": "Vine-climbing platform rescue with chain links, jungle hazards, and stage bonuses.",
-    "tags": ["platform climber", "vine climb", "jungle", "rescue arcade"],
-    "aliases": ["kangaroo", "jr climb", "jungle rescue"]
+    "tags": [
+      "platform climber",
+      "vine climb",
+      "jungle",
+      "rescue arcade"
+    ],
+    "aliases": [
+      "kangaroo",
+      "jr climb",
+      "jungle rescue"
+    ]
   },
   {
     "name": "TRACK FIELD BLITZ",
@@ -165,8 +265,18 @@
     "path": "games/track-field-blitz/wrapper-v2.html",
     "thumb": "assets/track-field-blitz_thumb.jpg",
     "description": "Three-event athletics challenge: 100M sprint, long jump, and javelin qualification rounds.",
-    "tags": ["track and field", "athletics", "sprint", "long jump", "javelin"],
-    "aliases": ["track field", "track & field", "olympic sprint"]
+    "tags": [
+      "track and field",
+      "athletics",
+      "sprint",
+      "long jump",
+      "javelin"
+    ],
+    "aliases": [
+      "track field",
+      "track & field",
+      "olympic sprint"
+    ]
   },
   {
     "name": "TOWER RUSH",
@@ -175,7 +285,186 @@
     "path": "games/orbit-siege/wrapper-v2.html",
     "thumb": "assets/tower-rush_thumb.png",
     "description": "Platform climber where you dodge rolling hazards and race to the relay.",
-    "tags": ["tower climber", "platformer", "barrel dodge", "arcade climb", "retro action"],
-    "aliases": ["tower climb", "rush climber"]
+    "tags": [
+      "tower climber",
+      "platformer",
+      "barrel dodge",
+      "arcade climb",
+      "retro action"
+    ],
+    "aliases": [
+      "tower climb",
+      "rush climber"
+    ]
+  },
+  {
+    "name": "2048",
+    "type": "iframe",
+    "slug": "licensed-2048",
+    "path": "games/licensed-2048/wrapper-v2.html",
+    "thumb": "assets/licensed-2048_thumb.svg",
+    "description": "Slide and combine matching tiles toward 2048.",
+    "tags": [
+      "Puzzle",
+      "Gabriele Cirulli",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "Gabriele Cirulli",
+    "license": "MIT"
+  },
+  {
+    "name": "ASTROBLAST",
+    "type": "iframe",
+    "slug": "licensed-astroblast",
+    "path": "games/licensed-astroblast/wrapper-v2.html",
+    "thumb": "assets/licensed-astroblast_thumb.svg",
+    "description": "Vector-style asteroid shooting with original arcade effects.",
+    "tags": [
+      "Shooter",
+      "Frank Force",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "Frank Force",
+    "license": "MIT"
+  },
+  {
+    "name": "MISSILE DEFENSE",
+    "type": "iframe",
+    "slug": "licensed-missile-defense",
+    "path": "games/licensed-missile-defense/wrapper-v2.html",
+    "thumb": "assets/licensed-missile-defense_thumb.svg",
+    "description": "Protect your cities from increasingly difficult missile waves.",
+    "tags": [
+      "Defense",
+      "Frank Force",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "Frank Force",
+    "license": "MIT"
+  },
+  {
+    "name": "PONG",
+    "type": "iframe",
+    "slug": "licensed-pong",
+    "path": "games/licensed-pong/wrapper-v2.html",
+    "thumb": "assets/licensed-pong_thumb.svg",
+    "description": "Classic fast-response paddle gameplay.",
+    "tags": [
+      "Sports",
+      "Frank Force",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "Frank Force",
+    "license": "MIT"
+  },
+  {
+    "name": "SNAKE",
+    "type": "iframe",
+    "slug": "licensed-snake",
+    "path": "games/licensed-snake/wrapper-v2.html",
+    "thumb": "assets/licensed-snake_thumb.svg",
+    "description": "Collect food, grow longer, and avoid collisions.",
+    "tags": [
+      "Arcade",
+      "OpenGames contributors",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "OpenGames contributors",
+    "license": "MIT"
+  },
+  {
+    "name": "BRICKOUT",
+    "type": "iframe",
+    "slug": "licensed-brickout",
+    "path": "games/licensed-brickout/wrapper-v2.html",
+    "thumb": "assets/licensed-brickout_thumb.svg",
+    "description": "Bounce a ball to clear brick formations.",
+    "tags": [
+      "Arcade",
+      "Frank Force",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "Frank Force",
+    "license": "MIT"
+  },
+  {
+    "name": "MOON LANDER",
+    "type": "iframe",
+    "slug": "licensed-moon-lander",
+    "path": "games/licensed-moon-lander/wrapper-v2.html",
+    "thumb": "assets/licensed-moon-lander_thumb.svg",
+    "description": "Land gently with precise thrust and fuel management.",
+    "tags": [
+      "Physics",
+      "Frank Force",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "Frank Force",
+    "license": "MIT"
+  },
+  {
+    "name": "EMOJI SURVIVORS",
+    "type": "iframe",
+    "slug": "licensed-emoji-survivors",
+    "path": "games/licensed-emoji-survivors/wrapper-v2.html",
+    "thumb": "assets/licensed-emoji-survivors_thumb.svg",
+    "description": "Survive increasing waves with upgrades and native emoji artwork.",
+    "tags": [
+      "Survival",
+      "Frank Force",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "Frank Force",
+    "license": "MIT"
+  },
+  {
+    "name": "POOL",
+    "type": "iframe",
+    "slug": "licensed-pool",
+    "path": "games/licensed-pool/wrapper-v2.html",
+    "thumb": "assets/licensed-pool_thumb.svg",
+    "description": "A physics-based billiards challenge.",
+    "tags": [
+      "Physics",
+      "Frank Force",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "Frank Force",
+    "license": "MIT"
+  },
+  {
+    "name": "FLAP",
+    "type": "iframe",
+    "slug": "licensed-flap",
+    "path": "games/licensed-flap/wrapper-v2.html",
+    "thumb": "assets/licensed-flap_thumb.svg",
+    "description": "Timing-based flying with touch, mouse, or keyboard.",
+    "tags": [
+      "Reflex",
+      "OpenGames contributors",
+      "licensed",
+      "third-party"
+    ],
+    "licensed": true,
+    "creator": "OpenGames contributors",
+    "license": "MIT"
   }
 ]

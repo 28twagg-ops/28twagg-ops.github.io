@@ -1,0 +1,41 @@
+name: PIXEL-NET unified arcade floor integration
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/unify-licensed-arcade-2026-10-31, main]
+  workflow_dispatch:
+concurrency:
+  group: pixelnet-unified-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  all-29:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate shared shell syntax
+        run: node --check PIXEL-NET/wrapper/shell.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Run local arcade server
+        run: |
+          python3 -m http.server 8765 --directory PIXEL-NET >/tmp/pixelnet-unified.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
+      - name: Verify 29 cards, new normal cabinets, credits and no score uploads
+        run: node PIXEL-NET/tests/unified-arcade-smoke.cjs
+      - name: Regression-test the ten original licensed game sources
+        run: node PIXEL-NET/tests/licensed-games-smoke.cjs
+      - name: Upload visual evidence and failures
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pixelnet-unified-arcade-evidence
+          path: unified-arcade-results/
