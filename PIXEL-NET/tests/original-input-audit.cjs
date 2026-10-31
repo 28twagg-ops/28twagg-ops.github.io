@@ -57,7 +57,7 @@ async function exercise(browser,profile,game){
      await play.click({timeout:2500}).then(()=>inputs.push('click start/play')).catch(()=>{});
    }
    if(nativeRepairs.has(game.slug)){
-     assert.ok(inputs.includes('click start/play'),'Native game's START control did not receive input');
+     assert.ok(inputs.includes('click start/play'),"Native game's START control did not receive input");
      await frame.locator('#overlay.hidden').waitFor({state:'attached',timeout:5000});
      inputs.push('verified game START cleared overlay');
    }
