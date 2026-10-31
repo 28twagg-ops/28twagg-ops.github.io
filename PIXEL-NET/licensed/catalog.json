@@ -1,0 +1,122 @@
+[
+  {
+    "id": "2048",
+    "name": "2048",
+    "emoji": "🔢",
+    "category": "Puzzle",
+    "creator": "Gabriele Cirulli",
+    "license": "MIT",
+    "origin": "https://github.com/gabrielecirulli/2048",
+    "notice": "vendors/2048/LICENSE.txt",
+    "path": "vendors/2048/index.html",
+    "description": "Slide and combine matching tiles toward 2048."
+  },
+  {
+    "id": "astroblast",
+    "name": "Astroblast",
+    "emoji": "🚀",
+    "category": "Shooter",
+    "creator": "Frank Force",
+    "license": "MIT",
+    "origin": "https://github.com/KilledByAPixel/LittleJSArcade",
+    "notice": "vendors/littlejs/LICENSE",
+    "path": "vendors/littlejs/games/astroblast.html",
+    "description": "Vector-style asteroid shooting with original arcade effects."
+  },
+  {
+    "id": "missile-defense",
+    "name": "Missile Defense",
+    "emoji": "🌆",
+    "category": "Defense",
+    "creator": "Frank Force",
+    "license": "MIT",
+    "origin": "https://github.com/KilledByAPixel/LittleJSArcade",
+    "notice": "vendors/littlejs/LICENSE",
+    "path": "vendors/littlejs/games/missileDefense.html",
+    "description": "Protect your cities from increasingly difficult missile waves."
+  },
+  {
+    "id": "pong",
+    "name": "Pong",
+    "emoji": "🏓",
+    "category": "Sports",
+    "creator": "Frank Force",
+    "license": "MIT",
+    "origin": "https://github.com/KilledByAPixel/LittleJSArcade",
+    "notice": "vendors/littlejs/LICENSE",
+    "path": "vendors/littlejs/games/pong.html",
+    "description": "Classic fast-response paddle gameplay."
+  },
+  {
+    "id": "snake",
+    "name": "Snake",
+    "emoji": "🐍",
+    "category": "Arcade",
+    "creator": "OpenGames contributors",
+    "license": "MIT",
+    "origin": "https://github.com/opengames-dev/opengames-dev.github.io",
+    "notice": "vendors/opengames/LICENSE",
+    "path": "vendors/opengames/snake/index.html",
+    "description": "Collect food, grow longer, and avoid collisions."
+  },
+  {
+    "id": "brickout",
+    "name": "Brickout",
+    "emoji": "🧱",
+    "category": "Arcade",
+    "creator": "Frank Force",
+    "license": "MIT",
+    "origin": "https://github.com/KilledByAPixel/LittleJSArcade",
+    "notice": "vendors/littlejs/LICENSE",
+    "path": "vendors/littlejs/games/brickout.html",
+    "description": "Bounce a ball to clear brick formations."
+  },
+  {
+    "id": "moon-lander",
+    "name": "Moon Lander",
+    "emoji": "🌙",
+    "category": "Physics",
+    "creator": "Frank Force",
+    "license": "MIT",
+    "origin": "https://github.com/KilledByAPixel/LittleJSArcade",
+    "notice": "vendors/littlejs/LICENSE",
+    "path": "vendors/littlejs/games/moonLander.html",
+    "description": "Land gently with precise thrust and fuel management."
+  },
+  {
+    "id": "emoji-survivors",
+    "name": "Emoji Survivors",
+    "emoji": "🧛",
+    "category": "Survival",
+    "creator": "Frank Force",
+    "license": "MIT",
+    "origin": "https://github.com/KilledByAPixel/LittleJSArcade",
+    "notice": "vendors/littlejs/LICENSE",
+    "path": "vendors/littlejs/games/emojiSurvivors.html",
+    "description": "Survive increasing waves with upgrades and native emoji artwork."
+  },
+  {
+    "id": "pool",
+    "name": "Pool",
+    "emoji": "🎱",
+    "category": "Physics",
+    "creator": "Frank Force",
+    "license": "MIT",
+    "origin": "https://github.com/KilledByAPixel/LittleJSArcade",
+    "notice": "vendors/littlejs/LICENSE",
+    "path": "vendors/littlejs/games/pool.html",
+    "description": "A physics-based billiards challenge."
+  },
+  {
+    "id": "flap",
+    "name": "Flap",
+    "emoji": "🐦",
+    "category": "Reflex",
+    "creator": "OpenGames contributors",
+    "license": "MIT",
+    "origin": "https://github.com/opengames-dev/opengames-dev.github.io",
+    "notice": "vendors/opengames/LICENSE",
+    "path": "vendors/opengames/flap/index.html",
+    "description": "Timing-based flying with touch, mouse, or keyboard."
+  }
+]

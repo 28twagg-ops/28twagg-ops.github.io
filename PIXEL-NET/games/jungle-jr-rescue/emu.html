@@ -1,63 +1,9 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Donkey Kong Jr — PIXEL-NET</title>
-<link rel="stylesheet" href="../_shared/emu-shell.css">
-<style>
-  :root{ --hero:#58e477; --ink:#d5f3df; }
-</style>
-</head>
-<body tabindex="0">
-<div id="game"></div>
-
-<div id="topbar">
-  <div id="hint">Move: ARROWS &nbsp;|&nbsp; Jump: SPACE &nbsp;|&nbsp; Coin: 5 &nbsp;|&nbsp; Start: 1</div>
-  <button id="submit">SUBMIT SCORE</button>
-</div>
-
-<div id="actions">
-  <button data-act="coin">COIN</button>
-  <button data-act="start1p">START 1P</button>
-  <button data-act="jump">JUMP</button>
-  <button data-act="reset">RESET</button>
-</div>
-
-<div id="errorOv" class="hidden">
-  <div class="card">
-    <h1>EMULATOR COULDN'T BOOT</h1>
-    <p class="msg"></p>
-    <p class="tip">If the ROM is incompatible, swap <kbd>dkongjr.zip</kbd> for an FBNeo-compatible DK Jr set.</p>
-  </div>
-</div>
-
-<script>
-  window.EJS_player = '#game';
-  window.EJS_core = 'arcade';
-  window.EJS_gameUrl = './rom/dkongjr.zip';
-  window.EJS_gameName = 'Donkey Kong Jr';
-  window.EJS_gameID = 'dkongjr';
-  window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-  window.EJS_startOnLoaded = true;
-  window.EJS_color = '#58e477';
-  window.EJS_volume = 0.45;
-
-  window.EMU_ACTIONS = {
-    coin:    { btn: 2, hold: 220, key: "5",  code: "Digit5", keyCode: 53 },
-    start1p: { btn: 3, hold: 220, key: "1",  code: "Digit1", keyCode: 49 },
-    jump:    { btn: 0, hold: 160, key: " ",  code: "Space",  keyCode: 32 },
-    reset:   { btn: 9, hold: 180, key: "F2", code: "F2",     keyCode: 113 }
-  };
-
-  window.EMU_AUTOSTART_INIT = 4500;
-  window.EMU_AUTOSTART = [
-    window.EMU_ACTIONS.coin,
-    window.EMU_ACTIONS.coin,
-    window.EMU_ACTIONS.start1p
-  ];
-</script>
-<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
-<script src="../_shared/emu-controls.js"></script>
-</body>
-</html>
+<meta http-equiv="refresh" content="0;url=./game.html">
+<title>jungle jr rescue — Play native edition</title>
+</head><body style="margin:0;background:#070a19;color:#fff;font:16px system-ui;display:grid;place-items:center;min-height:100vh">
+<main><p>Opening the native, auto-scoring game…</p>
+<p><a style="color:#69e9ff" href="./game.html">Play game</a></p></main>
+<script>location.replace('./game.html')</script></body></html>

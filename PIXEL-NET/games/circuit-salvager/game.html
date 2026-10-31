@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-monospace,Consolas,monospace}
-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+canvas{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:100%;display:block}
 #overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(4,6,20,.92)}
 #overlay.hidden{display:none}
 .panel{background:rgba(8,12,32,.98);border:2px solid #63d9ff;padding:22px 28px;border-radius:12px;text-align:center;max-width:390px;color:#e9f8ff}
@@ -108,10 +108,13 @@ const GARBAGE_INTERVAL = 20000; // ms between garbage rows at high levels
 
 /* ══ RESIZE ══ */
 function resize() {
-  const r = cv.getBoundingClientRect();
+  const r = document.documentElement.getBoundingClientRect();
   W = Math.max(400, Math.floor(r.width));
   H = Math.max(400, Math.floor(r.height));
   cv.width  = W; cv.height = H;
+  const scale = Math.min(r.width / W, r.height / H);
+  cv.style.width = (W * scale) + 'px';
+  cv.style.height = (H * scale) + 'px';
 
   // Give the gameplay grid priority so pieces stay readable.
   // We solve for largest cell size that still fits side panels.

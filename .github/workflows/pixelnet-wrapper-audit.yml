@@ -1,0 +1,32 @@
+name: PIXEL-NET wrapper audit
+on:
+  push:
+    branches: [work/container-fixes-2026-10-27]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wrapper-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start local arcade without deployment
+        run: |
+          python3 -m http.server 8765 --directory PIXEL-NET >/tmp/pxnet.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games/neon-chase-v2/wrapper-v2.html >/dev/null && break || sleep 1; done
+      - name: Test all thirteen custom-game wrappers
+        run: node PIXEL-NET/tests/wrapper-audit.cjs
+      - name: Save wrapper measurements and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixelnet-wrapper-qa
+          path: wrapper-qa-results/
+          if-no-files-found: warn

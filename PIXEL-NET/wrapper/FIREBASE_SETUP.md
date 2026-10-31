@@ -1,102 +1,71 @@
-# Firebase Shared Leaderboard Setup
+# PIXEL-NET Firebase global leaderboard (secure deployment)
 
-Follow these steps once. It takes about 5 minutes and costs $0 forever on the free Spark plan.
+This project already has the Realtime Database at
+`https://pixel-net-arcade-default-rtdb.firebaseio.com`. Existing global
+scores can be read publicly. **Live score writes remain disabled until
+authenticated rules are explicitly deployed and tested.**
 
----
+## Score flow
 
-## Step 1 — Create a Firebase project
+1. A playable game reaches its genuine game-over sequence and sends a
+   `GAME_OVER_SCORE` message to its same-origin wrapper.
+2. The wrapper records the run locally, and queues an upload under an
+   idempotent client-generated record ID.
+3. Firebase Anonymous Authentication obtains an ID token without a login screen.
+4. The wrapper performs an authenticated `PUT` to
+   `/lb/{game-slug}/{record-id}.json`.
+5. On success, global boards refresh. On failure, the run is marked **LOCAL**
+   and stays queued for future retries. Queued submissions use the current
+   server-window timestamp on retry.
 
-1. Go to https://console.firebase.google.com
-2. Click **Add project** → name it (e.g. `pixel-net-arcade`) → Continue → Create project
-3. In the left sidebar, click **Build → Realtime Database**
-4. Click **Create Database**
-5. Choose a location (US is fine) → **Next**
-6. Select **Start in TEST mode** → **Enable**
-   (This sets rules to allow all reads/writes — fine for a public arcade)
+The public Firebase Web API key (not a private service account key) must
+be configured as `FIREBASE_WEB_API_KEY` in `PIXEL-NET/wrapper/shell.js`.
+The key was intentionally left unconfigured on the development branch
+until an authorized configuration update can be completed.
 
----
+## Firebase console requirements
 
-## Step 2 — Copy your database URL
+- Enable Firebase **Authentication → Sign-in method → Anonymous**.
+- Under Realtime Database **Rules**, deploy a verified least-privilege policy
+  based on `PIXEL-NET/firebase/leaderboard-rules-candidate.json` after testing
+  against a separate QA path/project.
+- The proposed policy allows public reads of `/lb/{game}` and authenticated,
+  **create-only** score records on the explicit playable-game allowlist. It
+  validates initials, integer score, timestamp, game ID, and Casino mode.
+- Never publish blanket `.write: true` or temporary expired TEST-mode rules.
+- Do not place Firebase service-account JSON or privileged credentials in
+  GitHub Pages, HTML, JavaScript, or repository commits.
 
-After the database is created, you'll see a URL at the top of the page that looks like:
+Firebase Anonymous Authentication and validation rules do **not** prove a
+score was earned legitimately. Strong anti-cheat requires a trusted server
+verifier and abuse controls. Additional Firebase billing or quota conditions
+may apply; never assume permanently unlimited free usage.
 
-```
-https://pixel-net-arcade-default-rtdb.firebaseio.com
-```
+## Scope
 
-Copy that URL.
+The arcade includes 19 playable game wrappers. The Casino has distinct
+Blackjack/Hold'em Standard/Analysis rankings, yielding 22 automatic scoring
+integration cases. Five games that previously used manually scored ROM
+emulators now use their native, auto-scoring `game.html` implementations.
+Retro Kombat is now a playable original arcade fighter and saves a score on game over.
 
----
+## Verification
 
-## Step 3 — Paste into shell.js
+- `node PIXEL-NET/tests/leaderboard-all-games.cjs` runs 22 browser-level
+  game-over / authenticated-write / cross-browser ranking tests using a
+  **mock backend**; no synthetic production scores are inserted.
+- `node PIXEL-NET/tests/live-site-audit.cjs` verifies the published site and
+  **read-only** Firebase records.
+- `node PIXEL-NET/tests/leaderboard-regression.cjs` checks Firebase denied and
+  healthy mock states.
+- Real production write verification must be performed separately using a
+  temporary QA record **after** authentication, client configuration, and
+  appropriate server-side rules are deployed.
 
-Open `PIXEL-NET/wrapper/shell.js` and find line 17 near the top:
+## Deployment
 
-```js
-const FIREBASE_DB_URL = null;
-```
-
-Replace `null` with your URL in quotes:
-
-```js
-const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
-```
-
----
-
-## Step 4 — Push to GitHub
-
-```bash
-git add PIXEL-NET/wrapper/shell.js
-git commit -m "feat(leaderboard): connect Firebase shared leaderboard"
-git push
-```
-
-That's it! All 9 games will now write scores to Firebase. Any player on any device will see the same top-10 leaderboard for each game.
-
----
-
-## Security rules (optional hardening)
-
-The default TEST mode rules expire after 30 days. To make them permanent (still public read/write, fine for an arcade):
-
-1. In Firebase console → Realtime Database → **Rules** tab
-2. Replace the rules with:
-
-```json
-{
-  "rules": {
-    "lb": {
-      ".read": true,
-      ".write": true
-    }
-  }
-}
-```
-
-3. Click **Publish**
-
----
-
-## Free tier limits (Spark plan)
-
-| Resource | Free limit |
-|---|---|
-| Storage | 1 GB |
-| Downloads / month | 10 GB |
-| Simultaneous connections | 100 |
-
-For an indie arcade game this is effectively unlimited. A score entry is ~50 bytes. 1 GB = ~20 million score entries.
-
----
-
-## FAQ
-
-**Q: What happens if Firebase is down?**
-A: shell.js always saves to localStorage too, so the leaderboard still shows local scores as a fallback.
-
-**Q: Old scores from localStorage — will they migrate?**
-A: Not automatically. New scores from each device go to Firebase going forward. Old local scores stay local until overwritten. You can manually migrate if needed.
-
-**Q: Can I reset a game's leaderboard?**
-A: In the Firebase console, navigate to `lb / <slug>` and delete the node.
+All code changes are on the separate development branch
+`work/container-fixes-2026-10-27`. The original `main` branch and
+`backup/original-pixelnet-2026-10-27` remain untouched. Only merge/publish
+after a real authenticated QA score reaches Firebase and is displayed on a
+second device.

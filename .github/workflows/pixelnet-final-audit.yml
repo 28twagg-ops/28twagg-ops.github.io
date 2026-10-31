@@ -1,0 +1,45 @@
+name: PIXEL-NET all-games UI and production review
+on:
+  push:
+    branches: [work/container-fixes-2026-10-27]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Serve development branch locally
+        run: |
+          python3 -m http.server 8765 --directory PIXEL-NET >/tmp/pixelnet-final.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
+      - name: Test 19 games × 3 viewports, panels, visual themes, online original
+        run: node PIXEL-NET/tests/final-interface-audit.cjs
+      - name: Verify leaderboard unavailable and healthy backend states
+        run: node PIXEL-NET/tests/leaderboard-regression.cjs
+      - name: Play Neon Chase in Chromium and verify mock score submission
+        run: node PIXEL-NET/tests/real-gameplay-smoke.cjs
+      - name: Play Retro Kombat with keyboard and touch controls
+        run: node PIXEL-NET/tests/retro-kombat-playtest.cjs
+      - name: Actually start every game on desktop and mobile
+        run: node PIXEL-NET/tests/all-game-start-smoke.cjs
+      - name: Run release hardening and storage/accessibility safeguards
+        run: node PIXEL-NET/tests/release-hardening.cjs
+      - name: Verify each game's real game-over score reaches an authenticated mock database
+        run: node PIXEL-NET/tests/leaderboard-all-games.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pixelnet-final-ui-audit
+          path: |
+            final-interface-audit/
+            leaderboard-all-games-results/
+            start-smoke-results/

@@ -1,0 +1,25 @@
+name: PIXEL-NET live production read-only audit
+on:
+  push:
+    branches: [work/container-fixes-2026-10-27]
+  workflow_dispatch:
+  # Scheduled checks only take effect once this workflow is on main.
+  schedule:
+    - cron: '17 13 * * *'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Check production links and Firebase GET only
+        run: node PIXEL-NET/tests/live-site-audit.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pixelnet-live-readonly-status
+          path: live-audit-results/

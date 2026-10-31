@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy and data — PIXEL-NET</title>
+<meta name="theme-color" content="#0a0e27">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;background:#0a0e27;color:#eef1ff;font:16px/1.65 system-ui,-apple-system,sans-serif}
+main{width:min(900px,94vw);margin:auto;padding:32px 12px 80px}
+a{color:#67f3ff}h1,h2{line-height:1.2}h1{font-size:clamp(1.9rem,5vw,2.9rem)}
+h2{margin-top:2rem}li{margin-bottom:.65rem}
+.notice{border:1px solid #59607a;border-radius:12px;padding:14px;background:#141834}
+:focus-visible{outline:3px solid #ffeb6b;outline-offset:4px}
+</style></head><body><main>
+<p><a href="./index.html">← PIXEL-NET arcade</a></p>
+<h1>Privacy, scores, and device storage</h1>
+<p class="notice">This page describes the arcade's intended technical data flow. It is not a substitute for a legal privacy review or the hosting services' policies. The production leaderboard may be read-only while the upgraded release is being activated.</p>
+<h2>What stays on your device</h2>
+<ul>
+<li>Up to three player initials, local high-score histories, and queued game-over scores may be kept in your browser's local storage.</li>
+<li>When online score uploads are enabled, a temporary Firebase anonymous sign-in token may be stored in session storage to avoid asking you to sign in for every game.</li>
+<li>Clearing your browser's site data deletes those local records and any unsent scores. An uploaded global record is not deleted by clearing local storage.</li>
+</ul>
+<h2>What can become public</h2>
+<p>After a completed game, the shared Firebase leaderboard may store your initials, numeric score, submission timestamp, and—for Casino modes—the selected game mode. These scores are intended to be readable by anyone visiting the arcade. Avoid using initials that reveal private information.</p>
+<h2>External services</h2>
+<p>The site is served by GitHub Pages. Shared leaderboard and optional anonymous authentication functionality use Google Firebase. Some visual fonts come from Google Fonts. Those providers can process connection and diagnostic information according to their own policies. No advertising or payment collection is implemented by this arcade's current source.</p>
+<h2>Questions, corrections, and score removal</h2>
+<p>To report an incorrect score, privacy concern, or request assistance with removal of a public leaderboard record, open a
+<a href="https://github.com/28twagg-ops/28twagg-ops.github.io/issues">GitHub issue</a>.
+Do not post personal information or credentials in public issues. A request does not automatically erase an existing record; an authorized project administrator must handle it.</p>
+<h2>Score integrity</h2>
+<p>Scores are intended to represent completed gameplay. Until a trusted server-side verifier is deployed, browser-generated scores cannot be independently proven genuine. Basic validation prevents malformed records but does not guarantee an anti-cheat system.</p>
+<p><a href="./index.html">Return to arcade</a></p></main></body></html>

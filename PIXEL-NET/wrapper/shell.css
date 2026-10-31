@@ -243,15 +243,15 @@ body{
 .arrowPad .right{grid-column:3;grid-row:2;}
 
 /* ── GAME FRAME — transparent so body gradient shows in letterbox gaps ── */
-.center{ height:100%; min-height:0; display:flex; justify-content:center; align-items:center; }
+.center{ height:100%; min-height:0; min-width:0; display:flex; justify-content:center; align-items:center; }
 .frame{
-  width:100%; max-width: var(--centerMaxW); height:100%; min-height:0;
+  width:100%; max-width: var(--centerMaxW); height:100%; min-height:0; min-width:0;
   border-radius:22px; overflow:hidden;
-  background: transparent;
+  background: rgba(0,0,0,.55);
   border: 1px solid color-mix(in srgb, var(--hero) 32%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--hero) 10%, transparent), 0 30px 90px rgba(0,0,0,.52);
 }
-iframe{ width:100%; height:100%; border:0; display:block; }
+iframe{ width:100%; height:100%; border:0; display:block; background:#05050b; }
 
 /* ── LEADERBOARD ── */
 .lbHeader{
@@ -295,14 +295,14 @@ iframe{ width:100%; height:100%; border:0; display:block; }
 .noScores p{ margin:0; font-size:12px; letter-spacing:.12em; text-transform:uppercase; text-align:center; line-height:1.6; }
 
 /* ── MOBILE ── */
-.mobileWrap{ display:none; height: calc(100vh - var(--topbarH)); padding: var(--pad); }
-.mobileStack{ height:100%; display:flex; flex-direction:column; gap:10px; }
-.displayZone{ flex:1; min-height:0; display:flex; justify-content:center; align-items:center; }
-.displayCard{ width:100%; max-width: var(--centerMaxW); border-radius:22px; overflow:hidden; height:100%; }
+.mobileWrap{ display:none; height: calc(100vh - var(--topbarH)); height: calc(100dvh - var(--topbarH)); padding: var(--pad); }
+.mobileStack{ height:100%; min-height:0; display:flex; flex-direction:column; gap:10px; }
+.displayZone{ flex:1; min-height:0; min-width:0; display:flex; justify-content:center; align-items:center; }
+.displayCard{ width:100%; min-width:0; max-width: var(--centerMaxW); border-radius:22px; overflow:hidden; height:100%; }
 .hidden{ display:none; }
 .mobileFrame{
   border:1px solid color-mix(in srgb, var(--hero) 32%, transparent);
-  background: transparent;
+  background: rgba(0,0,0,.55);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--hero) 10%, transparent);
 }
 .btnbar{
@@ -380,3 +380,141 @@ iframe{ width:100%; height:100%; border:0; display:block; }
 }
 .modalSave:hover{ opacity:.88; }
 .modalHint{ text-align:center; color: rgba(243,246,255,.55); font-size:11px; font-style:italic; }
+
+
+/* Compact top bar: keep Exit, long game names, and initials from overlapping. */
+@media (max-width: 600px){
+  .topbar{grid-template-columns:auto minmax(0,1fr) auto; gap:6px; padding:7px 9px}
+  .exit{font-size:11px; padding:7px 8px; white-space:nowrap}
+  .gameBadge{min-width:0; max-width:100%; font-size:10px; letter-spacing:.035em;
+    padding:8px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .verTag{display:none}
+  .playerBtn{padding:7px 8px; gap:4px}
+  .playerBtn .muted{font-size:9px; letter-spacing:.04em}
+  .playerBtn strong{font-size:12px; letter-spacing:.04em}
+}
+
+
+/* 2026-10-27 design consistency pass: every panel inherits its cabinet's colors.
+   Keep the in-game iframe separate from panel styling and its native ratio. */
+:root{
+  --panelBg:
+    radial-gradient(ellipse at 0% 0%, color-mix(in srgb,var(--hero) 13%,transparent),transparent 72%),
+    linear-gradient(165deg,color-mix(in srgb,var(--bg2) 78%,#080910),color-mix(in srgb,var(--bg0) 82%,#070711));
+}
+.shell{
+  height:calc(100vh - var(--topbarH));
+  height:calc(100dvh - var(--topbarH));
+  --leftW:clamp(245px,20vw,325px);
+  --rightW:clamp(245px,20vw,325px);
+}
+.panel{
+  border:1px solid color-mix(in srgb,var(--hero) 38%,rgba(255,255,255,.11));
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--hero2) 16%,transparent),
+   0 15px 35px rgba(0,0,0,.30);
+}
+.panel h3,
+.panel .mobile-board-heading{
+  color:color-mix(in srgb,var(--hero2) 75%,#fff);
+  border-bottom:1px solid color-mix(in srgb,var(--hero) 28%,transparent);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--hero) 20%,transparent),
+    color-mix(in srgb,var(--hero2) 8%,transparent));
+  min-height:43px;
+}
+.panel.leaderboard h3{color:color-mix(in srgb,var(--hero) 73%,#fff)}
+.panel .content{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--hero) transparent}
+.instructionGrid{overflow:visible;flex:initial;width:100%;align-content:flex-start;min-width:0}
+.instrCard{
+  flex:1 1 100%;min-width:0;
+  padding:12px;
+  border:1px solid color-mix(in srgb,var(--hero) 35%,transparent);
+  background:linear-gradient(140deg,
+    color-mix(in srgb,var(--hero) 10%,#090911),
+    color-mix(in srgb,var(--hero2) 4%,#070912));
+  box-shadow:inset 3px 0 0 color-mix(in srgb,var(--hero) 52%,transparent);
+}
+.instrAction{color:color-mix(in srgb,var(--hero2) 86%,white);overflow-wrap:anywhere}
+.instrDetail{overflow-wrap:anywhere;font-size:12px;line-height:1.5}
+.instrCard .kbd{
+  background:color-mix(in srgb,var(--hero) 11%,#05050d);
+  border-color:color-mix(in srgb,var(--hero) 40%,transparent);
+}
+.boardRow{
+  min-width:0;border-color:color-mix(in srgb,var(--hero2) 28%,transparent);
+}
+.boardRow .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.boardRow .score{font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.boardNotice{
+  border:1px solid color-mix(in srgb,var(--hero2) 45%,transparent);
+  border-radius:12px;padding:10px 11px;margin-bottom:12px;
+  background:color-mix(in srgb,var(--hero2) 8%,#060914);
+  color:var(--text);font-size:11px;line-height:1.5;
+}
+.boardNotice[data-status="online"]{border-color:color-mix(in srgb,var(--hero) 53%,transparent)}
+.boardNotice[data-status="error"]{border-color:#eab35b;color:#ffe7ae}
+.frame,.mobileFrame{
+  border:2px solid color-mix(in srgb,var(--hero) 58%,#131523);
+  border-radius:16px;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--hero) 8%,transparent),
+    0 18px 48px #0008;
+}
+@media(max-width:1100px){
+  .mobileWrap{padding:10px 12px max(10px,env(safe-area-inset-bottom))}
+  .mobileStack{gap:8px}
+  .displayZone{min-height:0;overflow:hidden;padding:6px}
+  .displayCard{max-height:100%;height:100%;border-radius:16px}
+  #view-howto,#view-board{display:flex;flex-direction:column;overflow:hidden}
+  #view-howto.hidden,#view-board.hidden{display:none}
+  #view-howto>.content,#view-board>.content{overflow-y:auto;overflow-x:hidden;min-height:0}
+  .btnbar{padding:6px;gap:6px;flex-shrink:0;border-radius:13px}
+  .tabBtn{height:46px;border-radius:10px;min-width:0;font-size:11px}
+}
+@media(max-width:420px){
+  .mobileWrap{padding:7px 8px max(9px,env(safe-area-inset-bottom))}
+  .displayZone{padding:4px}
+  .instrCard{padding:10px}
+  .topbar{height:var(--topbarH)}
+}
+@media(max-height:560px) and (max-width:1100px){
+  .mobileWrap{padding:5px}
+  .mobileStack{gap:5px}
+  .btnbar{padding:4px}
+  .tabBtn{height:35px}
+}
+
+
+/* Polished short instructions/scores pages: use available portrait height
+   intentionally rather than leaving a plain black lower half. */
+@media(max-width:1100px){
+  #view-howto,#view-board{
+    position:relative;
+    background:
+      radial-gradient(ellipse at 50% 76%,color-mix(in srgb,var(--hero) 14%,transparent),transparent 60%),
+      repeating-linear-gradient(0deg,transparent 0px,transparent 39px,
+        color-mix(in srgb,var(--hero) 4%,transparent) 40px),
+      var(--panelBg);
+  }
+  #view-howto .content{justify-content:safe center}
+  #view-howto .instructionGrid{flex:0 0 auto;max-width:560px;margin-inline:auto}
+  #view-howto::after,#view-board::after{
+    content:attr(data-cabinet);
+    position:absolute;left:8%;right:8%;bottom:11%;
+    font:900 clamp(18px,5vw,29px)/1.3 var(--arcadeFont);
+    text-align:center;letter-spacing:.13em;
+    color:var(--hero);opacity:.12;
+    overflow-wrap:anywhere;pointer-events:none;
+  }
+  #view-howto>.content,#view-board>.content{position:relative;z-index:1}
+}
+
+
+/* Keyboard players should be able to see every control they are tabbing to. */
+.playerBtn:focus-visible,.exit:focus-visible,.tabBtn:focus-visible,
+.modalClose:focus-visible,.modalSave:focus-visible,.px-install-btn:focus-visible {
+  outline:3px solid var(--hero2);
+  outline-offset:3px;
+}
+.playerBtn{font-family:inherit;color:inherit}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}

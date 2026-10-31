@@ -1,23 +1,12 @@
-// ================================================================
-// PIXEL-NET Shared Wrapper Shell
-// ================================================================
-// FIREBASE SETUP — Shared cross-device leaderboards (free)
-//
-// 1. Go to https://console.firebase.google.com → Add project
-// 2. Click "Realtime Database" in the left sidebar → Create database
-//    → Start in TEST MODE (sets read/write to true)
-// 3. Copy your database URL (looks like:
-//    https://YOUR-PROJECT-default-rtdb.firebaseio.com)
-// 4. Paste it below and replace null:
-//
+// PIXEL-NET shared arcade shell.
+// Firebase global score reads are public; writes MUST be authenticated
+// and permitted by the project owner's Firebase Realtime Database rules.
+// Do not use TEST mode or unrestricted public write permissions.
 const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
-// example: "https://pixel-net-arcade-default-rtdb.firebaseio.com"
-//
-// After saving this file and pushing to GitHub, all players on
-// all devices will share the same leaderboard per game.
-// See PIXEL-NET/wrapper/FIREBASE_SETUP.md for full instructions.
-// ================================================================
-
+// Web API key is a PUBLIC client configuration value, NOT a service account key.
+// A blank value deliberately disables authenticated uploads until configured.
+const FIREBASE_WEB_API_KEY = "";
+// See PIXEL-NET/wrapper/FIREBASE_SETUP.md.
 (() => {
   const CFG = (window.PX_WRAPPER || {});
   const T = CFG.theme || {};
@@ -30,6 +19,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   if (T.bg2)   root.style.setProperty('--bg2',   T.bg2);
 
   const title = CFG.title || 'PIXEL-NET';
+  root.dataset.game = String(CFG.slug||'unknown').replace(/[^a-z0-9-]/gi,'');
   document.title = title + ' — PIXEL-NET';
 
   const instructions = Array.isArray(CFG.instructions) ? CFG.instructions : [];
@@ -61,7 +51,8 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       const icon = iconFor(raw);
       return `<div class="instrCard"><div class="instrAction"><span class="i">${icon}</span> ${action}</div><div class="instrDetail">${detail}</div></div>`;
     }
-    const looksDirectional = /arrow keys|wasd|move|left|right|up|down/i.test(raw);
+    // Avoid rendering an arrow pad for unrelated text such as 'up to ×8'.
+    const looksDirectional = /^(?:move|steer|navigate|controls?|arrow keys|wasd|use (?:the )?arrows?)\b/i.test(raw.trim());
     if (looksDirectional) {
       return `<div class="instrCard diagramCard"><div class="instrAction"><span class="i">🎮</span> ${fmt(raw)}</div><div class="arrowPad"><span class="kbd up">↑</span><span class="kbd left">←</span><span class="kbd down">↓</span><span class="kbd right">→</span></div></div>`;
     }
@@ -69,7 +60,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     return `<div class="instrCard"><div class="instrDetail"><span class="i">${icon}</span> ${fmt(raw)}</div></div>`;
   };
 
-  const globalBadge = FIREBASE_DB_URL ? '<span class="badge">GLOBAL</span>' : '';
+  const globalBadge = '<span class="badge lbState" data-lb-status>CHECKING</span>';
   const stepsHTML   = instructions.map(buildInstructionCard).join('');
   const isSpyderCasino = (CFG.slug || '').toLowerCase() === 'spyder-casino';
   const desktopBoardHTML = isSpyderCasino
@@ -94,9 +85,9 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     <div class="topbar">
       <div class="top-left"><a class="exit" href="../../index.html" id="exitBtn">✕ EXIT</a></div>
       <div class="gameBadge" id="gameBadge">${title.toUpperCase()}<span class="verTag" id="verTag">version: ...</span></div>
-      <div class="playerBtn" id="playerBtn" role="button" aria-label="Set player initials">
+      <button type="button" class="playerBtn" id="playerBtn" aria-label="Set player initials">
         <span class="muted">PLAYER</span><strong id="initials">???</strong>
-      </div>
+      </button>
     </div>
 
     <div class="shell">
@@ -113,7 +104,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
       </div>
       <div class="panel leaderboard">
         <h3>Leaderboard ${globalBadge}</h3>
-        <div class="content">${desktopBoardHTML}</div>
+        <div class="content"><div class="boardNotice" id="boardNoticeDesktop" role="status">Checking online scores…</div>${desktopBoardHTML}</div>
       </div>
     </div>
 
@@ -130,7 +121,7 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
           </div>
           <div class="panel leaderboard displayCard hidden" id="view-board">
             <h3 style="margin:0;padding:11px 14px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(243,246,255,.60);border-bottom:1px solid rgba(255,255,255,.08);">Leaderboard ${globalBadge}</h3>
-            <div class="content">${mobileBoardHTML}</div>
+            <div class="content"><div class="boardNotice" id="boardNoticeMobile" role="status">Checking online scores…</div>${mobileBoardHTML}</div>
           </div>
         </div>
         <div class="btnbar">
@@ -142,17 +133,21 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     </div>
 
     <div class="modalBack" id="modalBack" aria-hidden="true">
-      <div class="modalCard" role="dialog" aria-modal="true">
-        <button class="modalClose" id="modalClose" type="button">✕</button>
+      <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="modalInitialsTitle">
+        <button class="modalClose" id="modalClose" type="button" aria-label="Close initials dialog">✕</button>
         <div class="modalInner">
-          <div class="modalTitle">Enter Initials</div>
-          <input class="modalInput" id="initialsInput" maxlength="3" placeholder="— — —" />
+          <div class="modalTitle" id="modalInitialsTitle">Enter Initials</div>
+          <input class="modalInput" id="initialsInput" maxlength="12" placeholder="— — —" aria-label="Player initials" autocapitalize="characters" spellcheck="false" />
           <button class="modalSave" id="saveInitials" type="button">Save</button>
           <div class="modalHint">Press Enter to save</div>
         </div>
       </div>
     </div>
   `;
+  for(const id of ['view-howto','view-board']){
+    const panel=document.getElementById(id);
+    if(panel)panel.dataset.cabinet=title.toUpperCase();
+  }
   async function loadVersionTag() {
     const el = document.getElementById('verTag');
     if (!el) return;
@@ -168,6 +163,20 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     }
   }
   loadVersionTag();
+
+  // App install entry on every game page; manifest/start page are shared.
+  const appManifest=document.createElement('link');
+  appManifest.rel='manifest';
+  appManifest.href='../../manifest.webmanifest';
+  document.head.appendChild(appManifest);
+  const appIcon=document.createElement('link');
+  appIcon.rel='apple-touch-icon';
+  appIcon.href='../../icons/arcade-192.png';
+  document.head.appendChild(appIcon);
+  const appInstallScript=document.createElement('script');
+  appInstallScript.src='../../install.js';
+  appInstallScript.defer=true;
+  document.body.appendChild(appInstallScript);
 
   // --- Aspect ratio: prevent game canvas stretching ---
   // CSS aspect-ratio is unreliable on iframes (no intrinsic size).
@@ -214,13 +223,14 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const KEY_MAIN = 'PIXELNET_INITIALS';
   const KEY_ALT  = 'playerInitials';
   const clean = s => (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
-  const getInitials = () =>
-    localStorage.getItem(KEY_MAIN) || localStorage.getItem(KEY_ALT) ||
-    sessionStorage.getItem(KEY_ALT) || '???';
+  const getInitials = () => {
+    try{return localStorage.getItem(KEY_MAIN)||localStorage.getItem(KEY_ALT)||
+      sessionStorage.getItem(KEY_ALT)||'???';}
+    catch(_){return '???';}
+  };
   const setInitialsAll = v => {
-    localStorage.setItem(KEY_MAIN, v);
-    localStorage.setItem(KEY_ALT, v);
-    sessionStorage.setItem(KEY_ALT, v);
+    try{localStorage.setItem(KEY_MAIN,v);localStorage.setItem(KEY_ALT,v)}catch(_){}
+    try{sessionStorage.setItem(KEY_ALT,v)}catch(_){}
   };
   const renderInitials = () => {
     const el = document.getElementById('initials');
@@ -240,15 +250,30 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const entry = CFG.entry || './game.html';
   const gd = document.getElementById('gameDesktop');
   const gm = document.getElementById('gameMobile');
-  gd.src = entry;
-  gm.src = entry;
+  // Only the visible game should execute. Previously both frames were
+  // loaded simultaneously, duplicating audio, animation and possible score events.
+  const narrowScreen = window.matchMedia('(max-width: 1100px)');
+  let activeGame = null;
+  const activateGameFrame = () => {
+    const chosen = narrowScreen.matches ? gm : gd;
+    if (chosen === activeGame) return;
+    const inactive = chosen === gd ? gm : gd;
+    // Crossing the desktop/mobile breakpoint starts a fresh game instance.
+    // Do not attempt to preserve a running game's opaque internal state.
+    if (inactive.hasAttribute('src')) inactive.removeAttribute('src');
+    if (!chosen.hasAttribute('src')) chosen.setAttribute('src', entry);
+    activeGame = chosen;
+  };
+  activateGameFrame();
+  if (narrowScreen.addEventListener) narrowScreen.addEventListener('change', activateGameFrame);
+  else if (narrowScreen.addListener) narrowScreen.addListener(activateGameFrame);
 
   const focusFrame = el => {
     try { el.focus(); } catch(_) {}
     try { el.contentWindow && el.contentWindow.focus && el.contentWindow.focus(); } catch(_) {}
   };
-  gd.addEventListener('load', () => focusFrame(gd));
-  gm.addEventListener('load', () => focusFrame(gm));
+  gd.addEventListener('load', () => { if(activeGame === gd) focusFrame(gd); });
+  gm.addEventListener('load', () => { if(activeGame === gm) focusFrame(gm); });
   document.getElementById('gameFrame')?.addEventListener('pointerdown', () => focusFrame(gd));
   document.getElementById('view-game')?.addEventListener('pointerdown', () => focusFrame(gm));
 
@@ -288,117 +313,283 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     return Array.isArray(rows) ? rows : [];
   };
 
-  // --- Firebase REST helpers (shared leaderboard) ---
-  const FB_BASE = FIREBASE_DB_URL ? `${FIREBASE_DB_URL}/lb/${slug}` : null;
-
-  async function fbFetch(slugOverride) {
-    const base = FIREBASE_DB_URL
-      ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
-      : null;
-    if (!base) return null;
-    try {
-      const r = await fetch(`${base}.json`);
-      if (!r.ok) return null;
-      const data = await r.json();
-      if (!data || typeof data !== 'object') return [];
-      return Object.values(data)
-        .filter(x => x && typeof x.score === 'number')
-        .sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0))
-        .slice(0, 10);
-    } catch(_) { return null; }
+  // This is a GLOBAL leaderboard only if the remote database actually responds.
+  const cleanScore=value=>Number.isFinite(Number(value))
+    ?Math.max(0,Math.floor(Number(value))):0;
+  const cleanMode=value=>String(value||'STANDARD').toUpperCase().startsWith('A')
+    ?'ANALYSIS':'STANDARD';
+  const cloudURL=key=>FIREBASE_DB_URL
+    ?FIREBASE_DB_URL+'/lb/'+encodeURIComponent(key)+'.json':null;
+  const setStatus=(ok,message)=>{
+    for(const e of document.querySelectorAll('[data-lb-status]')){
+      e.textContent=ok?(FIREBASE_WEB_API_KEY?'GLOBAL LIVE':'GLOBAL VIEW ONLY'):'LOCAL ONLY';
+      e.dataset.status=ok?(FIREBASE_WEB_API_KEY?'online':'readonly'):'error';e.title=message;
+    }
+    for(const id of ['boardNoticeDesktop','boardNoticeMobile']){
+      const e=document.getElementById(id);
+      if(e){e.textContent=message;e.dataset.status=ok?'online':'error'}
+    }
+  };
+  const normalizeRows=(data,board=slug)=>{
+    if(!data||typeof data!=='object')return [];
+    const sorted=Object.values(data).filter(x=>x&&Number.isFinite(Number(x.score)))
+      .map(x=>({initials:clean(x.initials||x.name)||'???',
+        score:cleanScore(x.score),mode:cleanMode(x.mode),t:Number(x.t)||0}))
+      .sort((a,b)=>b.score-a.score||a.t-b.t);
+    // Do not truncate the casino before separating modes. When many
+    // STANDARD scores exist, ANALYSIS scores must remain discoverable.
+    if(board==='spyder-blackjack'||board==='spyder-holdem'){
+      return [...sorted.filter(r=>r.mode==='STANDARD').slice(0,10),
+        ...sorted.filter(r=>r.mode==='ANALYSIS').slice(0,10)];
+    }
+    return sorted.slice(0,50);
+  };
+  async function fbFetch(board=slug){
+    if(!cloudURL(board))return {ok:false,rows:[],reason:'Global database not configured.'};
+    try{
+      // Ask Firebase for only the highest scores on ordinary games.
+      // Casino modes still fetch the full mixed-mode board until the
+      // database has been migrated into separate mode partitions.
+      const isCasinoBoard=board==='spyder-blackjack'||board==='spyder-holdem';
+      const url=cloudURL(board)+(isCasinoBoard?'':'?orderBy=%22score%22&limitToLast=50');
+      const res=await fetch(url,{cache:'no-store'});
+      if(!res.ok)return {ok:false,rows:[],reason:
+        res.status===401||res.status===403?'Database permission denied.':
+        'Global scores unavailable (HTTP '+res.status+').'};
+      return {ok:true,rows:normalizeRows(await res.json(),board)};
+    }catch(_){return {ok:false,rows:[],reason:'Global database connection unavailable.'}}
   }
-
-  async function fbPost(entry, slugOverride) {
-    const base = FIREBASE_DB_URL
-      ? `${FIREBASE_DB_URL}/lb/${slugOverride || slug}`
-      : null;
-    if (!base) return;
-    try {
-      await fetch(`${base}.json`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(entry),
-      });
-    } catch(_) {}
+  // Anonymous Firebase Auth: a player needs no account or sign-in form.
+  // Tokens expire; create another anonymous session when they do. Firebase
+  // security rules must allow authenticated, create-only writes at /lb.
+  // Keep a renewable anonymous session rather than creating a new anonymous
+  // Firebase account whenever the one-hour access token expires.
+  const AUTH_CACHE_KEY='PIXELNET_ANON_AUTH_SESSION_V2';
+  let authPromise=null,authExpiry=0,authRefreshToken=null;
+  const rememberAuth=(token,refresh,seconds)=>{
+    authExpiry=Date.now()+Math.max(60,Number(seconds)||3600)*1000;
+    if(refresh)authRefreshToken=String(refresh);
+    try{sessionStorage.setItem(AUTH_CACHE_KEY,JSON.stringify({
+      token,refresh:authRefreshToken,exp:authExpiry,key:FIREBASE_WEB_API_KEY
+    }))}catch(_){}
+    return token;
+  };
+  async function getScoreToken(){
+    if(!FIREBASE_WEB_API_KEY)return null;
+    if(!authPromise){
+      try{
+        const cached=JSON.parse(sessionStorage.getItem(AUTH_CACHE_KEY)||'null');
+        if(cached?.key===FIREBASE_WEB_API_KEY){
+          authRefreshToken=cached.refresh||null;
+          authExpiry=Number(cached.exp)||0;
+          if(cached.token&&authExpiry>Date.now()+60000)
+            authPromise=Promise.resolve(cached.token);
+        }
+      }catch(_){}
+    }
+    if(!authPromise || Date.now()>authExpiry-60000){
+      authPromise=(async()=>{
+        if(authRefreshToken){
+          try{
+            const response=await fetch('https://securetoken.googleapis.com/v1/token?key='+
+              encodeURIComponent(FIREBASE_WEB_API_KEY),{
+              method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+              body:new URLSearchParams({grant_type:'refresh_token',
+                refresh_token:authRefreshToken}).toString()
+            });
+            if(response.ok){
+              const renewed=await response.json();
+              if(renewed.id_token){
+                return rememberAuth(renewed.id_token,
+                  renewed.refresh_token||authRefreshToken,renewed.expires_in);
+              }
+            }
+          }catch(_){/* Try a fresh anonymous account only if refresh fails. */}
+        }
+        const response=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+
+          encodeURIComponent(FIREBASE_WEB_API_KEY),{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({returnSecureToken:true})
+        });
+        if(!response.ok)throw new Error('Firebase anonymous sign-in failed');
+        const created=await response.json();
+        if(!created.idToken)throw new Error('Missing Firebase identity token');
+        return rememberAuth(created.idToken,created.refreshToken,created.expiresIn);
+      })().catch(()=>{authExpiry=0;authPromise=null;return null});
+    }
+    return authPromise;
   }
-
-  // --- Render leaderboard rows ---
-  function renderBoard(targetId, rows) {
-    const el = document.getElementById(targetId);
-    if (!el) return;
-    el.innerHTML = '';
-    if (!rows.length) { el.innerHTML = `<div class="small">No scores yet.</div>`; return; }
-    rows.slice(0,10).forEach((r, i) => {
-      const name  = (r.initials || r.name || '???').toString().toUpperCase().slice(0,3);
-      const score = (r.score ?? r.value ?? 0);
-      const row = document.createElement('div');
-      row.className = 'boardRow' + (i===0 ? ' top1' : '');
-      row.innerHTML = `<div class="rank">${i+1}.</div><div class="name">${name}</div><div class="score">${score}</div>`;
-      el.appendChild(row);
+  // A stable database key makes retries idempotent. If Firebase wrote a
+  // score but the acknowledgement was lost, don't create a duplicate.
+  async function fbPost(entry,board=slug,id){
+    if(!FIREBASE_DB_URL || !id)return false;
+    const token=await getScoreToken();
+    if(!token)return false;
+    const url=FIREBASE_DB_URL+'/lb/'+encodeURIComponent(board)+'/'+encodeURIComponent(id)+'.json';
+    try{
+      const res=await fetch(url+'?auth='+encodeURIComponent(token),{method:'PUT',
+        headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});
+      if(res.ok)return true;
+      // A create-only policy can deny retrying a previously committed write.
+      // Check the exact record before treating that denial as a failure.
+      if(res.status===401||res.status===403){
+        const check=await fetch(url,{cache:'no-store'});
+        if(check.ok){
+          const remote=await check.json();
+          if(remote&&remote.initials===entry.initials&&remote.score===entry.score&&
+             (board!=='spyder-blackjack'&&board!=='spyder-holdem'||
+              cleanMode(remote.mode)===cleanMode(entry.mode)))return true;
+        }
+      }
+      return false;
+    }catch(_){return false}
+  }
+  const PENDING_KEY='PIXELNET_PENDING_SCORES_V1';
+  const MAX_PENDING=500;
+  const pendingLoad=()=>{
+    try{const a=JSON.parse(localStorage.getItem(PENDING_KEY)||'[]');
+      return Array.isArray(a)?a.filter(x=>x&&x.id&&x.board&&x.entry):[]}
+    catch(_){return []}
+  };
+  // Never silently drop unsent scores. Notify players if storage is full.
+  const pendingSave=a=>{
+    if(a.length>MAX_PENDING)return false;
+    try{localStorage.setItem(PENDING_KEY,JSON.stringify(a));return true}
+    catch(_){return false}
+  };
+  const pendingRows=board=>pendingLoad().filter(x=>x.board===board)
+    .map(x=>({...x.entry,pending:true}));
+  const queueScore=(entry,board)=>{
+    const id='pn-'+(globalThis.crypto?.randomUUID ? crypto.randomUUID() :
+      Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,14));
+    return pendingSave([...pendingLoad(),{id,board,entry}])?id:null;
+  };
+  let draining=null;
+  async function drainPending(){
+    if(draining)return draining;
+    draining=(async()=>{
+      const done=[];
+      if(!FIREBASE_WEB_API_KEY)return done;
+      for(const item of pendingLoad()){
+        // Use submission time for Firebase's server-time validation on retries.
+        const payload={...item.entry,t:Date.now()};
+        if(await fbPost(payload,item.board,item.id))done.push(item.id);
+      }
+      if(done.length)pendingSave(pendingLoad().filter(x=>!done.includes(x.id)));
+      return done;
+    })().finally(()=>{draining=null});
+    return draining;
+  }
+  function renderBoard(id,rows){
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.replaceChildren();
+    if(!rows.length){
+      const empty=document.createElement('div');empty.className='small';
+      empty.textContent='No scores on this board yet.';el.appendChild(empty);return;
+    }
+    rows.slice(0,10).forEach((entry,i)=>{
+      const row=document.createElement('div');row.className='boardRow'+(i===0?' top1':'');
+      const rank=document.createElement('div');rank.className='rank';rank.textContent=(i+1)+'.';
+      const name=document.createElement('div');name.className='name';
+      name.textContent=(clean(entry.initials||entry.name)||'???')+(entry.pending?' · LOCAL':'');
+      const points=document.createElement('div');points.className='score';
+      points.textContent=String(cleanScore(entry.score));
+      row.append(rank,name,points);el.appendChild(row);
     });
   }
-
-  // Refresh both desktop + mobile boards.
-  // If Firebase is configured, shows global scores; otherwise falls back to local.
-  const isAnalysisMode = r => String((r && r.mode) || '').toUpperCase().startsWith('A');
-  const modeSplit = rows => ({
-    std: rows.filter(r => !isAnalysisMode(r)).slice(0, 10),
-    an:  rows.filter(r =>  isAnalysisMode(r)).slice(0, 10),
+  const modeSplit=rows=>({
+    std:rows.filter(r=>cleanMode(r.mode)!=='ANALYSIS').slice(0,10),
+    an:rows.filter(r=>cleanMode(r.mode)==='ANALYSIS').slice(0,10)
   });
-  const refreshBoards = async () => {
-    if (isSpyderCasino) {
-      const bjRows = ((await fbFetch('spyder-blackjack')) || []).slice(0, 10);
-      const heRows = ((await fbFetch('spyder-holdem')) || []).slice(0, 10);
-      const bj = modeSplit(bjRows);
-      const he = modeSplit(heRows);
-      renderBoard('boardDesktopBjStd', bj.std);
-      renderBoard('boardDesktopBjAn',  bj.an);
-      renderBoard('boardDesktopHeStd', he.std);
-      renderBoard('boardDesktopHeAn',  he.an);
-      renderBoard('boardMobileBjStd', bj.std);
-      renderBoard('boardMobileBjAn',  bj.an);
-      renderBoard('boardMobileHeStd', he.std);
-      renderBoard('boardMobileHeAn',  he.an);
+  let refreshId=0;
+  const refreshBoards=async()=>{
+    const id=++refreshId;
+    if(isSpyderCasino){
+      const [bj,he]=await Promise.all([fbFetch('spyder-blackjack'),fbFetch('spyder-holdem')]);
+      if(id!==refreshId)return;
+      // Confirmed online results must never be displaced by unsent local
+      // entries: the latter appear only if the online board cannot load.
+      const b=modeSplit(bj.ok?bj.rows:lbLoadRaw('LB_spyder-blackjack'));
+      const h=modeSplit(he.ok?he.rows:lbLoadRaw('LB_spyder-holdem'));
+      for(const type of ['Desktop','Mobile']){
+        renderBoard('board'+type+'BjStd',b.std);
+        renderBoard('board'+type+'BjAn',b.an);
+        renderBoard('board'+type+'HeStd',h.std);
+        renderBoard('board'+type+'HeAn',h.an);
+      }
+      const ok=bj.ok&&he.ok;
+      const waiting=pendingLoad().filter(x=>['spyder-blackjack','spyder-holdem'].includes(x.board)).length;
+      setStatus(ok,ok
+        ?'Live shared Blackjack and Hold’em rankings. '+(FIREBASE_WEB_API_KEY?'Online upload enabled.':'New score uploads are not activated.')+
+          (waiting?' '+waiting+' score(s) awaiting upload.':'')
+        :'Casino leaderboard is offline. Showing locally saved scores where available.');
       return;
     }
-    const cloud = await fbFetch();
-    const rows  = (cloud !== null ? cloud : lbLoad()).slice(0, 10);
-    renderBoard('boardDesktop', rows);
-    renderBoard('boardMobile', rows);
+    const cloud=await fbFetch();
+    if(id!==refreshId)return;
+    const rows=cloud.ok?cloud.rows:lbLoad();
+    renderBoard('boardDesktop',rows);renderBoard('boardMobile',rows);
+    const waiting=pendingLoad().filter(x=>x.board===slug).length;
+    setStatus(cloud.ok,cloud.ok
+      ?'Live global rankings. '+(FIREBASE_WEB_API_KEY?'Online score upload enabled.':'New score uploads are not activated.')+
+        (waiting?' '+waiting+' score(s) awaiting upload.':'')
+      :cloud.reason+' Showing scores saved on this device.');
   };
   refreshBoards();
-
-  // --- Score intake (dedup burst within 1.2 s) ---
-  let lastSig = '', lastAt = 0;
-  async function addScore(rawScore, scoreSlug) {
-    const initials = getInitials() || '???';
-    const score = Math.max(0, Math.floor(Number(rawScore) || 0));
-    const now = Date.now();
-    const sig = `${initials}:${score}`;
-    if (sig === lastSig && (now - lastAt) < 1200) return;
-    lastSig = sig; lastAt = now;
-
-    const entry = { initials, score, t: now };
-
-    if (isSpyderCasino && scoreSlug) {
-      const entry = { initials, score, t: now };
-      fbPost(entry, scoreSlug).finally(() => refreshBoards());
-      refreshBoards();
-      return;
-    }
-    // Always save locally (works offline / no Firebase configured)
-    const rows = lbLoad();
+  let lastSig='',lastAt=0;
+  async function addScore(rawScore,scoreSlug,scoreMode){
+    const initials=clean(getInitials())||'YOU',score=cleanScore(rawScore),now=Date.now();
+    const mode=cleanMode(scoreMode);
+    const target=isSpyderCasino&&['spyder-blackjack','spyder-holdem'].includes(scoreSlug)
+      ?scoreSlug:slug;
+    const sig=target+':'+mode+':'+initials+':'+score;
+    if(sig===lastSig&&now-lastAt<1200)return;
+    lastSig=sig;lastAt=now;
+    const entry={initials,score,t:now,...(isSpyderCasino?{mode}:{})};
+    const key='LB_'+target,rows=lbLoadRaw(key);
     rows.push(entry);
-    rows.sort((a,b) => (b.score||0)-(a.score||0) || (a.t||0)-(b.t||0));
-    lbSave(rows.slice(0,10));
-
-    // Also push to Firebase (fire-and-forget, then refresh)
-    fbPost(entry).finally(() => refreshBoards());
-    refreshBoards(); // show local result immediately; Firebase update follows
+    rows.sort((a,b)=>(b.score||0)-(a.score||0)||(a.t||0)-(b.t||0));
+    let historySaved=false;
+    // Keep separate local history caps for each Casino mode. A long run of
+    // high-scoring Standard games must not evict all Analysis records.
+    const history=isSpyderCasino
+      ? [...rows.filter(r=>cleanMode(r.mode)==='STANDARD').slice(0,30),
+         ...rows.filter(r=>cleanMode(r.mode)==='ANALYSIS').slice(0,30)]
+      : rows.slice(0,30);
+    try{localStorage.setItem(key,JSON.stringify(history));historySaved=true}catch(_){}
+    const id=queueScore(entry,target);
+    const localSaved=historySaved||!!id;
+    await refreshBoards();
+    const done=id?await drainPending():[];
+    const globalSaved=!!id&&done.includes(id);
+    // Let every game display honest global-upload confirmation or fallback.
+    if(activeGame?.contentWindow){
+      activeGame.contentWindow.postMessage(
+        {type:'PIXELNET_SCORE_STATUS',localSaved,globalSaved},location.origin);
+    }
+    await refreshBoards();
+    if(!globalSaved){
+      const message=!id?(localSaved
+          ?'Score saved locally, but upload queue storage is full or unavailable.'
+          :'Score could not be retained; local storage and upload queue are unavailable.')
+        :!FIREBASE_WEB_API_KEY?'Score saved locally; new global uploads are not activated.'
+        :'Score saved on this device; queued for global upload.';
+      for(const noticeId of ['boardNoticeDesktop','boardNoticeMobile']){
+        const node=document.getElementById(noticeId);
+        if(node){node.dataset.status='error';node.textContent=message;}
+      }
+    }
   }
+  window.addEventListener('online',()=>drainPending().then(refreshBoards));
+  // Retry an interrupted score submission when the player next opens a game.
+  setTimeout(()=>drainPending().then(refreshBoards),1200);
 
   // Listen for score / initials messages from iframed games
   window.addEventListener('message', e => {
+    // Only accept messages from the active child game, never the inactive
+    // blank frame or unrelated windows. All hosted custom games are same-origin.
+    if (!activeGame || e.source !== activeGame.contentWindow || e.origin !== location.origin) return;
     const d = e.data || {};
     if (!d || !d.type) return;
     if (d.type === 'PIXELNET_SET_INITIALS' && d.initials) {
@@ -409,14 +600,16 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
     if (d.type === 'GAME_OVER_SCORE' || d.type === 'GAME_OVER' ||
         d.type === 'PIXELNET_SCORE'  || d.type === 'PIXELNET_SUBMIT_SCORE') {
       const s = d.score != null ? d.score : (d.finalScore != null ? d.finalScore : d.value);
-      if (s != null) addScore(s, d.slug);
+      if (s != null) addScore(s, d.slug, d.mode);
     }
   });
 
   // --- Initials modal ---
   const modalBack = document.getElementById('modalBack');
   const input = document.getElementById('initialsInput');
+  let modalReturnFocus=null;
   const openModal = () => {
+    modalReturnFocus=document.activeElement;
     modalBack.style.display = 'flex';
     modalBack.setAttribute('aria-hidden','false');
     input.value = getInitials().replace(/\?/g,'');
@@ -425,7 +618,19 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const closeModal = () => {
     modalBack.style.display = 'none';
     modalBack.setAttribute('aria-hidden','true');
+    (modalReturnFocus instanceof HTMLElement?modalReturnFocus:document.getElementById('playerBtn')).focus();
+    modalReturnFocus=null;
   };
+  input.addEventListener('input',()=>{
+    input.value=clean(input.value);
+  });
+  modalBack.addEventListener('keydown',e=>{
+    if(e.key!=='Tab')return;
+    const controls=[...modalBack.querySelectorAll('button,input')].filter(el=>!el.disabled);
+    const first=controls[0],last=controls[controls.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+  });
   document.getElementById('playerBtn').addEventListener('click', openModal);
   document.getElementById('modalClose').addEventListener('click', closeModal);
   modalBack.addEventListener('click', e => { if (e.target === modalBack) closeModal(); });

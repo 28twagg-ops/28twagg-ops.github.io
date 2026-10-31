@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PIXEL-NET | Online Arcade Network</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#0a0e27">
+  <meta name="description" content="Play 19 classic-inspired arcade games, compete for high scores, and discover your next favorite cabinet in PIXEL-NET.">
+  <meta property="og:title" content="PIXEL-NET — Online Arcade Network">
+  <meta property="og:description" content="Play arcade games and compete on shared leaderboards.">
+  <meta property="og:type" content="website">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="./icons/arcade-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -192,8 +201,12 @@
     .pixel-game{color:rgba(255,255,255,.72);}
     .pixel-score{color:var(--neon-cyan);font-weight:700;}
     .game-card{
+      display:block;color:inherit;text-decoration:none;
       background:rgba(0,0,0,.4);border:2px solid transparent;border-radius:15px;overflow:hidden;cursor:pointer;
       transition:all .4s cubic-bezier(.175,.885,.32,1.275);position:relative;
+    }
+    .game-card:focus-visible,.player-initials-display:focus-visible{
+      outline:3px solid var(--neon-yellow);outline-offset:4px;
     }
     .game-card::before{
       content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--neon-cyan),var(--neon-pink));
@@ -204,7 +217,7 @@
       box-shadow:0 15px 40px rgba(0,245,255,.4),0 0 20px rgba(255,0,110,.3);
     }
     .game-card:hover::before{opacity:.1;}
-    .game-thumbnail{width:100%;aspect-ratio:1/1;background-size:cover;background-position:center;position:relative;overflow:hidden;}
+    .game-thumbnail{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:center;background:#151631;}
     .game-title{padding:20px;text-align:center;background:rgba(0,0,0,.6);}
     .game-title h4{
       font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;
@@ -218,6 +231,8 @@
     .footer-links a{color:var(--neon-cyan);text-decoration:none;font-weight:600;transition:all .3s ease;position:relative;}
     .footer-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:2px;background:var(--neon-pink);transition:width .3s ease;}
     .footer-links a:hover::after{width:100%;}
+    .footer-reset{border:0;background:transparent;color:var(--neon-cyan);font:inherit;font-weight:600;cursor:pointer}
+    .footer-reset:focus-visible{outline:3px solid var(--neon-yellow);outline-offset:4px}
 
     .modal-overlay{
       position:fixed;inset:0;background:rgba(0,0,0,.9);backdrop-filter:blur(10px);
@@ -273,16 +288,20 @@
       .modal{padding:30px 20px;}
       .initials-input{font-size:1.2rem;letter-spacing:10px;}
     }
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+      .game-card:hover{transform:none;}
+    }
   </style>
 </head>
 <body>
   <!-- Initial Input Modal -->
-  <div class="modal-overlay" id="initialModal">
+  <div class="modal-overlay" id="initialModal" role="dialog" aria-modal="true" aria-labelledby="initialsTitle">
     <div class="modal">
-      <button class="modal-close" onclick="closeModal()">×</button>
-      <h2>Enter Initials</h2>
+      <button class="modal-close" type="button" aria-label="Close initials dialog" onclick="closeModal()">×</button>
+      <h2 id="initialsTitle">Enter Initials</h2>
       <div class="initials-input-container">
-        <input type="text" class="initials-input" id="initialsInput" maxlength="3" placeholder="___" autocomplete="off">
+        <input type="text" class="initials-input" id="initialsInput" maxlength="12" placeholder="___" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Three player initials">
       </div>
       <button class="btn-save" onclick="saveInitials()">SAVE</button>
       <p class="hint-text">Press Enter to save</p>
@@ -294,7 +313,7 @@
       <h1 class="logo">PIXEL-NET</h1>
       <p class="tagline">Online Arcade Network</p>
       <p class="site-version" id="siteVersion">version: loading...</p>
-      <div class="player-initials-display" id="playerInitials" onclick="showModal()">???</div>
+      <button type="button" class="player-initials-display" id="playerInitials" onclick="showModal()" aria-label="Change player initials">???</button>
     </header>
 
     <section class="featured-section">
@@ -311,10 +330,10 @@
 
     <section class="top-pixels">
       <h4>Top Pixels</h4>
-      <div class="meta" id="topPixelsMeta">Loading competitive board…</div>
+      <div class="meta" id="topPixelsMeta" aria-live="polite">Loading competitive board…</div>
       <div class="top-pixels-list" id="topPixelsList"></div>
       <div class="takeover-wrap">
-        <div class="takeover-title">Takeover Honor Board</div>
+        <div class="takeover-title">Current Record Leads</div>
         <div id="takeoverList"></div>
       </div>
     </section>
@@ -322,9 +341,10 @@
     <div class="section-header">
       <div>
         <h3>Arcade Floor</h3>
-        <p>Pick a cabinet. Click to play.</p>
+        <p>Choose a cabinet to play, using touch, mouse, or keyboard.</p>
+        <p style="margin-top:9px"><a href="./licensed/" style="color:#66f7e9;font-weight:800">Explore 10 creator-licensed games →</a> <span style="font-size:.8em;opacity:.8">(separate local scores)</span></p>
       </div>
-      <input type="text" class="search-bar" id="searchBar" placeholder="Search games...">
+      <input type="search" class="search-bar" id="searchBar" placeholder="Search games..." aria-label="Search arcade games">
     </div>
 
     <div class="games-grid" id="gamesGrid"></div>
@@ -334,7 +354,8 @@
       <div class="footer-links">
         <a href="./">PIXEL-NET</a>
         <a href="https://github.com/28twagg-ops/28twagg-ops.github.io">GitHub</a>
-        <a href="#" onclick="localStorage.removeItem('playerInitials'); localStorage.removeItem('PIXELNET_INITIALS'); sessionStorage.removeItem('playerInitials'); location.reload(); return false;">Reset Initials</a>
+        <a href="./privacy.html">Privacy and scores</a>
+        <button type="button" class="footer-reset" id="resetInitials">Reset Initials</button>
       </div>
     </footer>
   </div>
@@ -443,7 +464,9 @@
     async function fetchLeaderboardForSlug(slug){
       if(!slug || !FIREBASE_DB_URL) return null;
       try{
-        const r = await fetch(`${FIREBASE_DB_URL}/lb/${slug}.json`, { cache: "no-store" });
+        const isCasino=slug==="spyder-blackjack"||slug==="spyder-holdem";
+        const limit=isCasino?"":"?orderBy=%22score%22&limitToLast=25";
+        const r = await fetch(`${FIREBASE_DB_URL}/lb/${encodeURIComponent(slug)}.json${limit}`, { cache: "no-store" });
         if(!r.ok) return null;
         const data = await r.json();
         if(!data || typeof data !== "object") return [];
@@ -458,35 +481,39 @@
       return "STANDARD";
     }
 
+    const htmlEscape = value => String(value ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[ch]));
     function renderTopPixels(items, sourceLabel){
       const meta = document.getElementById("topPixelsMeta");
       const list = document.getElementById("topPixelsList");
       const takeoverEl = document.getElementById("takeoverList");
       if(!items.length){
-        meta.textContent = "No leaderboard scores yet. Finish a run to claim first place.";
+        meta.textContent = "No published record holders yet. Global score uploads have not been activated.";
         list.innerHTML = "";
-        takeoverEl.innerHTML = `<div class="takeover-row">No takeovers yet. Be the first to set a record.</div>`;
+        takeoverEl.innerHTML = `<div class="takeover-row">No confirmed global record changes are available.</div>`;
         return;
       }
-      meta.textContent = `Live ${sourceLabel}. Ranked by longest standing top records.`;
+      meta.textContent = `Existing ${sourceLabel} (view only). New global score uploads are not activated. Ranked by longest standing top records.`;
       list.innerHTML = items.slice(0, 5).map((row, i) => `
         <div class="pixel-row">
           <div class="pixel-rank">#${i+1}</div>
-          <div class="pixel-name">${row.initials}</div>
-          <div class="pixel-game">${row.gameName} · held ${formatHeldDuration(Date.now() - row.t)}</div>
-          <div class="pixel-score">${row.score}</div>
+          <div class="pixel-name">${htmlEscape(row.initials)}</div>
+          <div class="pixel-game">${htmlEscape(row.gameName)} · held ${htmlEscape(formatHeldDuration(Math.max(0,Date.now() - row.t)))}</div>
+          <div class="pixel-score">${htmlEscape(row.score)}</div>
         </div>
       `).join("");
       const takeovers = items
         .filter(r => r.takeoverText)
         .slice(0, 5);
       takeoverEl.innerHTML = takeovers.length
-        ? takeovers.map(r => `<div class="takeover-row">${r.takeoverText}</div>`).join("")
-        : items.slice(0,3).map(r => `<div class="takeover-row">${r.initials} currently holds ${r.gameName} (${r.score})</div>`).join("");
+        ? takeovers.map(r => `<div class="takeover-row">${htmlEscape(r.takeoverText)}</div>`).join("")
+        : items.slice(0,3).map(r => `<div class="takeover-row">${htmlEscape(r.initials)} currently holds ${htmlEscape(r.gameName)} (${htmlEscape(r.score)})</div>`).join("");
     }
 
     async function loadTopPixels(games){
       const scored = [];
+      let successfulBoards=0;
       const withSlug = games.map(g => ({ ...g, slug: g.slug || getSlugFromPath(g.path) })).filter(g => g.slug);
       const topTargets = [];
       withSlug.forEach(g => {
@@ -504,6 +531,7 @@
       const pulls = topTargets.map(async target => {
         const rows = await fetchLeaderboardForSlug(target.slug);
         if(rows === null) return;
+        successfulBoards++;
         const modeRows = target.mode
           ? rows.filter(r => normalizeMode(r.mode) === target.mode)
           : rows;
@@ -517,7 +545,7 @@
             const topIni = (top.initials || top.name || "???").toString().toUpperCase().slice(0,3);
             const secIni = (second.initials || second.name || "???").toString().toUpperCase().slice(0,3);
             const margin = (Number(top.score) || 0) - (Number(second.score) || 0);
-            takeoverText = `${topIni} took over ${target.name} from ${secIni} (+${margin})`;
+            takeoverText = `${topIni} leads ${target.name} ahead of ${secIni} (+${margin})`;
           }
           scored.push({
             initials: (top.initials || top.name || "???").toString().toUpperCase().slice(0,3),
@@ -529,6 +557,12 @@
         }
       });
       await Promise.all(pulls);
+      if(successfulBoards===0){
+        renderTopPixels([], "unavailable");
+        document.getElementById("topPixelsMeta").textContent =
+          "Live leaderboard is temporarily unavailable. Existing scores are not lost.";
+        return;
+      }
       // Top Pixels = longest-standing current #1 records (oldest top timestamp first).
       scored.sort((a,b) => (a.t - b.t) || (b.score - a.score));
       renderTopPixels(scored, "record holders");
@@ -536,17 +570,33 @@
 
     function renderGrid(list){
       const gamesGrid = document.getElementById("gamesGrid");
-      gamesGrid.innerHTML = "";
+      gamesGrid.replaceChildren();
+      if(!list.length){
+        const empty=document.createElement("p");
+        empty.textContent="No games match that search. Try a different title or genre.";
+        empty.style.cssText="padding:1.2rem;color:#c4c7dc";
+        gamesGrid.appendChild(empty);
+        return;
+      }
       list.forEach(game => {
-        const card = document.createElement("div");
+        // Real anchors support keyboard navigation, browser history,
+        // link previews, long-press and opening cabinets in new tabs.
+        const card = document.createElement("a");
         card.className = "game-card";
-        card.innerHTML = `
-          <div class="game-thumbnail" style="background-image:url('${withVersion(normalizePath(game.thumb))}')"></div>
-          <div class="game-title"><h4>${game.name || "GAME"}</h4></div>
-        `;
-        card.addEventListener("click", () => {
-          if(game.path) window.location.href = normalizePath(game.path);
-        });
+        card.href = normalizePath(game.path || "index.html");
+        card.setAttribute("aria-label","Play "+String(game.name || "GAME"));
+        const thumbnail = document.createElement("img");
+        thumbnail.className = "game-thumbnail";
+        thumbnail.src = withVersion(normalizePath(game.thumb));
+        thumbnail.alt = "";
+        thumbnail.loading = "lazy";
+        thumbnail.decoding = "async";
+        const titleWrap = document.createElement("div");
+        titleWrap.className = "game-title";
+        const title = document.createElement("h4");
+        title.textContent = game.name || "GAME";
+        titleWrap.appendChild(title);
+        card.append(thumbnail,titleWrap);
         gamesGrid.appendChild(card);
       });
     }
@@ -557,16 +607,18 @@
     const playerInitials = document.getElementById("playerInitials");
 
     input.addEventListener("input", (e) => {
-      const value = e.target.value.toUpperCase().slice(0,3);
+      const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
       e.target.value = value;
     });
     input.addEventListener("keypress", (e) => { if(e.key === "Enter") saveInitials(); });
 
     function saveInitials(){
-      const initials = input.value.toUpperCase();
+      const initials = input.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
       if(initials.length === 3){
-        localStorage.setItem("playerInitials", initials);
-        localStorage.setItem("PIXELNET_INITIALS", initials);
+        try{
+          localStorage.setItem("playerInitials", initials);
+          localStorage.setItem("PIXELNET_INITIALS", initials);
+        }catch(_){ /* Browsers that disable storage can still play locally. */ }
         updatePlayerInitials(initials);
         closeModal();
       } else {
@@ -583,16 +635,30 @@
       try{ localStorage.setItem("playerInitials", v); localStorage.setItem("PIXELNET_INITIALS", v); }catch(e){}
     }
 
+    let modalReturnFocus = null;
     function showModal(){
+      modalReturnFocus = document.activeElement;
       modal.style.display = "flex";
       modal.style.animation = "fadeIn .3s ease";
-      setTimeout(()=>input.focus(), 100);
+      input.value=(playerInitials.textContent||"").replace(/[^A-Z0-9]/g,"").slice(0,3);
+      input.focus();
     }
 
     function closeModal(){
-      modal.style.animation = "fadeOut .3s ease";
-      setTimeout(()=>{ modal.style.display = "none"; }, 300);
+      modal.style.display = "none";
+      modal.style.animation = "none";
+      (modalReturnFocus instanceof HTMLElement ? modalReturnFocus : playerInitials).focus();
+      modalReturnFocus = null;
     }
+    modal.addEventListener("keydown",e=>{
+      if(e.key==="Escape"){e.preventDefault();closeModal();return}
+      if(e.key!=="Tab")return;
+      const focusable=[...modal.querySelectorAll("button,input")].filter(el=>!el.disabled);
+      if(!focusable.length)return;
+      const first=focusable[0],last=focusable[focusable.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+    });
 
     window.addEventListener("storage", (e)=>{
       if(e.key === "playerInitials" || e.key === "PIXELNET_INITIALS"){
@@ -602,11 +668,11 @@
     });
 
     window.addEventListener("load", async () => {
-      const saved = (localStorage.getItem("playerInitials") || localStorage.getItem("PIXELNET_INITIALS") || "").toString().trim().toUpperCase();
+      let saved="";
+      try{saved=(localStorage.getItem("playerInitials") || localStorage.getItem("PIXELNET_INITIALS") || "").toString().trim().toUpperCase().replace(/[^A-Z0-9]/g,"");}catch(_){}
       if(saved && saved.length >= 3){
         const v = saved.slice(0,3);
-        localStorage.setItem("playerInitials", v);
-        localStorage.setItem("PIXELNET_INITIALS", v);
+        try{localStorage.setItem("playerInitials", v);localStorage.setItem("PIXELNET_INITIALS", v)}catch(_){}
         updatePlayerInitials(v);
         modal.style.display = "none";
       } else {
@@ -625,6 +691,15 @@ try{
       }
     });
 
+    document.getElementById("resetInitials").addEventListener("click",()=>{
+      try{
+        localStorage.removeItem("playerInitials");
+        localStorage.removeItem("PIXELNET_INITIALS");
+      }catch(_){}
+      try{sessionStorage.removeItem("playerInitials")}catch(_){}
+      location.reload();
+    });
+
     // Search filter
     document.getElementById("searchBar").addEventListener("input", (e)=>{
       const q = (e.target.value || "").toLowerCase().trim();
@@ -640,5 +715,6 @@ try{
     `;
     document.head.appendChild(style);
   </script>
+  <script defer src="./install.js"></script>
 </body>
 </html>
