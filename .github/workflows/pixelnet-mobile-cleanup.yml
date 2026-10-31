@@ -1,0 +1,49 @@
+name: PIXEL-NET mobile quality release gate
+on:
+  push:
+    branches: [fix/pixelnet-mobile-cleanup-2026-10-31]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  responsive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate code and public catalog
+        run: |
+          node --check PIXEL-NET/wrapper/shell.js
+          node --check PIXEL-NET/games/spyder-casino/mobile-touch.js
+          node --check PIXEL-NET/tests/mobile-cabinet-layout.cjs
+          node PIXEL-NET/tests/arcade-publish-guard.cjs
+      - name: Install Chromium and WebKit
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Serve PIXEL-NET
+        run: |
+          python3 -m http.server 8765 --directory PIXEL-NET >/tmp/pixelnet.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/games.json >/dev/null && break || sleep 1; done
+      - name: Score and licensed source safety
+        run: |
+          node PIXEL-NET/tests/score-safety-smoke.cjs
+          node PIXEL-NET/tests/licensed-games-smoke.cjs
+      - name: Integrated arcade test
+        run: node PIXEL-NET/tests/unified-arcade-smoke.cjs
+      - name: Portrait and landscape for all 28 games
+        run: node PIXEL-NET/tests/mobile-cabinet-layout.cjs
+      - name: Preserve visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixelnet-mobile-evidence
+          path: |
+            mobile-layout-results/
+            unified-arcade-results/
+          if-no-files-found: ignore
