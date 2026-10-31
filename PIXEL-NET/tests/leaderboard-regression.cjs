@@ -135,7 +135,7 @@ const fs=require('node:fs');
       body:(await response.text()).replace('const FIREBASE_WEB_API_KEY = "";',
         'const FIREBASE_WEB_API_KEY = "TEST_KEY";')});
   });
-  await renewable.route(/securetoken\\.googleapis\\.com/,route=>{
+  await renewable.route(/securetoken\.googleapis\.com/,route=>{
     refreshed++;
     const body=new URLSearchParams(route.request().postData());
     assert.equal(body.get('grant_type'),'refresh_token');
@@ -144,11 +144,11 @@ const fs=require('node:fs');
       id_token:'renewed-token',refresh_token:'rotated-refresh-token',expires_in:'3600'
     })});
   });
-  await renewable.route(/identitytoolkit\\.googleapis\\.com/,route=>{
+  await renewable.route(/identitytoolkit\.googleapis\.com/,route=>{
     created++;
     return route.fulfill({status:200,contentType:'application/json',body:'{}'});
   });
-  await renewable.route(/firebaseio\\.com/,route=>{
+  await renewable.route(/firebaseio\.com/,route=>{
     if(route.request().method()==='PUT'){
       refreshedWrite=new URL(route.request().url()).searchParams.get('auth')==='renewed-token';
       return route.fulfill({status:200,contentType:'application/json',body:'{}'});
