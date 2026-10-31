@@ -13,6 +13,7 @@ const profiles = [
  {name:'iphone-webkit',browser:webkit,settings:devices['iPhone 13'],frame:'#gameMobile'}
 ];
 const nativeRepairs = new Set(['dig-dug-delve','combat-cx2601','jungle-jr-rescue','track-field-blitz','orbit-siege']);
+const touchRepairs = new Set(['galaxy-swarm-2084','circuit-salvager','atariforce-hyperlane','kangaroo-climb']);
 const output = 'original-input-audit-results';
 fs.mkdirSync(output,{recursive:true});
 const results={total:catalog.length*profiles.length,passed:[],failed:[],warnings:[],coverage:
@@ -74,7 +75,7 @@ async function exercise(browser,profile,game){
        const y=rect.y+Math.min(rect.height*.5,Math.max(16,rect.height-16));
        await page.touchscreen.tap(x,y).then(()=>inputs.push('physical simulated touch')).catch(()=>{});
      }
-     if(nativeRepairs.has(game.slug)){
+     if(nativeRepairs.has(game.slug) || touchRepairs.has(game.slug)){
        const left=frame.locator('[data-pn-touch="left"]');
        await left.waitFor({state:'visible',timeout:5000});
        await frame.evaluate(()=>{
@@ -83,7 +84,14 @@ async function exercise(browser,profile,game){
        });
        await left.tap({timeout:4000});
        await frame.waitForFunction(()=>window.__pnTouchTestKeys>0,null,{timeout:4000});
-       inputs.push('verified native touch left emits ArrowLeft keydown');
+       inputs.push('verified shared touch left emits ArrowLeft keydown');
+       if(game.slug==='circuit-salvager'){
+         await frame.locator('[data-pn-touch="hold"]').waitFor({state:'visible'});
+         await frame.locator('[data-pn-touch="rotate-back"]').waitFor({state:'visible'});
+       }
+       if(game.slug==='atariforce-hyperlane'){
+         await frame.locator('[data-pn-touch="burst"]').waitFor({state:'visible'});
+       }
      }
      const arrow=frame.locator('[data-direction="left"], #btnLeft, .dpad button').first();
      if(await arrow.count()&&await arrow.isVisible().catch(()=>false)){

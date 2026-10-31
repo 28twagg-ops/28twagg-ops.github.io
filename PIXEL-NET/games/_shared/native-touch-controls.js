@@ -7,9 +7,16 @@
   ['left','ArrowLeft','←'],['up','ArrowUp','↑'],['down','ArrowDown','↓'],
   ['right','ArrowRight','→'],['fire',' ','ACTION']
  ];
+ if(location.pathname.includes('/circuit-salvager/')){
+   buttons.push(['hold','c','HOLD'],['rotate-back','z','↶']);
+ }
+ if(location.pathname.includes('/atariforce-hyperlane/')){
+   buttons.push(['burst','Shift','BURST']);
+ }
  const style=document.createElement('style');
  style.textContent=[
  '.pn-touch-controls{position:fixed;left:8px;right:8px;bottom:8px;z-index:50;display:flex;justify-content:space-between;align-items:end;pointer-events:none;user-select:none;-webkit-user-select:none}',
+ '.pn-touch-action{display:flex;flex-direction:column;gap:4px;pointer-events:none}',
  '.pn-touch-pad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:4px;pointer-events:none}',
  '.pn-touch-controls button{display:flex;justify-content:center;align-items:center;min-width:46px;min-height:46px;border:2px solid rgba(255,255,255,.65);border-radius:12px;background:rgba(10,17,33,.72);color:#fff;font:700 22px system-ui;touch-action:none;pointer-events:auto;-webkit-tap-highlight-color:transparent}',
  '.pn-touch-controls button:active,.pn-touch-controls button.active{background:rgba(32,159,220,.86)}',
