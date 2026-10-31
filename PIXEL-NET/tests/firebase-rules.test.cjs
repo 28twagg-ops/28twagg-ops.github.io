@@ -44,6 +44,9 @@ async function main(){
   await denied('Cannot write extra data',set(ref(player,'lb/retro-kombat/pn-demo012345abc'),{...entry,admin:true}));
   await denied('Cannot write malformed record ID',set(ref(player,'lb/retro-kombat/bad'),entry));
   await denied('Cannot write invalid Casino mode',set(ref(player,'lb/spyder-blackjack/pn-demo012345abc'),{...entry,mode:'CHEAT'}));
+  await denied('Casino scores require mode',set(ref(player,'lb/spyder-holdem/pn-demo012345abc'),entry));
+  await denied('Non-Casino scores reject Casino mode',set(ref(player,'lb/retro-kombat/pn-demo012345abc'),{...entry,mode:'ANALYSIS'}));
+
   await ok('Retro Kombat authenticated score',set(ref(player,'lb/retro-kombat/pn-demo012345abc'),entry));
   await ok('Casino standard mode score',set(ref(player,'lb/spyder-blackjack/pn-demo012345abc'),{...entry,mode:'STANDARD'}));
   await ok('Casino analysis mode score',set(ref(player,'lb/spyder-holdem/pn-demo012345abc'),{...entry,mode:'ANALYSIS'}));
