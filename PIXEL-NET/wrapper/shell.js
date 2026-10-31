@@ -257,8 +257,18 @@ const FIREBASE_DB_URL = "https://pixel-net-arcade-default-rtdb.firebaseio.com";
   const entry = CFG.entry || './game.html';
   const gd = document.getElementById('gameDesktop');
   const gm = document.getElementById('gameMobile');
-  gd.src = entry;
-  gm.src = entry;
+  // Only one game instance may run at a time. Previously both iframes
+  // started rendering even when CSS hid one (double canvas/audio/CPU).
+  const mobileBreak = matchMedia('(max-width: 1100px)');
+  function syncActiveGame() {
+    const active = mobileBreak.matches ? gm : gd;
+    const inactive = mobileBreak.matches ? gd : gm;
+    if (inactive.hasAttribute('src')) inactive.removeAttribute('src');
+    if (active.getAttribute('src') !== entry) active.setAttribute('src', entry);
+  }
+  syncActiveGame();
+  if (mobileBreak.addEventListener) mobileBreak.addEventListener('change', syncActiveGame);
+  else mobileBreak.addListener(syncActiveGame);
 
   const focusFrame = el => {
     try { el.focus(); } catch(_) {}
