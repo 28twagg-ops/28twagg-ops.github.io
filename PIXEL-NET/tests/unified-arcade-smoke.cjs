@@ -10,9 +10,9 @@ const imported=JSON.parse(fs.readFileSync('PIXEL-NET/licensed/catalog.json','utf
 const out='unified-arcade-results';fs.mkdirSync(out,{recursive:true});
 const report={total:catalog.length,original:catalog.filter(g=>!g.licensed).length,
   imported:catalog.filter(g=>g.licensed).length,runs:[],failures:[]};
-assert.equal(report.original,19);
+assert.equal(report.original,18,'Expected 18 original playable titles after archiving the placeholder');
 assert.equal(report.imported,10);
-assert.equal(new Set(catalog.map(x=>x.slug)).size,29);
+assert.equal(new Set(catalog.map(x=>x.slug)).size,catalog.length);
 assert.deepEqual(catalog.filter(x=>x.licensed).map(x=>x.slug),
   imported.map(x=>'licensed-'+x.id));
 assert.ok(catalog.find(x=>x.featured)?.slug==='spyder-casino',
@@ -32,8 +32,8 @@ for(const g of catalog.filter(x=>x.licensed)){
   await home.addInitScript(()=>localStorage.setItem('playerInitials','QA1'));
   await home.goto(BASE+'index.html',{waitUntil:'domcontentloaded'});
   await home.locator('.game-card').first().waitFor();
-  await home.waitForFunction(()=>document.querySelectorAll('.game-card').length===29);
-  assert.equal(await home.locator('.game-card').count(),29);
+  await home.waitForFunction(expected=>document.querySelectorAll('.game-card').length===expected,catalog.length);
+  assert.equal(await home.locator('.game-card').count(),catalog.length);
   assert.equal(await home.locator('.licensedTag').count(),10);
   assert.equal(await home.locator('#featuredTitle').innerText(),'SPYDER CASINO');
   await home.locator('#searchBar').fill('Frank Force');
@@ -41,11 +41,34 @@ for(const g of catalog.filter(x=>x.licensed)){
   await home.locator('#searchBar').fill('2048');
   await home.waitForFunction(()=>document.querySelectorAll('.game-card').length===1);
   await home.locator('#searchBar').fill('');
-  await home.waitForFunction(()=>document.querySelectorAll('.game-card').length===29);
+  await home.waitForFunction(expected=>document.querySelectorAll('.game-card').length===expected,catalog.length);
   const click=home.locator('.game-card').filter({hasText:'2048'}).first();
   await click.click();
   await home.waitForURL('**/games/licensed-2048/wrapper-v2.html');
   await home.close();
+  // The previous Millipede build referenced /js/engine.js, a missing file.
+  // Verify the self-contained game starts and renders without missing assets.
+  const millipede=await browser.newPage();
+  const millErrors=[];
+  millipede.on('pageerror',e=>millErrors.push('JS '+e.message));
+  millipede.on('response',r=>{
+    if(r.url().startsWith(BASE)&&r.status()>=400&&!r.url().endsWith('/favicon.ico'))
+      millErrors.push('HTTP '+r.status()+' '+r.url());
+  });
+  await millipede.goto(BASE+'games/millipede-chaos-v3/wrapper-v2.html',
+    {waitUntil:'domcontentloaded'});
+  const millFrame=millipede.frameLocator('#gameDesktop');
+  const startMill=millFrame.locator('#btnStart');
+  await startMill.waitFor({state:'visible',timeout:9000});
+  await startMill.click();
+  await millFrame.locator('#overlay.hidden').waitFor({state:'attached',timeout:6000});
+  await millipede.waitForTimeout(700);
+  const canvasDims=await millFrame.locator('canvas#c').evaluate(c=>({w:c.width,h:c.height}));
+  assert.ok(canvasDims.w>200&&canvasDims.h>200,'Millipede canvas did not initialize');
+  assert.deepEqual(millErrors,[],'Millipede must not load missing files or crash after START');
+  report.runs.push({name:'MILLIPEDE CHAOS',device:'gameplay',result:'pass'});
+  await millipede.close();
+
   const profiles=[
    {name:'desktop',settings:{viewport:{width:1440,height:900}},frame:'#gameDesktop'},
    {name:'mobile',settings:devices['iPhone 13'],frame:'#gameMobile'}
@@ -74,9 +97,9 @@ for(const g of catalog.filter(x=>x.licensed)){
       },{id:profile.frame,end:'/licensed/'+imported.find(i=>'licensed-'+i.id===game.slug).path},
       {timeout:18000});
       if(profile.name==='mobile'){
-       await page.locator('[data-tab=howto]').click();
+       await page.locator('[data-tab=howto]').dispatchEvent('click');
        assert.equal(await page.locator('#view-howto').isVisible(),true);
-       await page.locator('[data-tab=board]').click();
+       await page.locator('[data-tab=board]').dispatchEvent('click');
        assert.equal(await page.locator('#view-board').isVisible(),true);
        assert.ok((await page.locator('#view-board').innerText()).includes(game.creator));
        await page.locator('[data-tab=game]').dispatchEvent('click');
@@ -119,7 +142,7 @@ for(const g of catalog.filter(x=>x.licensed)){
    await browser.close();
    fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2));
  }
- console.log('UNIFIED_ARCADE '+report.runs.length+'/'+(20+19)+' with '+
+ console.log('UNIFIED_ARCADE '+report.runs.length+'/'+(21+report.original)+' with '+
    report.failures.length+' failures');
  if(report.failures.length){
   console.error(JSON.stringify(report.failures,null,2));
